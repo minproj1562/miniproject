@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Details - Courses in India</title>
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      color: white;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 5%;
+      background: rgba(0, 0, 0, 0.8);
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.5rem;
+    }
+    nav ul li a {
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    nav ul li a:hover {
+      color: #f8b400;
+    }
+    main {
+      max-width: 1200px;
+      margin: 80px auto;
+      padding: 2rem;
+      background: white;
+      color: black;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      color: #1e3c72;
+    }
+    .search-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .search-container input {
+      width: 60%;
+      padding: 12px;
+      border: 2px solid #007BFF;
+      border-radius: 25px;
+      font-size: 1em;
+      outline: none;
+    }
+    .search-container button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-left: none;
+      border-radius: 0 5px 5px 0;
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+    }
+    .search-container button:hover {
+      background-color: #2980b9;
+    }
+    .degree-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .degree-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      color: #2c5282;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+    .degree-item:hover {
+      background-color: #e2e8f0;
+    }
+    .degree-item h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .degree-item p {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .reviews {
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .review {
+      margin-bottom: 0.5rem;
+    }
+    .rating {
+      color: #f39c12;
+    }
+    .user {
+      font-weight: bold;
+    }
+    .comment {
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Career Analytics</div>
+    <nav>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/test">Career Test</a></li>
+        <li><a href="/student">Student Portal</a></li>
+        <li><a href="/degree">Degrees</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Career Details - Courses Offered in India</h1>
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search for courses...">
+      <button onclick="filterDegrees()">Search</button>
+    </div>
+    <div class="degree-list" id="degree-list"></div>
+    <p id="no-results" style="display:none; color:red;">No degrees found.</p>
+  </main>
+
+  <script>
+    const courses = [
+      {
+        title: "Computer Science Engineering",
+        description: "Focuses on software development, algorithms, and computer systems. Specializations include AI, Machine Learning, and Data Science.",
+        link: "https://www.shiksha.com/engineering/computer-science-engineering-chp",
+        icon: "fas fa-laptop",
+        reviews: [
+          { user: "Rahul", rating: 4.5, comment: "Great course with excellent faculty." },
+          { user: "Priya", rating: 5, comment: "Highly recommended for aspiring software engineers." }
+        ]
+      },
+      {
+        title: "Mechanical Engineering",
+        description: "Deals with the design, analysis, and manufacturing of mechanical systems. Specializations include Robotics, Automotive, and HVAC.",
+        link: "https://www.shiksha.com/engineering/mechanical-engineering-chp",
+        icon: "fas fa-cogs",
+        reviews: [
+          { user: "Anjali", rating: 4, comment: "Challenging but rewarding career path." },
+          { user: "Vikram", rating: 4.7, comment: "Top-notch institutions and training." }
+        ]
+      },
+      {
+        title: "Civil Engineering",
+        description: "Involves the design and construction of infrastructure like roads, bridges, and buildings. Specializations include Structural and Environmental Engineering.",
+        link: "https://www.shiksha.com/engineering/civil-engineering-chp",
+        icon: "fas fa-building",
+        reviews: [
+          { user: "Neha", rating: 4.8, comment: "Best decision for my career growth." },
+          { user: "Arun", rating: 4.2, comment: "Networking opportunities are amazing." }
+        ]
+      },
+      {
+        title: "Electrical Engineering",
+        description: "Focuses on electrical systems, electronics, and power generation. Specializations include Power Systems and Telecommunications.",
+        link: "https://www.shiksha.com/engineering/electrical-engineering-chp",
+        icon: "fas fa-bolt",
+        reviews: [
+          { user: "Suresh", rating: 4.6, comment: "Great for IT career aspirants." },
+          { user: "Meena", rating: 4.3, comment: "Practical knowledge is very useful." }
+        ]
+      },
+      {
+        title: "Electronics and Communication Engineering",
+        description: "Deals with electronic devices, circuits, and communication systems. Specializations include VLSI and Embedded Systems.",
+        link: "https://www.shiksha.com/engineering/electronics-communication-engineering-chp",
+        icon: "fas fa-microchip",
+        reviews: [
+          { user: "Kiran", rating: 4.4, comment: "Excellent course for electronics careers." },
+          { user: "Ravi", rating: 4.1, comment: "Challenging but fulfilling profession." }
+        ]
+      },
+      {
+        title: "Medicine",
+        description: "Pursue a career in medicine with specializations like MBBS, MD, or Dentistry. Medical professionals are in high demand globally.",
+        link: "https://www.collegedekho.com/medical-colleges/",
+        icon: "fas fa-stethoscope",
+        reviews: [
+          { user: "Anjali", rating: 4, comment: "Challenging but rewarding career path." },
+          { user: "Vikram", rating: 4.7, comment: "Top-notch institutions and training." }
+        ]
+      },
+      {
+        title: "Business Administration (MBA)",
+        description: "An MBA degree opens doors to leadership roles in various industries. Top institutions like IIMs offer world-class programs.",
+        link: "https://www.mbacrystalball.com/mba-in-india",
+        icon: "fas fa-briefcase",
+        reviews: [
+          { user: "Neha", rating: 4.8, comment: "Best decision for my career growth." },
+          { user: "Arun", rating: 4.2, comment: "Networking opportunities are amazing." }
+        ]
+      },
+      {
+        title: "Computer Applications (MCA)",
+        description: "MCA is a popular course for students interested in software development, programming, and IT management.",
+        link: "https://www.shiksha.com/mca-chp",
+        icon: "fas fa-laptop-code",
+        reviews: [
+          { user: "Suresh", rating: 4.6, comment: "Great for IT career aspirants." },
+          { user: "Meena", rating: 4.3, comment: "Practical knowledge is very useful." }
+        ]
+      },
+      {
+        title: "Law",
+        description: "A career in law offers opportunities in litigation, corporate law, and judiciary. Top law schools include NLUs.",
+        link: "https://www.collegedekho.com/law-colleges/",
+        icon: "fas fa-balance-scale",
+        reviews: [
+          { user: "Kiran", rating: 4.4, comment: "Excellent course for legal careers." },
+          { user: "Ravi", rating: 4.1, comment: "Challenging but fulfilling profession." }
+        ]
+      },
+      {
+        title: "Arts and Humanities",
+        description: "Explore careers in literature, history, psychology, and more. Arts graduates can work in diverse fields like media, education, and research.",
+        link: "https://www.shiksha.com/arts-chp",
+        icon: "fas fa-palette",
+        reviews: [
+          { user: "Divya", rating: 4.7, comment: "Great for creative minds." },
+          { user: "Raj", rating: 4, comment: "Opens up diverse career options." }
+        ]
+      },
+      {
+        title: "Architecture",
+        description: "Architecture involves the design and planning of buildings and structures. Specializations include Urban Design and Landscape Architecture.",
+        link: "https://www.shiksha.com/architecture-chp",
+        icon: "fas fa-archway",
+        reviews: [
+          { user: "Amit", rating: 4.5, comment: "Creative and fulfilling career." },
+          { user: "Sneha", rating: 4.3, comment: "Great for those interested in design." }
+        ]
+      },
+      {
+        title: "Pharmacy",
+        description: "Pharmacy involves the preparation and dispensing of drugs. Specializations include Clinical Pharmacy and Pharmacology.",
+        link: "https://www.collegedekho.com/pharmacy-colleges/",
+        icon: "fas fa-prescription-bottle",
+        reviews: [
+          { user: "Rohit", rating: 4.2, comment: "Excellent course for healthcare." },
+          { user: "Pooja", rating: 4.4, comment: "Good career opportunities." }
+        ]
+      },
+      {
+        title: "Agriculture",
+        description: "Agriculture focuses on farming, crop production, and agribusiness. Specializations include Horticulture and Agricultural Engineering.",
+        link: "https://www.shiksha.com/agriculture-chp",
+        icon: "fas fa-tractor",
+        reviews: [
+          { user: "Vijay", rating: 4.1, comment: "Great for those interested in farming." },
+          { user: "Anita", rating: 4.3, comment: "Good scope in agribusiness." }
+        ]
+      },
+      {
+        title: "Fashion Design",
+        description: "Fashion Design involves creating clothing and accessories. Specializations include Textile Design and Fashion Marketing.",
+        link: "https://www.collegedekho.com/fashion-design-colleges/",
+        icon: "fas fa-tshirt",
+        reviews: [
+          { user: "Riya", rating: 4.6, comment: "Creative and exciting career." },
+          { user: "Kunal", rating: 4.2, comment: "Great for those with a passion for fashion." }
+        ]
+      },
+      {
+        title: "Hotel Management",
+        description: "Hotel Management involves managing hospitality services. Specializations include Culinary Arts and Event Management.",
+        link: "https://www.shiksha.com/hotel-management-chp",
+        icon: "fas fa-hotel",
+        reviews: [
+          { user: "Rajesh", rating: 4.3, comment: "Great for those interested in hospitality." },
+          { user: "Suman", rating: 4.5, comment: "Good career opportunities." }
+        ]
+      }
+    ];
+
+    function displayDegrees(degrees) {
+      const degreeList = document.getElementById("degree-list");
+      degreeList.innerHTML = "";
+      
+      degrees.forEach(degree => {
+        const degreeItem = document.createElement("a");
+        degreeItem.className = "degree-item";
+        degreeItem.href = degree.link;
+        degreeItem.target = "_blank";
+        degreeItem.innerHTML = `
+          <h2><i class="${degree.icon}"></i>${degree.title}</h2>
+          <p>${degree.description}</p>
+          <div class="reviews">
+            ${degree.reviews.map(review => `
+              <div class="review">
+                <div class="rating">${'★'.repeat(Math.floor(review.rating))}${'☆'.repeat(5 - Math.floor(review.rating))}</div>
+                <div class="user">${review.user}:</div>
+                <div class="comment">${review.comment}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        degreeList.appendChild(degreeItem);
+      });
+    }
+
+    function filterDegrees() {
+      const searchInput = document.getElementById("searchInput").value.toLowerCase();
+      const degreeItems = document.querySelectorAll(".degree-item");
+      let found = false;
+      
+      degreeItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchInput)) {
+          item.style.display = "";
+          found = true;
+        } else {
+          item.style.display = "none";
+        }
+      });
+
+      document.getElementById("no-results").style.display = found ? "none" : "block";
+    }
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+      displayDegrees(courses);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Career Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        nav ul li a:hover {
+            color: #f8b400;
+        }
+        main {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 2rem;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #1e3c72;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #2c5282;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover {
+            background-color: #e2e8f0;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+        .card a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .card a:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Career Analytics</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/test">Career Test</a></li>
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/degree">Degrees</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Student Career Dashboard</h1>
+        <div class="dashboard">
+            <div class="card">
+                <h2>Career Assessment</h2>
+                <p>Take a personality test to discover your ideal career path.</p>
+                <a href="career_assessment.html">Start Assessment</a>
+            </div>
+            <div class="card">
+                <h2>Job Listings</h2>
+                <p>Explore internships and full-time roles tailored for you.</p>
+                <a href="career.html">View Jobs</a>
+            </div>
+            <div class="card">
+                <h2>Skill Development</h2>
+                <p>Enroll in courses to build in-demand skills.</p>
+                <a href="skilldev.html">Explore Courses</a>
+            </div>
+            <div class="card">
+                <h2>Resume Builder</h2>
+                <p>Create a professional resume in minutes.</p>
+                <a href="resume.html">Build Resume</a>
+            </div>
+            <div class="card">
+                <h2>Interview Prep</h2>
+                <p>Practice mock interviews and learn tips to ace them.</p>
+                <a href="interviewprep.html">Prepare Now</a>
+            </div>
+            <div class="card">
+                <h2>Career Roadmap</h2>
+                <p>Get a step-by-step guide to your dream career.</p>
+                <a href="roadmap.html">View Roadmap</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

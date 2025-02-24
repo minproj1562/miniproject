@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Roadmap to Become a Software Engineer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        nav ul li a:hover {
+            color: #f8b400;
+        }
+        main {
+            max-width: 900px;
+            margin: 80px auto;
+            padding: 2rem;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #1e3c72;
+        }
+        .roadmap {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .roadmap-stage {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #2c5282;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .roadmap-stage h2 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .roadmap-stage p {
+            font-size: 16px;
+            color: #34495e;
+            margin-bottom: 20px;
+        }
+        .roadmap-stage button {
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .roadmap-stage button:hover {
+            background-color: #2980b9;
+        }
+        .roadmap-stage:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .progress-check {
+            display: none;
+        }
+        .progress-check + label {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #3498db;
+            cursor: pointer;
+            position: relative;
+            margin-left: 10px;
+        }
+        .progress-check:checked + label::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: #3498db;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar-inner {
+            height: 20px;
+            background-color: #3498db;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+        footer {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            text-align: center;
+            color: white;
+            position: absolute;
+            width: 100%;
+            bottom: 0;
+        }
+        @media (max-width: 768px) {
+            .roadmap-stage button {
+                padding: 10px 15px;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Career Analytics</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/test">Career Test</a></li>
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/degree">Degrees</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Career Roadmap: Becoming a Software Engineer</h1>
+        <p>Follow this roadmap to understand the steps to become a Software Engineer. It includes skills, stages, and resources to help you succeed!</p>
+
+        <div class="progress-bar">
+            <div class="progress-bar-inner" id="progress-bar-inner"></div>
+        </div>
+
+        <section class="roadmap">
+            <div class="roadmap-stage">
+                <h2>1. Learn Basic Programming</h2>
+                <p>Start with basic programming languages like Python, JavaScript, or Java. Learn core concepts like loops, variables, data structures, and functions.</p>
+                <button class="btn" onclick="window.location.href='https://www.codecademy.com'">Start Learning</button>
+                <input type="checkbox" class="progress-check" id="stage1" onchange="saveProgress('stage1')">
+                <label for="stage1"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>2. Study Data Structures & Algorithms</h2>
+                <p>Data structures and algorithms are critical for coding interviews. Study topics like arrays, linked lists, trees, graphs, sorting, and searching algorithms.</p>
+                <button class="btn" onclick="window.location.href='https://www.geeksforgeeks.org/data-structures/'">Learn More</button>
+                <input type="checkbox" class="progress-check" id="stage2" onchange="saveProgress('stage2')">
+                <label for="stage2"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>3. Get Familiar with Development Tools</h2>
+                <p>Learn to use essential tools such as Git, Visual Studio Code, and npm to manage your code and development workflow.</p>
+                <button class="btn" onclick="window.location.href='https://git-scm.com/'">Git Documentation</button>
+                <input type="checkbox" class="progress-check" id="stage3" onchange="saveProgress('stage3')">
+                <label for="stage3"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>4. Build Real Projects</h2>
+                <p>Work on personal projects to apply the skills you’ve learned. Create websites, apps, or APIs to build a portfolio.</p>
+                <button class="btn" onclick="window.location.href='https://www.github.com'">Showcase on GitHub</button>
+                <input type="checkbox" class="progress-check" id="stage4" onchange="saveProgress('stage4')">
+                <label for="stage4"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>5. Learn a Framework</h2>
+                <p>Learn front-end frameworks like React, Angular, or Vue.js, or back-end frameworks like Django or Node.js.</p>
+                <button class="btn" onclick="window.location.href='https://reactjs.org/'">React Documentation</button>
+                <input type="checkbox" class="progress-check" id="stage5" onchange="saveProgress('stage5')">
+                <label for="stage5"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>6. Practice Coding Interviews</h2>
+                <p>Prepare for coding interviews by solving algorithmic problems on platforms like LeetCode, HackerRank, and CodeSignal.</p>
+                <button class="btn" onclick="window.location.href='https://www.hackerrank.com/domains/tutorials/10-days-of-javascript'">Start Practicing</button>
+                <input type="checkbox" class="progress-check" id="stage6" onchange="saveProgress('stage6')">
+                <label for="stage6"></label> Completed
+            </div>
+
+            <div class="roadmap-stage">
+                <h2>7. Build a Portfolio</h2>
+                <p>Host your projects and show off your skills on a personal website or GitHub profile. This is your opportunity to shine!</p>
+                <button class="btn" onclick="window.location.href='https://www.github.com'">GitHub Portfolio</button>
+                <input type="checkbox" class="progress-check" id="stage7" onchange="saveProgress('stage7')">
+                <label for="stage7"></label> Completed
+            </div>
+            
+            <div class="roadmap-stage">
+                <h2>8. Apply for Jobs</h2>
+                <p>Apply for junior developer roles. Network with people in the industry and attend developer meetups.</p>
+                <button class="btn" onclick="window.location.href='https://www.linkedin.com/jobs/'">LinkedIn Jobs</button>
+                <input type="checkbox" class="progress-check" id="stage8" onchange="saveProgress('stage8')">
+                <label for="stage8"></label> Completed
+            </div>
+
+            <div class="roadmap-stage">
+                <h2>9. Prepare for Job Interviews</h2>
+                <p>Prepare for both technical and behavioral interviews. Practice mock interviews and study system design principles.</p>
+                <button class="btn" onclick="window.location.href='https://www.interviewing.io'">Mock Interviews</button>
+                <input type="checkbox" class="progress-check" id="stage9" onchange="saveProgress('stage9')">
+                <label for="stage9"></label> Completed
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            loadProgress();
+            updateProgressBar();
+        });
+
+        function saveProgress(stageId) {
+            const isChecked = document.getElementById(stageId).checked;
+            localStorage.setItem(stageId, isChecked);
+            updateProgressBar();
+        }
+
+        function loadProgress() {
+            const stages = document.querySelectorAll('.progress-check');
+            stages.forEach(stage => {
+                const stageId = stage.id;
+                const isChecked = localStorage.getItem(stageId) === 'true';
+                stage.checked = isChecked;
+            });
+        }
+
+        function updateProgressBar() {
+            const stages = document.querySelectorAll('.progress-check');
+            const completedStages = Array.from(stages).filter(stage => stage.checked).length;
+            const totalStages = stages.length;
+            const progressPercentage = (completedStages / totalStages) * 100;
+            document.getElementById('progress-bar-inner').style.width = progressPercentage + '%';
+        }
+    </script>
+</body>
+</html>

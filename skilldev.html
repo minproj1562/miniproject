@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Development for Career Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        nav ul li a:hover {
+            color: #f8b400;
+        }
+        main {
+            max-width: 900px;
+            margin: 80px auto;
+            padding: 2rem;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1e3c72;
+            text-align: center;
+        }
+        .career-select {
+            margin-bottom: 20px;
+        }
+        .career-select label {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .career-select select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .skills-section, .resources-section, .progress-section {
+            margin-top: 20px;
+        }
+        .skills-section h2, .resources-section h2, .progress-section h2 {
+            color: #1e3c72;
+            border-bottom: 2px solid #1e3c72;
+            padding-bottom: 5px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            background: #f9f9f9;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            color: #333;
+        }
+        a {
+            color: #1e3c72;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .progress-section input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .progress-section button {
+            padding: 10px 20px;
+            background: #1e3c72;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .progress-section button:hover {
+            background: #2a5298;
+        }
+    </style>
+</head>
+<body>
+    
+    <main>
+        <h1>Skill Development for Career Analysis</h1>
+
+        <!-- Career Selection Dropdown -->
+        <div class="career-select">
+            <label for="career-field">Select Your Career Field:</label>
+            <select id="career-field" onchange="updateSkills()">
+                <option value="data-science">Data Science</option>
+                <option value="medicine">Medicine</option>
+                <option value="engineering">Engineering</option>
+                <option value="arts">Arts</option>
+                <option value="business">Business</option>
+            </select>
+        </div>
+
+        <!-- Skills Section -->
+        <div class="skills-section">
+            <h2>Recommended Skills</h2>
+            <ul id="skills-list">
+                <!-- Skills will be dynamically populated here -->
+            </ul>
+        </div>
+
+        <!-- Resources Section -->
+        <div class="resources-section">
+            <h2>Learning Resources</h2>
+            <ul id="resources-list">
+                <!-- Resources will be dynamically populated here -->
+            </ul>
+        </div>
+
+        <!-- Progress Tracker Section -->
+        <div class="progress-section">
+            <h2>Track Your Progress</h2>
+            <ul id="progress-list">
+                <!-- Progress tasks will be dynamically populated here -->
+            </ul>
+            <button onclick="addTask()">Add Task</button>
+        </div>
+    </main>
+
+    <script>
+        // Data for skills and resources based on career fields
+        const careerData = {
+            "data-science": {
+                skills: ["Python", "Machine Learning", "Data Visualization", "SQL", "Statistics"],
+                resources: [
+                    { name: "Kaggle", link: "https://www.kaggle.com/" },
+                    { name: "Coursera Data Science", link: "https://www.coursera.org/" },
+                    { name: "Towards Data Science", link: "https://towardsdatascience.com/" }
+                ]
+            },
+            "medicine": {
+                skills: ["Anatomy", "Pharmacology", "Clinical Skills", "Medical Ethics", "Patient Communication"],
+                resources: [
+                    { name: "Khan Academy Medicine", link: "https://www.khanacademy.org/science/health-and-medicine" },
+                    { name: "Medscape", link: "https://www.medscape.com/" }
+                ]
+            },
+            "engineering": {
+                skills: ["CAD Design", "Structural Analysis", "Programming (C++, Python)", "Project Management", "Mathematics"],
+                resources: [
+                    { name: "MIT OpenCourseWare", link: "https://ocw.mit.edu/" },
+                    { name: "Engineering.com", link: "https://www.engineering.com/" }
+                ]
+            },
+            "arts": {
+                skills: ["Drawing", "Painting", "Digital Art", "Art History", "Creative Writing"],
+                resources: [
+                    { name: "Skillshare Art Classes", link: "https://www.skillshare.com/" },
+                    { name: "DeviantArt", link: "https://www.deviantart.com/" }
+                ]
+            },
+            "business": {
+                skills: ["Marketing", "Finance", "Leadership", "Data Analysis", "Entrepreneurship"],
+                resources: [
+                    { name: "Harvard Business Review", link: "https://hbr.org/" },
+                    { name: "Coursera Business Courses", link: "https://www.coursera.org/" }
+                ]
+            }
+        };
+
+        // Function to update skills and resources based on selected career field
+        function updateSkills() {
+            const careerField = document.getElementById("career-field").value;
+            const data = careerData[careerField];
+
+            // Update Skills List
+            const skillsList = document.getElementById("skills-list");
+            skillsList.innerHTML = data.skills.map(skill => `<li>${skill}</li>`).join("");
+
+            // Update Resources List
+            const resourcesList = document.getElementById("resources-list");
+            resourcesList.innerHTML = data.resources.map(resource => `
+                <li><a href="${resource.link}" target="_blank">${resource.name}</a></li>
+            `).join("");
+
+            // Update Progress Tracker
+            const progressList = document.getElementById("progress-list");
+            progressList.innerHTML = data.skills.map(skill => `
+                <li><input type="checkbox"> ${skill}</li>
+            `).join("");
+        }
+
+        // Function to add a custom task to the progress tracker
+        function addTask() {
+            const task = prompt("Enter a new task:");
+            if (task) {
+                const progressList = document.getElementById("progress-list");
+                const li = document.createElement("li");
+                li.innerHTML = `<input type="checkbox"> ${task}`;
+                progressList.appendChild(li);
+            }
+        }
+
+        // Initialize with default career field
+        updateSkills();
+    </script>
+</body>
+</html>

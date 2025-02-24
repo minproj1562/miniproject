@@ -1,0 +1,33 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-3xl font-bold mb-6 text-center">Your Results</h1>
+            <div class="mb-6">
+                <div class="text-center">
+                    <span class="text-4xl font-bold {% if results.score >= 85 %}text-green-500
+                                                   {% elif results.score >= 70 %}text-blue-500
+                                                   {% elif results.score >= 50 %}text-yellow-500
+                                                   {% else %}text-red-500{% endif %}">
+                        {{ results.score }}%
+                    </span>
+                </div>
+            </div>
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-2">Assessment:</h2>
+                <p>{{ results.assessment }}</p>
+            </div>
+            <a href="/" class="block w-full text-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Take Test Again
+            </a>
+        </div>
+    </div>
+</body>
+</html>
+    

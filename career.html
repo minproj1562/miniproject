@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal for Students</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        nav ul li a:hover {
+            color: #f8b400;
+        }
+        main {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 2rem;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #1e3c72;
+        }
+        .filters {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .filters select, .filters input {
+            margin: 0 10px;
+            padding: 12px;
+            border: 2px solid #007BFF;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+        }
+        .job-listings {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .job-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #2c5282;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .job-card:hover {
+            background-color: #e2e8f0;
+        }
+        .job-card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .job-card p {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        .internship-badge {
+            background-color: #28a745;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .qualifications {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        .qualifications strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Career Analytics</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/test">Career Test</a></li>
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/degree">Degrees</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Job Portal for Students</h1>
+        <div class="filters">
+            <select id="job-type">
+                <option value="">All Job Types</option>
+                <option value="internship">Internship</option>
+                <option value="full-time">Full-Time</option>
+                <option value="part-time">Part-Time</option>
+                <option value="remote">Remote</option>
+            </select>
+            <select id="location">
+                <option value="">All Locations</option>
+                <option value="bangalore">Bangalore</option>
+                <option value="delhi">Delhi</option>
+                <option value="mumbai">Mumbai</option>
+                <option value="hyderabad">Hyderabad</option>
+            </select>
+            <input type="text" id="search" placeholder="Search jobs...">
+        </div>
+        <div id="job-listings" class="job-listings">
+            <!-- Job listings will be dynamically inserted here -->
+        </div>
+    </main>
+
+    <script>
+        // Sample job data with qualifications (20 jobs)
+        const jobs = [
+            {
+                title: "Software Engineer Intern",
+                company: "Tech Mahindra",
+                location: "Bangalore",
+                type: "internship",
+                description: "Join our team as a software engineer intern and work on cutting-edge technologies.",
+                qualifications: "Pursuing or completed Bachelor's in Computer Science, knowledge of Python/Java.",
+                applyLink: "https://example.com/apply/software-engineer-intern"
+            },
+            {
+                title: "Data Analyst",
+                company: "Infosys",
+                location: "Hyderabad",
+                type: "full-time",
+                description: "We are hiring data analysts to work on big data projects.",
+                qualifications: "Bachelor's/Master's in Data Science, proficiency in SQL and Python.",
+                applyLink: "https://example.com/apply/data-analyst"
+            },
+            {
+                title: "Product Manager Intern",
+                company: "Flipkart",
+                location: "Bengaluru",
+                type: "internship",
+                description: "Assist in product development for one of India's largest e-commerce platforms.",
+                qualifications: "Pursuing MBA or Bachelor's in Business/Technology, strong communication skills.",
+                applyLink: "https://example.com/apply/product-manager-intern"
+            },
+            {
+                title: "Digital Marketing Specialist",
+                company: "Zomato",
+                location: "Gurgaon",
+                type: "full-time",
+                description: "We are looking for a digital marketing expert to grow our online presence.",
+                qualifications: "Bachelor's in Marketing, experience with SEO/SEM tools.",
+                applyLink: "https://example.com/apply/digital-marketing"
+            },
+            {
+                title: "DevOps Engineer",
+                company: "Wipro",
+                location: "Pune",
+                type: "full-time",
+                description: "Join our DevOps team to streamline deployment processes.",
+                qualifications: "Bachelor's in Computer Science, experience with Docker and Kubernetes.",
+                applyLink: "https://example.com/apply/devops-engineer"
+            },
+            {
+                title: "UI/UX Designer Intern",
+                company: "Paytm",
+                location: "Noida",
+                type: "internship",
+                description: "Design intuitive user interfaces for our financial products.",
+                qualifications: "Pursuing or completed Bachelor's in Design, proficiency in Figma/Adobe XD.",
+                applyLink: "https://example.com/apply/ui-ux-designer-intern"
+            },
+            {
+                title: "Healthcare Consultant",
+                company: "Apollo Hospitals",
+                location: "Chennai",
+                type: "full-time",
+                description: "Provide consulting services for healthcare management.",
+                qualifications: "Bachelor's/Master's in Healthcare Management, strong analytical skills.",
+                applyLink: "https://example.com/apply/healthcare-consultant"
+            },
+            {
+                title: "Financial Analyst",
+                company: "ICICI Bank",
+                location: "Mumbai",
+                type: "full-time",
+                description: "Analyze financial data and provide insights for decision-making.",
+                qualifications: "Bachelor's/Master's in Finance, proficiency in Excel and financial modeling.",
+                applyLink: "https://example.com/apply/financial-analyst"
+            },
+            {
+                title: "Content Writer",
+                company: "BYJU'S",
+                location: "Bengaluru",
+                type: "internship",
+                description: "Create engaging educational content for our learning platform.",
+                qualifications: "Pursuing or completed Bachelor's in English/Journalism, excellent writing skills.",
+                applyLink: "https://example.com/apply/content-writer"
+            },
+            {
+                title: "Sales Executive",
+                company: "Ola Cabs",
+                location: "Gurgaon",
+                type: "full-time",
+                description: "Drive sales and partnerships for our ride-hailing services.",
+                qualifications: "Bachelor's in Business/Marketing, strong communication and negotiation skills.",
+                applyLink: "https://example.com/apply/sales-executive"
+            },
+            {
+                title: "Network Engineer",
+                company: "Airtel",
+                location: "Delhi",
+                type: "full-time",
+                description: "Manage and optimize network infrastructure for telecom services.",
+                qualifications: "Bachelor's in Computer Science/IT, knowledge of networking protocols.",
+                applyLink: "https://example.com/apply/network-engineer"
+            },
+            {
+                title: "Graphic Designer",
+                company: "Myntra",
+                location: "Bengaluru",
+                type: "internship",
+                description: "Design visuals for our fashion e-commerce platform.",
+                qualifications: "Pursuing or completed Bachelor's in Design, proficiency in Adobe Creative Suite.",
+                applyLink: "https://example.com/apply/graphic-designer"
+            },
+            {
+                title: "Customer Support Executive",
+                company: "MakeMyTrip",
+                location: "Gurgaon",
+                type: "full-time",
+                description: "Assist customers with travel bookings and inquiries.",
+                qualifications: "Bachelor's degree, excellent communication skills, customer-focused attitude.",
+                applyLink: "https://example.com/apply/customer-support-executive"
+            },
+            {
+                title: "Machine Learning Intern",
+                company: "Google India",
+                location: "Hyderabad",
+                type: "internship",
+                description: "Work on machine learning models for real-world applications.",
+                qualifications: "Pursuing or completed Bachelor's/Master's in Computer Science, knowledge of ML algorithms.",
+                applyLink: "https://example.com/apply/machine-learning-intern"
+            },
+            {
+                title: "HR Recruiter",
+                company: "Reliance Industries",
+                location: "Mumbai",
+                type: "full-time",
+                description: "Manage recruitment processes for a leading conglomerate.",
+                qualifications: "Bachelor's/Master's in HR, strong interpersonal and organizational skills.",
+                applyLink: "https://example.com/apply/hr-recruiter"
+            },
+            {
+                title: "Cybersecurity Analyst",
+                company: "HCL Technologies",
+                location: "Noida",
+                type: "full-time",
+                description: "Protect our systems and data from cyber threats.",
+                qualifications: "Bachelor's in Computer Science, knowledge of cybersecurity tools and practices.",
+                applyLink: "https://example.com/apply/cybersecurity-analyst"
+            },
+            {
+                title: "Business Development Intern",
+                company: "Swiggy",
+                location: "Bengaluru",
+                type: "internship",
+                description: "Assist in expanding our food delivery services.",
+                qualifications: "Pursuing Bachelor's/Master's in Business, strong analytical and communication skills.",
+                applyLink: "https://example.com/apply/business-development-intern"
+            },
+            {
+                title: "Mobile App Developer",
+                company: "Paytm",
+                location: "Noida",
+                type: "full-time",
+                description: "Develop and maintain mobile applications for our financial services.",
+                qualifications: "Bachelor's in Computer Science, experience with React Native/Flutter.",
+                applyLink: "https://example.com/apply/mobile-app-developer"
+            },
+            {
+                title: "Social Media Manager",
+                company: "Nykaa",
+                location: "Mumbai",
+                type: "full-time",
+                description: "Manage social media campaigns for our beauty and wellness brand.",
+                qualifications: "Bachelor's in Marketing, experience with social media platforms and analytics.",
+                applyLink: "https://example.com/apply/social-media-manager"
+            },
+            {
+                title: "Research Intern",
+                company: "ISRO",
+                location: "Bangalore",
+                type: "internship",
+                description: "Assist in research projects related to space technology.",
+                qualifications: "Pursuing or completed Bachelor's/Master's in Engineering/Physics, strong research skills.",
+                applyLink: "https://example.com/apply/research-intern"
+            }
+        ];
+
+        // Function to render jobs
+        function renderJobs(filteredJobs) {
+            const jobListings = document.getElementById('job-listings');
+            jobListings.innerHTML = ''; // Clear existing jobs
+            filteredJobs.forEach(job => {
+                const jobCard = document.createElement('div');
+                jobCard.className = 'job-card';
+                jobCard.innerHTML = `
+                    ${job.type === 'internship' ? '<div class="internship-badge">Internship</div>' : ''}
+                    <h2>${job.title}</h2>
+                    <p><strong>Company:</strong> ${job.company}</p>
+                    <p><strong>Location:</strong> ${job.location}</p>
+                    <p><strong>Description:</strong> ${job.description}</p>
+                    <div class="qualifications">
+                        <strong>Qualifications:</strong> ${job.qualifications}
+                    </div>
+                    <a href="${job.applyLink}" target="_blank">Apply Now</a>
+                `;
+                jobListings.appendChild(jobCard);
+            });
+        }
+
+        // Initial render
+        renderJobs(jobs);
+
+        // Filter functionality
+        document.getElementById('job-type').addEventListener('change', () => {
+            const type = document.getElementById('job-type').value;
+            const filteredJobs = type ? jobs.filter(job => job.type === type) : jobs;
+            renderJobs(filteredJobs);
+        });
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filteredJobs = jobs.filter(job => 
+                job.title.toLowerCase().includes(query) || 
+                job.company.toLowerCase().includes(query)
+            );
+            renderJobs(filteredJobs);
+        });
+    </script>
+</body>
+</html>

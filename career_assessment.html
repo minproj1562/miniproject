@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Assessment</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        nav ul li a:hover {
+            color: #f8b400;
+        }
+        main {
+            max-width: 900px;
+            margin: 80px auto;
+            padding: 2rem;
+            background: white;
+            color: black;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1e3c72;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .question p {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .question label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .results h2 {
+            color: #1e3c72;
+        }
+        .results p {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .results a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .results a:hover {
+            text-decoration: underline;
+        }
+        .results .preferences {
+            margin-top: 20px;
+        }
+        .results .preferences h3 {
+            color: #1e3c72;
+        }
+        .results .preferences ul {
+            list-style: none;
+            padding: 0;
+        }
+        .results .preferences ul li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Career Analytics</div>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/test">Career Test</a></li>
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/degree">Degrees</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Career Assessment</h1>
+        <form id="assessment-form">
+            <!-- Existing Questions -->
+            <div class="question">
+                <p>1. Do you enjoy working with technology?</p>
+                <label><input type="radio" name="q1" value="Technical"> Yes</label>
+                <label><input type="radio" name="q1" value="Non-Technical"> No</label>
+            </div>
+            <div class="question">
+                <p>2. Are you interested in healthcare and medicine?</p>
+                <label><input type="radio" name="q2" value="Medical"> Yes</label>
+                <label><input type="radio" name="q2" value="Non-Medical"> No</label>
+            </div>
+            <div class="question">
+                <p>3. Do you have a passion for the arts?</p>
+                <label><input type="radio" name="q3" value="Arts"> Yes</label>
+                <label><input type="radio" name="q3" value="Non-Arts"> No</label>
+            </div>
+            <div class="question">
+                <p>4. Are you interested in business and management?</p>
+                <label><input type="radio" name="q4" value="Business"> Yes</label>
+                <label><input type="radio" name="q4" value="Non-Business"> No</label>
+            </div>
+            <div class="question">
+                <p>5. Do you enjoy scientific research?</p>
+                <label><input type="radio" name="q5" value="Scientific"> Yes</label>
+                <label><input type="radio" name="q5" value="Non-Scientific"> No</label>
+            </div>
+
+            <!-- New Questions -->
+            <div class="question">
+                <p>6. How do you prefer to work?</p>
+                <label><input type="radio" name="q6" value="Team"> In a team</label>
+                <label><input type="radio" name="q6" value="Independent"> Independently</label>
+                <label><input type="radio" name="q6" value="Both"> Both, depending on the task</label>
+            </div>
+            <div class="question">
+                <p>7. What is your preferred work environment?</p>
+                <label><input type="radio" name="q7" value="Office"> Office</label>
+                <label><input type="radio" name="q7" value="Remote"> Remote</label>
+                <label><input type="radio" name="q7" value="Field"> Field/Outdoor</label>
+                <label><input type="radio" name="q7" value="Lab"> Laboratory</label>
+            </div>
+            <div class="question">
+                <p>8. How do you handle challenges?</p>
+                <label><input type="radio" name="q8" value="ProblemSolver"> I solve problems logically</label>
+                <label><input type="radio" name="q8" value="CreativeSolver"> I think creatively</label>
+                <label><input type="radio" name="q8" value="CollaborativeSolver"> I collaborate with others</label>
+                <label><input type="radio" name="q8" value="Avoid"> I avoid challenges</label>
+            </div>
+            <div class="question">
+                <p>9. What motivates you the most?</p>
+                <label><input type="radio" name="q9" value="Money"> Financial rewards</label>
+                <label><input type="radio" name="q9" value="Impact"> Making a positive impact</label>
+                <label><input type="radio" name="q9" value="Growth"> Personal growth</label>
+                <label><input type="radio" name="q9" value="Creativity"> Creative freedom</label>
+            </div>
+            <div class="question">
+                <p>10. How do you prefer to learn new skills?</p>
+                <label><input type="radio" name="q10" value="HandsOn"> Hands-on experience</label>
+                <label><input type="radio" name="q10" value="Courses"> Online courses</label>
+                <label><input type="radio" name="q10" value="Books"> Reading books</label>
+                <label><input type="radio" name="q10" value="Mentorship"> Mentorship</label>
+            </div>
+
+            <button type="button" onclick="submitAssessment()">Submit</button>
+        </form>
+        <div id="results" class="results"></div>
+    </main>
+
+    <script>
+        function submitAssessment() {
+            const form = document.getElementById('assessment-form');
+            const formData = new FormData(form);
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+
+            const answers = {
+                q1: formData.get('q1'),
+                q2: formData.get('q2'),
+                q3: formData.get('q3'),
+                q4: formData.get('q4'),
+                q5: formData.get('q5'),
+                q6: formData.get('q6'),
+                q7: formData.get('q7'),
+                q8: formData.get('q8'),
+                q9: formData.get('q9'),
+                q10: formData.get('q10')
+            };
+
+            // Career recommendation logic
+            let careerRecommendation = '';
+            let externalLinks = '';
+            let preferences = [];
+
+            if (answers.q1 === 'Technical') {
+                careerRecommendation = 'Software Engineer or Data Scientist';
+                externalLinks = `
+                    <p>Learn more about these careers:</p>
+                    <a href="https://www.codecademy.com/learn/paths/computer-science" target="_blank">Codecademy Computer Science Path</a><br>
+                    <a href="https://www.coursera.org/specializations/data-science" target="_blank">Coursera Data Science Specialization</a>
+                `;
+                preferences.push('Enjoys working with technology');
+            }
+            if (answers.q2 === 'Medical') {
+                careerRecommendation = 'Doctor or Healthcare Professional';
+                externalLinks = `
+                    <p>Learn more about these careers:</p>
+                    <a href="https://www.khanacademy.org/science/health-and-medicine" target="_blank">Khan Academy Health and Medicine</a><br>
+                    <a href="https://www.coursera.org/specializations/clinical-science" target="_blank">Coursera Clinical Science Specialization</a>
+                `;
+                preferences.push('Interested in healthcare and medicine');
+            }
+            if (answers.q3 === 'Arts') {
+                careerRecommendation = 'Artist or Graphic Designer';
+                externalLinks = `
+                    <p>Learn more about these careers:</p>
+                    <a href="https://www.skillshare.com/browse/art" target="_blank">Skillshare Art Classes</a><br>
+                    <a href="https://www.coursera.org/specializations/graphic-design" target="_blank">Coursera Graphic Design Specialization</a>
+                `;
+                preferences.push('Passionate about the arts');
+            }
+            if (answers.q4 === 'Business') {
+                careerRecommendation = 'Business Manager or Entrepreneur';
+                externalLinks = `
+                    <p>Learn more about these careers:</p>
+                    <a href="https://www.coursera.org/specializations/business-foundations" target="_blank">Coursera Business Foundations Specialization</a><br>
+                    <a href="https://www.udemy.com/topic/business/" target="_blank">Udemy Business Courses</a>
+                `;
+                preferences.push('Interested in business and management');
+            }
+            if (answers.q5 === 'Scientific') {
+                careerRecommendation = 'Research Scientist or Biologist';
+                externalLinks = `
+                    <p>Learn more about these careers:</p>
+                    <a href="https://www.coursera.org/specializations/research-methods" target="_blank">Coursera Research Methods Specialization</a><br>
+                    <a href="https://www.edx.org/course/research-methods" target="_blank">edX Research Methods Course</a>
+                `;
+                preferences.push('Enjoys scientific research');
+            }
+
+            // Display results
+            results.innerHTML = `
+                <h2>Career Recommendation: ${careerRecommendation}</h2>
+                <div class="preferences">
+                    <h3>Your Preferences:</h3>
+                    <ul>
+                        ${preferences.map(pref => `<li>${pref}</li>`).join('')}
+                    </ul>
+                </div>
+                ${externalLinks}
+            `;
+        }
+    </script>
+</body>
+</html>
