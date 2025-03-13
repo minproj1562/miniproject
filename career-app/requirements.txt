@@ -3,4 +3,3 @@ flask-sqlalchemy
 flask-wtf
 flask-bcrypt
 python-dotenv
-numpy

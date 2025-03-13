@@ -1,33 +1,28 @@
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Test Results</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
-            <h1 class="text-3xl font-bold mb-6 text-center">Your Results</h1>
-            <div class="mb-6">
-                <div class="text-center">
-                    <span class="text-4xl font-bold {% if results.score >= 85 %}text-green-500
-                                                   {% elif results.score >= 70 %}text-blue-500
-                                                   {% elif results.score >= 50 %}text-yellow-500
-                                                   {% else %}text-red-500{% endif %}">
-                        {{ results.score }}%
-                    </span>
-                </div>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3>Assessment Results</h3>
+        </div>
+        <div class="card-body">
+            <h4 class="mb-4">Recommended Career Path:</h4>
+            <div class="alert alert-success" role="alert">
+                <h2>{{ career }}</h2>
             </div>
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold mb-2">Assessment:</h2>
-                <p>{{ results.assessment }}</p>
-            </div>
-            <a href="/" class="block w-full text-center bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-                Take Test Again
-            </a>
+            
+            <h5 class="mt-4">Detailed Scores:</h5>
+            <ul class="list-group">
+                {% for subject, score in scores.items() %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ subject }}
+                    <span class="badge bg-primary rounded-pill">{{ score|round(2) }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
         </div>
     </div>
-</body>
-</html>
-    
+</div>
+{% endblock %}

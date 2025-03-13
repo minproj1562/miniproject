@@ -1,0 +1,16 @@
+<header>
+    <nav>
+        <div class="logo">Career Analytics</div>
+        <ul>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('career_test') }}">Career Test</a></li>
+            <li><a href="{{ url_for('student_portal') }}">Student Portal</a></li>
+            <li><a href="{{ url_for('software_engineer') }}">Career Roadmaps</a></li>
+            {% if 'user_id' in session %}
+                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>

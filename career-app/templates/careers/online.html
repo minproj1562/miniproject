@@ -83,9 +83,16 @@ footer {
     </style>
 </head>
 <body>
+    
+
     <header>
         <h1>Best Online Job Search Websites</h1>
     </header>
+    {% extends "base.html" %}
+
+{% block title %}Online Jobs - Career Analytics{% endblock %}
+
+{% block content %}
     <section>
         <h2>1. LinkedIn</h2>
         <p>LinkedIn is one of the most popular professional networking platforms. It not only allows users to connect with potential employers but also provides job listings tailored to your profile. LinkedIn's advanced search features and job alerts are highly valuable for job seekers.</p>
@@ -117,7 +124,7 @@ footer {
         <h2>10. We Work Remotely</h2>
         <p>We Work Remotely is a job board dedicated to remote job opportunities. It features a variety of job listings across multiple industries and is a great place for individuals seeking fully remote work.</p>
     </section>
-
+    {% endblock %}
     
 </body>
 </html>
