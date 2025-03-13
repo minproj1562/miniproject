@@ -1,26 +1,59 @@
-/* Unified button styling */
-.btn-primary {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    padding: 1rem 2rem;
-    border-radius: 0.5rem;
-    color: white;
-    transition: transform 0.2s ease;
+:root {
+    --primary: #2A5C82;
+    --secondary: #5BA4E6;
+    --accent: #FFD700;
+    --success: #4CAF50;
+    --danger: #f44336;
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Consistent card styling */
-.card {
-    background: white;
-    border-radius: 1rem;
+.question-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid var(--primary);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1rem 0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+.question-card:hover {
+    transform: translateY(-3px);
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.option-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.option-card:hover {
+    border-color: var(--secondary);
+    background: #f8f9fa;
+}
+
+.timer-alert {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: var(--primary);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.category-badge {
+    background: var(--secondary);
+    color: white;
+    font-size: 0.9rem;
 }

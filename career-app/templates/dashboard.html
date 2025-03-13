@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Career Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Progress Section -->
+            <div class="bg-white rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Assessment Progress</h2>
+                <div class="radial-progress" data-progress="{{ aptitude_progress }}"></div>
+                <div class="radial-progress" data-progress="{{ personality_progress }}"></div>
+            </div>
+
+            <!-- Cognitive Profile -->
+            <div class="bg-white rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Cognitive Strengths</h2>
+                <canvas id="cognitiveChart"></canvas>
+            </div>
+
+            <!-- Personality Profile -->
+            <div class="bg-white rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Personality Traits</h2>
+                <canvas id="personalityChart"></canvas>
+            </div>
+
+            <!-- Career Recommendations -->
+            <div class="md:col-span-2 bg-white rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Career Matches</h2>
+                <div class="grid grid-cols-2 gap-4" id="careerGrid"></div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="bg-white rounded-lg p-6 shadow-lg">
+                <h2 class="text-xl font-bold mb-4">Next Steps</h2>
+                <ul class="space-y-3" id="actionList">
+                    <li class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">1</div>
+                        Complete remaining assessments
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
