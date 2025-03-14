@@ -1,4 +1,5 @@
-from backend import app, db
+# init_db.py
+from app import app, db
 
 with app.app_context():
     db.create_all()

@@ -1,66 +1,73 @@
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+import os
+import math
+import json
+import datetime
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, abort, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-import json
-from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING
-import math
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, jwt_required
 from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_caching import Cache
-from flask_jwt_extended import JWTManager, jwt_required)
 
-jwt = JWTManager(app)
-
-
-cache = Cache(config={'CACHE_TYPE': 'RedisCache'})
-
-
-limiter = Limiter(app=app, key_func=get_remote_address)
-
+# Local imports
+from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING
+from apis import APIService, ONetAPI, PlagiarismChecker
+from config import SECRET_KEY, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 
 app = Flask(__name__)
-app.config.update(
-    SECRET_KEY='your_secret_key',
-    SQLALCHEMY_DATABASE_URI='sqlite:///career.db',
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
-)
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
+app.config['LINKEDIN_API_KEY'] = os.getenv('LINKEDIN_KEY')
+app.config['ONET_CREDENTIALS'] = (os.getenv('ONET_USER'), os.getenv('ONET_PWD'))
+app.config['COPYLEAKS_KEY'] = os.getenv('COPYLEAKS_KEY')
 
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
+limiter = Limiter(key_func=get_remote_address)
+limiter.init_app(app)
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # or 'RedisCache'
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True)
-    assessments = db.Column(db.JSON)
-    api_data = db.Column(db.JSON)  # Store API responses
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    mobile_number = db.Column(db.String(15))
+    pin_code = db.Column(db.String(6))
+    dob = db.Column(db.String(10))
+    assessments = db.Column(db.JSON, default={})
+    api_data = db.Column(db.JSON, default={})
     last_updated = db.Column(db.DateTime)
+    assessments_completed = db.Column(db.Integer, default=0)
 
-# Authentication routes (similar to previous implementation)
-ADAPTIVE_TEST_SETTINGS = {
-    "scaling_factors": {
-        "correct_answer": 1.0,
-        "wrong_answer": -0.5,
-        "time_penalty": 0.2
-    }
-}
-# Add to top
-from apis import APIService, ONetAPI, PlagiarismChecker
+@app.before_request
+def validate_inputs():
+    """Validate JSON inputs for routes that accept JSON."""
+    if request.content_type == 'application/json':
+        try:
+            request.get_json()
+        except Exception:
+            abort(400, description="Invalid JSON format")
 
-# Add to config
-app.config.update(
-    LINKEDIN_API_KEY=os.getenv('LINKEDIN_KEY'),
-    ONET_CREDENTIALS=(os.getenv('ONET_USER'), os.getenv('ONET_PWD')),
-    COPYLEAKS_KEY=os.getenv('COPYLEAKS_KEY')
-)
+@app.route('/')
+def home():
+    return render_template('index.html')  # or whichever template is your home page
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
     user = User.query.get(session['user_id'])
+    aptitude_progress = user.assessments.get('aptitude_progress', 0) if user.assessments else 0
+    personality_progress = user.assessments.get('personality_progress', 0) if user.assessments else 0
     return render_template('dashboard.html', 
-                         aptitude_progress=user.assessments.get('aptitude_progress', 0),
-                         personality_progress=user.assessments.get('personality_progress', 0))
+                           aptitude_progress=aptitude_progress,
+                           personality_progress=personality_progress)
 
 @app.route('/aptitude-test')
 def aptitude_test():
@@ -73,6 +80,8 @@ def personality_test():
 @app.route('/submit-assessment', methods=['POST'])
 def submit_assessment():
     data = request.get_json()
+    if 'user_id' not in session:
+        abort(401)
     user = User.query.get(session['user_id'])
     
     if data['type'] == 'personality':
@@ -80,23 +89,31 @@ def submit_assessment():
     else:
         scores = calculate_aptitude(data['responses'])
     
-    # Store results
+    if not user.assessments:
+        user.assessments = {}
     user.assessments[f"{data['type']}_scores"] = scores
     user.assessments[f"{data['type']}_progress"] = 100
     db.session.commit()
     
     return jsonify({'redirect': url_for('results')})
+
 def calculate_personality(results):
-    """Calculate Big Five scores using validated scoring protocol"""
     traits = {'O': [], 'C': [], 'E': [], 'A': [], 'N': []}
-    
-    for question, response in results.items():
-        q = next(q for q in PERSONALITY_QUESTIONS if q['id'] == question['id'])
-        score = response if q['direction'] else 4 - response  # Reverse coding
+    for question_id, response in results.items():
+        q = next((q for q in PERSONALITY_QUESTIONS if q['id'] == question_id), None)
+        if q is None:
+            continue
+        # direction=True means direct scoring, direction=False means reverse scoring
+        score = response if q.get('direction', True) else (4 - response)
         traits[q['trait']].append(score)
-    
-    # Convert to percentile scores
-    return {trait: (sum(scores)/len(scores)*20) for trait, scores in traits.items()}
+    result_scores = {}
+    for trait, scores in traits.items():
+        if scores:
+            result_scores[trait] = (sum(scores) / len(scores)) * 20
+        else:
+            result_scores[trait] = 0
+    return result_scores
+
 def get_question(question_id):
     for domain, levels in APTITUDE_QUESTIONS.items():
         for difficulty_level, question_list in levels.items():
@@ -111,56 +128,33 @@ def get_question(question_id):
     return None
 
 def calculate_aptitude(responses):
-    """IRT-based ability estimation using Bayesian updating"""
     ability = 0
     for response in responses:
         question = get_question(response['id'])
-        # Use 2PL IRT model
-        p = 1/(1 + math.exp(-question['discrimination'] * (ability - question['difficulty'])))
-        ability += math.log(p/(1-p)) * ADAPTIVE_TEST_SETTINGS['scaling_factors']['correct_answer']
+        if not question:
+            continue
+        p = 1 / (1 + math.exp(-question['discrimination'] * (ability - question['difficulty'])))
+        epsilon = 1e-10
+        p = min(max(p, epsilon), 1 - epsilon)
+        # Using a simple log-odds approach for demonstration
+        ability += math.log(p / (1 - p))
     return ability
-# Modify CAREER_MAPPING to use API data
-def enhance_career_mapping():
-    for career in CAREER_MAPPING:
-        api_data = ONetAPI().get_career_details(career)
-        CAREER_MAPPING[career].update({
-            'growth_rate': api_data.get('growthRate'),
-            'median_salary': api_data.get('medianSalary')
-        })
-def calculate_score(responses):
-    ability_estimate = 0
-    for response in responses:
-        question = get_question(response.id)
-        p_correct = 1 / (1 + math.exp(-question.discrimination * 
-                        (ability_estimate - question.difficulty)))
-        ability_estimate += ADAPTIVE_TEST_SETTINGS["scaling_factors"]["correct_answer"] \
-                            if response.correct else \
-                            ADAPTIVE_TEST_SETTINGS["scaling_factors"]["wrong_answer"]
-        # Adjust for time penalty
-        ability_estimate -= (max(0, response.time_taken - question.time_limit) / 
-                           question.time_limit * 0.1) * \
-                           ADAPTIVE_TEST_SETTINGS["scaling_factors"]["time_penalty"]
-    return ability_estimate
-@app.errorhandler(APIException)
-def handle_api_error(exc):
-    return jsonify({
-        "error": exc.message,
-        "status": exc.status_code
-    }), exc.status_code
+
 @app.route('/results')
 def results():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
+    aptitude = user.assessments.get('aptitude_scores') if user.assessments else None
+    personality = user.assessments.get('personality_scores') if user.assessments else None
     return render_template('results.html',
-                         aptitude=user.assessments.get('aptitude_scores'),
-                         personality=user.assessments.get('personality_scores'),
-                         careers=CAREER_MAPPING)
+                           aptitude=aptitude,
+                           personality=personality,
+                           careers=CAREER_MAPPING)
+
 @app.route('/api/careers/<soc_code>')
 def career_details(soc_code):
     return jsonify(ONetAPI().get_career_details(soc_code))
-app.route('/api/*')
-@limiter.limit("100/hour")
-def api_endpoints():
-    pass
 
 @app.route('/api/job-market/<title>')
 def job_market(title):
@@ -171,23 +165,95 @@ def verify_answers():
     responses = request.json.get('answers')
     scores = [PlagiarismChecker.verify_content(r) for r in responses]
     return jsonify({"originality_scores": scores})
-@app.route('/login')
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html')
-@app.before_request
-def validate_inputs():
-    if request.content_type == 'application/json':
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if not username or not password:
+            flash('Please fill in all fields', 'danger')
+            return redirect(url_for('login'))
+        user = User.query.filter_by(username=username).first()
+        if user and bcrypt.check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials', 'danger')
+    return render_template('auth/login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        if password != confirm_password:
+            flash('Passwords do not match!', 'danger')
+            return redirect(url_for('register'))
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(
+            username=username,
+            email=email,
+            password=hashed_password,
+            mobile_number=request.form.get('mobile_number'),
+            pin_code=request.form.get('pin_code'),
+            dob=request.form.get('dob')
+        )
         try:
-            request.get_json()
-        except Exception as e:
-            abort(400, "Invalid JSON format")
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception:
+            flash('Username or email already exists!', 'danger')
+            db.session.rollback()
+    return render_template('auth/register.html')
+
+@app.route('/interview-prep')
+def interview_prep():
+    return render_template('careers/interview.html')
+
+@app.route('/career-test')
+def career_test():
+    return render_template('careers/career_assessment.html')
+
+@app.route('/online-jobs')
+def online_jobs():
+    return render_template('careers/online.html')
+
+@app.route('/software-engineer')
+def software_engineer():
+    return render_template('careers/software_engg.html')
+
+@app.route('/introvert-careers')
+def introvert_careers():
+    return render_template('careers/introvert.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+
 @app.route('/protected-api', methods=['POST'])
 @jwt_required()
 def protected_endpoint():
-    pass
+    return jsonify({"message": "Protected endpoint accessed"})
+
 @cache.memoize(timeout=3600)
 def get_career_data(soc_code):
     return ONetAPI().get_career_details(soc_code)
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

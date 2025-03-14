@@ -1,31 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Work Ethics Test Questions</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-8 text-center">Work Ethics Assessment</h1>
-        <form action="/submit" method="post" class="max-w-2xl mx-auto">
-            {% for question in questions %}
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <h2 class="text-xl font-semibold mb-4">{{ question.question }}</h2>
-                {% for option in question.options %}
-                <div class="mb-2">
-                    <label class="flex items-center space-x-3">
-                        <input type="radio" name="{{ question.id }}" value="{{ loop.index0 }}" required
-                               class="form-radio text-blue-500">
-                        <span>{{ option }}</span>
-                    </label>
-                </div>
-                {% endfor %}
+{% extends "base.html" %}
+{% block title %}Work Ethics Test Questions{% endblock %}
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<style>
+  /* Additional styles if needed */
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-center">Work Ethics Assessment</h1>
+    <form action="/submit" method="post" class="max-w-2xl mx-auto">
+        {% for question in questions %}
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">{{ question.question }}</h2>
+            {% for option in question.options %}
+            <div class="mb-2">
+                <label class="flex items-center space-x-3">
+                    <input type="radio" name="{{ question.id }}" value="{{ loop.index0 }}" required class="form-radio text-blue-500">
+                    <span>{{ option }}</span>
+                </label>
             </div>
             {% endfor %}
-            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-                Submit Answers
-            </button>
-        </form>
-    </div>
-</body>
-</html>
+        </div>
+        {% endfor %}
+        <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+            Submit Answers
+        </button>
+    </form>
+</div>
+{% endblock %}

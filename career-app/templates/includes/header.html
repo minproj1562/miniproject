@@ -1,16 +1,23 @@
 <header>
-    <nav>
-        <div class="logo">Career Analytics</div>
-        <ul>
-            <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="{{ url_for('career_test') }}">Career Test</a></li>
-            <li><a href="{{ url_for('student_portal') }}">Student Portal</a></li>
-            <li><a href="{{ url_for('software_engineer') }}">Career Roadmaps</a></li>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('home') }}">Career Analytics</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('career_test') }}">Career Test</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Student Portal</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('degree') }}">Degrees</a></li>
             {% if 'user_id' in session %}
-                <li><a href="{{ url_for('logout') }}">Logout</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
-                <li><a href="{{ url_for('login') }}">Login</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
             {% endif %}
-        </ul>
+          </ul>
+        </div>
+      </div>
     </nav>
 </header>

@@ -1,200 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Career Analytics</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(to right, #1e3c72, #2a5298);
-            color: white;
-            text-align: center;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 5%;
-            background: rgba(0, 0, 0, 0.8);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            left: 0;
-            z-index: 100;
-        }
-        .logo {
-            font-size: 1.8rem;
-            font-weight: bold;
-        }
-        nav ul {
-            list-style: none;
-            display: flex;
-            gap: 1.5rem;
-        }
-        nav ul li {
-            display: inline;
-        }
-        nav ul li a {
-            text-decoration: none;
-            color: white;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        nav ul li a:hover {
-            color: #f8b400;
-        }
-        .hero {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            flex-direction: column;
-            text-align: center;
-        }
-        .hero h1 {
-            font-size: 3rem;
-            animation: fadeIn 2s ease-in-out;
-        }
-        .hero p {
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin: 20px auto;
-            animation: fadeIn 3s ease-in-out;
-        }
-        .cta-button {
-            background: #f8b400;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            font-size: 1.2rem;
-            border-radius: 25px;
-            transition: 0.3s;
-            animation: fadeIn 3.5s ease-in-out;
-        }
-        .cta-button:hover {
-            background: #ffcc00;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .info-section {
-            padding: 4rem 5%;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 2rem 0;
-        }
-        .info-section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-        .info-section p {
-            font-size: 1.1rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .stats-section {
-            display: flex;
-            justify-content: space-around;
-            padding: 4rem 5%;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        .stat {
-            text-align: center;
-        }
-        .stat h3 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-        .stat p {
-            font-size: 1rem;
-        }
-        .testimonials-section {
-            padding: 4rem 5%;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        .testimonials-section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-        }
-        .testimonial {
-            max-width: 600px;
-            margin: 0 auto 2rem;
-            font-style: italic;
-        }
-        .testimonial p {
-            font-size: 1.1rem;
-        }
-        .testimonial span {
-            display: block;
-            margin-top: 1rem;
-            font-weight: bold;
-        }
-        footer {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1rem;
-            position: relative;
-            width: 100%;
-            bottom: 0;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo">Career Analytics</div>
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/test">Career Test</a></li>
-                <li><a href="/student">Student Portal</a></li>
-                <li><a href="/degree">Degrees</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <section class="hero">
-        <h1>Discover Your Future Career</h1>
-        <p>Using AI-driven insights and career analytics, we help you find the perfect career path tailored to your skills, interests, and goals.</p>
-        <a href="/test" class="cta-button">Take the Career Test</a>
-    </section>
-
-    <section class="info-section">
-        <h2>Why Choose Career Analytics?</h2>
-        <p>Our platform leverages advanced AI algorithms to analyze your strengths, preferences, and market trends, providing you with personalized career recommendations. Whether you're a student exploring options or a professional considering a career change, we offer the tools and insights you need to make informed decisions.</p>
-    </section>
-
-    <section class="stats-section">
-        <div class="stat">
-            <h3>95%</h3>
-            <p>User Satisfaction Rate</p>
-        </div>
-        <div class="stat">
-            <h3>10,000+</h3>
-            <p>Successful Career Matches</p>
-        </div>
-        <div class="stat">
-            <h3>50+</h3>
-            <p>Industries Covered</p>
-        </div>
-    </section>
-
-    <section class="testimonials-section">
-        <h2>What Our Users Say</h2>
-        <div class="testimonial">
-            <p>"Career Analytics helped me discover a career path I never considered before. The insights were spot on, and I couldn't be happier with my new job!"</p>
-            <span>- Jane Doe, Marketing Manager</span>
-        </div>
-        <div class="testimonial">
-            <p>"The career test was incredibly accurate and easy to use. I highly recommend Career Analytics to anyone looking for career guidance."</p>
-            <span>- John Smith, Software Engineer</span>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; 2024 Career Analytics. All rights reserved.</p>
-    </footer>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Career Analytics{% endblock %}
+{% block extra_head %}
+<style>
+  .hero {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+  }
+  .hero h1 {
+      font-size: 3rem;
+      animation: fadeIn 2s ease-in-out;
+  }
+  .hero p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 20px auto;
+      animation: fadeIn 3s ease-in-out;
+  }
+  .cta-button {
+      background: #f8b400;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      font-size: 1.2rem;
+      border-radius: 25px;
+      transition: 0.3s;
+      animation: fadeIn 3.5s ease-in-out;
+  }
+  .cta-button:hover {
+      background: #ffcc00;
+  }
+  @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+  }
+  .info-section {
+      padding: 4rem 5%;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 2rem 0;
+  }
+  .info-section h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+  }
+  .info-section p {
+      font-size: 1.1rem;
+      max-width: 800px;
+      margin: 0 auto;
+  }
+  .stats-section {
+      display: flex;
+      justify-content: space-around;
+      padding: 4rem 5%;
+      background: rgba(0, 0, 0, 0.5);
+  }
+  .stat {
+      text-align: center;
+  }
+  .stat h3 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+  }
+  .stat p {
+      font-size: 1rem;
+  }
+  .testimonials-section {
+      padding: 4rem 5%;
+      background: rgba(255, 255, 255, 0.1);
+  }
+  .testimonials-section h2 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+  }
+  .testimonial {
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      font-style: italic;
+  }
+  .testimonial p {
+      font-size: 1.1rem;
+  }
+  .testimonial span {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<section class="hero">
+    <h1>Discover Your Future Career</h1>
+    <p>Using AI-driven insights and career analytics, we help you find the perfect career path tailored to your skills, interests, and goals.</p>
+    <a href="/test" class="cta-button">Take the Career Test</a>
+</section>
+<section class="info-section">
+    <h2>Why Choose Career Analytics?</h2>
+    <p>Our platform leverages advanced AI algorithms to analyze your strengths, preferences, and market trends, providing you with personalized career recommendations. Whether you're a student exploring options or a professional considering a career change, we offer the tools and insights you need to make informed decisions.</p>
+</section>
+<section class="stats-section">
+    <div class="stat">
+        <h3>95%</h3>
+        <p>User Satisfaction Rate</p>
+    </div>
+    <div class="stat">
+        <h3>10,000+</h3>
+        <p>Successful Career Matches</p>
+    </div>
+    <div class="stat">
+        <h3>50+</h3>
+        <p>Industries Covered</p>
+    </div>
+</section>
+<section class="testimonials-section">
+    <h2>What Our Users Say</h2>
+    <div class="testimonial">
+        <p>"Career Analytics helped me discover a career path I never considered before. The insights were spot on, and I couldn't be happier with my new job!"</p>
+        <span>- Jane Doe, Marketing Manager</span>
+    </div>
+    <div class="testimonial">
+        <p>"The career test was incredibly accurate and easy to use. I highly recommend Career Analytics to anyone looking for career guidance."</p>
+        <span>- John Smith, Software Engineer</span>
+    </div>
+</section>
+{% endblock %}

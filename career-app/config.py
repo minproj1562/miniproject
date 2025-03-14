@@ -1,3 +1,4 @@
+# config.py
 import os
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'super-secret-key')

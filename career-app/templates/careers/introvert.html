@@ -1,102 +1,12 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Best Career for Introverts</title>
-    <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f9fc;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
+{% extends "base.html" %}
+{% block title %}Best Career for Introverts{% endblock %}
 
-        /* Header Styles */
-        h1 {
-            text-align: center;
-            background-color: #004b8d;
-            color: white;
-            padding: 20px;
-            margin: 0;
-        }
-
-        h2 {
-            color: #005ea6;
-            font-size: 24px;
-            margin-top: 20px;
-        }
-
-        p {
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            padding: 0 15px;
-        }
-
-        /* Section Styling */
-        section {
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 900px;
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-
-        /* Link Styling (if any links are added in the future) */
-        a {
-            color: #004b8d;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Footer Styling (for potential footer) */
-        footer {
-            text-align: center;
-            padding: 15px;
-            background-color: #004b8d;
-            color: white;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-        }
-
-    </style>
-</head>
-<body>
-    <h1>BEST CAREER FOR INTROVERTS</h1>
-    <section>
-        <p>Introverts often thrive in careers that allow them to work independently, with minimal social interaction, or in environments where their deep thinking and focus are valued. Here are some of the best career options for introverts, based on the traits that tend to make them excel:</p>
-
-        <h2>1. Software Developer/Engineer</h2>
-        <p>Why it's a great fit: Software development requires concentration, problem-solving, and technical expertise, all of which introverts tend to excel at. Many developers can work independently or in small teams, making it an ideal career for those who prefer a quiet work environment.</p>
-        <p>Skills: Programming languages (Java, Python, C++), problem-solving, logical thinking, and attention to detail.</p>
-
-        <h2>2. Writer/Editor</h2>
-        <p>Why it's a great fit: Writing and editing offer the chance to work independently, often in solitude, allowing introverts to focus on crafting high-quality content. Whether it's journalism, technical writing, creative writing, or copywriting, introverts can find satisfaction in creating work that speaks to others.</p>
-        <p>Skills: Strong writing, editing, and research skills; attention to detail; creativity.</p>
-
-        <h2>3. Accountant/Financial Analyst</h2>
-        <p>Why it's a great fit: Accounting and finance involve tasks that are often performed individually, such as managing financial statements, creating budgets, or analyzing data. Introverts who prefer working with numbers and data rather than interacting with large groups of people may find this field highly rewarding.</p>
-        <p>Skills: Analytical skills, attention to detail, proficiency in accounting software, knowledge of finance principles.</p>
-
-        <h2>4. Graphic Designer</h2>
-        <p>Why it's a great fit: Graphic design allows introverts to express creativity while working independently or in small teams. Much of the work can be done remotely, which is appealing to those who prefer working alone or in a quiet space.</p>
-        <p>Skills: Proficiency in design software (Adobe Creative Suite), creativity, attention to detail, and communication with clients through visual design rather than verbal.</p>
-
-        <h2>5. Librarian/Archivist</h2>
-        <p>Why it's a great fit: Libraries and archives are calm environments where introverts can manage information, organize materials, and assist people in more controlled, one-on-one settings. These roles typically involve research, cataloging, and helping others find resources, often in solitary settings.</p>
-        <p>Skills: Organizational skills, research abilities, attention to detail, and knowledge of library systems.</p>
-
-        <h2>Conclusion:</h2>
-        <p>Introverts tend to thrive in careers that allow for independent work, deep thinking, and minimal social interaction. By focusing on roles that leverage their strengths, such as concentration, attention to detail, and creativity, introverts can build successful and fulfilling careers.</p>
-    </section>
-
-    
-</body>
-</html>
+{% block content %}
+<div class="container my-5">
+  <h1 class="text-center mb-4">Best Career for Introverts</h1>
+  <p>Introverts often thrive in careers that allow them to work independently, with minimal social interaction, or in environments where their deep thinking and focus are valued.</p>
+  <h2>Software Developer/Engineer</h2>
+  <p>Software development requires concentration, problem-solving, and technical expertise. Many developers can work independently or in small teams, making it an ideal career for those who prefer a quiet work environment.</p>
+  <!-- Add additional career suggestions as needed -->
+</div>
+{% endblock %}

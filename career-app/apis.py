@@ -1,4 +1,4 @@
-# APIs Configuration
+# apis.py
 import os
 import requests
 from flask import current_app

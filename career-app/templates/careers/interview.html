@@ -1,122 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top 10 Interview Questions</title>
-    <style>
-        /* General Styles */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f9fc;
-    color: #333;
-    margin: 0;
-    padding: 0;
-}
+{% extends "base.html" %}
+{% block title %}Top 10 Interview Questions{% endblock %}
 
-/* Header Styles */
-header {
-    text-align: center;
-    background-color: #004b8d;
-    color: white;
-    padding: 20px;
-    margin: 0;
-}
-
-h1 {
-    font-size: 36px;
-    margin: 0;
-}
-
-/* Section Styling */
-section {
-    padding: 20px;
-    margin: 20px auto;
-    max-width: 900px;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-}
-
-/* Subheading Styles */
-h2 {
-    color: #005ea6;
-    font-size: 24px;
-    margin-top: 20px;
-}
-
-/* Paragraph Styles */
-p {
-    font-size: 16px;
-    line-height: 1.6;
-    margin-bottom: 20px;
-    padding: 0 15px;
-}
-
-/* Footer Styles */
-footer {
-    text-align: center;
-    padding: 15px;
-    background-color: #004b8d;
-    color: white;
-    position: fixed;
-    width: 100%;
-    bottom: 0;
-}
-
-/* Responsive Design */
-@media screen and (max-width: 768px) {
-    h1 {
-        font-size: 28px;
-    }
-
-    h2 {
-        font-size: 20px;
-    }
-
-    p {
-        font-size: 14px;
-    }
-}
-
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Top 10 Interview Questions</h1>
-    </header>
-    <section>
-        <h2>1. Tell me about yourself.</h2>
-        <p>This is often the first question in an interview. Use it as an opportunity to summarize your professional background, skills, and what brings you to the role you're applying for.</p>
-
-        <h2>2. Why do you want to work for this company?</h2>
-        <p>Research the company beforehand to answer this question in a way that aligns with the company’s values, mission, and work culture.</p>
-
-        <h2>3. What are your strengths?</h2>
-        <p>Highlight your key strengths that relate to the role. Use specific examples to show how these strengths have benefited your past work.</p>
-
-        <h2>4. What are your weaknesses?</h2>
-        <p>Be honest, but choose a weakness that is not essential to the job. Also, explain what you're doing to improve upon it.</p>
-
-        <h2>5. Where do you see yourself in 5 years?</h2>
-        <p>Discuss your career goals and how the position aligns with those goals, showing your long-term interest in growth with the company.</p>
-
-        <h2>6. Why should we hire you?</h2>
-        <p>Summarize your qualifications, experience, and skills, highlighting how you can make a positive impact in the role and add value to the company.</p>
-
-        <h2>7. How do you handle stress or pressure?</h2>
-        <p>Provide examples of times you successfully managed stress or worked under pressure, showing your ability to remain calm and productive in challenging situations.</p>
-
-        <h2>8. Tell me about a time you had a conflict with a colleague and how you resolved it.</h2>
-        <p>Share a situation where you resolved a conflict by demonstrating good communication, problem-solving, and teamwork skills.</p>
-
-        <h2>9. What do you know about our company?</h2>
-        <p>Research the company before your interview and mention its products, services, values, or recent news, showing that you've done your homework.</p>
-
-        <h2>10. Do you have any questions for us?</h2>
-        <p>Always have a few thoughtful questions prepared to show your genuine interest in the company and the role.</p>
-    </section>
-
-    
-</body>
-</html>
+{% block content %}
+<div class="container my-5">
+  <h1 class="text-center mb-4">Top 10 Interview Questions</h1>
+  <div class="mb-3">
+    <h2>1. Tell me about yourself.</h2>
+    <p>This is often the first question in an interview. Use it as an opportunity to summarize your professional background, skills, and what brings you to the role you're applying for.</p>
+  </div>
+  <div class="mb-3">
+    <h2>2. Why do you want to work for this company?</h2>
+    <p>Research the company beforehand to answer this question in a way that aligns with the company’s values, mission, and work culture.</p>
+  </div>
+  <!-- Add the remaining questions in a similar structure -->
+</div>
+{% endblock %}
