@@ -141,23 +141,6 @@ def interpret_scores(raw_scores):
                 
     return interpretations
 
-@app.route('/submit-assessment', methods=['POST'])
-def submit_assessment():
-    data = request.get_json()
-    user = User.query.get(session['user_id'])
-    
-    if data['type'] == 'personality':
-        raw_scores = calculate_personality(data['responses'])
-        interpretations = interpret_scores(raw_scores)
-        
-        user.assessments['personality'] = {
-            'raw_scores': raw_scores,
-            'interpretations': interpretations,
-            'completed_at': datetime.datetime.utcnow()
-        }
-        
-    db.session.commit()
-    return jsonify(interpretations)
 def get_question(question_id):
     for domain, levels in APTITUDE_QUESTIONS.items():
         for difficulty_level, question_list in levels.items():
