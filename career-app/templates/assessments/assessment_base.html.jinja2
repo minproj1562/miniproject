@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="assessment-container">
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {{ progress }}%"></div>
+    </div>
+    
+    <div class="question-card">
+        <h3 class="question-text">{{ current_question.text }}</h3>
+        
+        <div class="options-grid">
+            {% for option in current_question.options %}
+            <div class="option-card" data-option="{{ loop.index0 }}">
+                <span class="option-text">{{ option }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="timer-alert" id="timer">
+        Time Left: <span id="time-left">{{ time_left }}</span>s
+    </div>
+</div>
+{% endblock %}

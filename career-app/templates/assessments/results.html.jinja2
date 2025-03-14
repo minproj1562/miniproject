@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="display-4 mb-4">Career Match Results</h1>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3>Aptitude Scores</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="aptitudeRadar"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h3>Personality Profile</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="personalityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mt-4">
+        <div class="card-header bg-success text-white">
+            <h3>Recommended Careers</h3>
+        </div>
+        <div class="card-body">
+            {% if career_matches %}
+                {% for career in career_matches %}
+                <div class="career-card mb-4 p-3 border rounded">
+                    <h4>{{ career.name }} 
+                        <span class="badge bg-primary">{{ career.score }}% Match</span>
+                    </h4>
+                    <p>{{ career.details.description }}</p>
+                    
+                    <div class="skill-gaps mt-3">
+                        <h5>Development Areas:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Aptitude Skills:</h6>
+                                <ul class="list-group">
+                                    {% for skill, gap in career.skill_gaps.aptitude.items() %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ skill }}
+                                        <span class="badge bg-danger">{{ gap }} points</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Personality Traits:</h6>
+                                <ul class="list-group">
+                                    {% for trait, gap in career.skill_gaps.personality.items() %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {{ TRAIT_DEFINITIONS[trait] }}
+                                        <span class="badge bg-warning">{{ gap }}%</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="development-path mt-3">
+                        <h5>Learning Path:</h5>
+                        <div class="list-group">
+                            {% for course in career.details.development_path %}
+                            <a href="#" class="list-group-item list-group-item-action">
+                                {{ course }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-warning">
+                    No career matches found. Complete both assessments first.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Radar Chart for Aptitude
+    new Chart(document.getElementById('aptitudeRadar'), {
+        type: 'radar',
+        data: {
+            labels: {{ aptitude_sections|tojson }},
+            datasets: [{
+                label: 'Your Scores',
+                data: {{ aptitude_values|tojson }},
+                backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                borderColor: '#2563eb',
+                pointBackgroundColor: '#2563eb'
+            }]
+        },
+        options: {
+            scales: { r: { beginAtZero: true, max: 100 } }
+        }
+    });
+
+    // Bar Chart for Personality
+    new Chart(document.getElementById('personalityChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ personality_traits|tojson }},
+            datasets: [{
+                label: 'T-Scores',
+                data: {{ personality_scores|tojson }},
+                backgroundColor: '#1d4ed8'
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+</script>
+{% endblock %}

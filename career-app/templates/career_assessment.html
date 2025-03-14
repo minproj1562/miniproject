@@ -135,6 +135,7 @@
 <div id="results" class="results"></div>
 {% endblock %}
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/assessments.js') }}"></script>
 <script>
   function submitAssessment() {
       const form = document.getElementById('assessment-form');

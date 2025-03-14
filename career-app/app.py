@@ -38,13 +38,12 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
-    mobile_number = db.Column(db.String(15))
-    pin_code = db.Column(db.String(6))
-    dob = db.Column(db.String(10))
-    assessments = db.Column(db.JSON, default={} )
-    api_data = db.Column(db.JSON, default={} )
+    assessments = db.Column(db.JSON, default={
+        'aptitude': {'scores': {}, 'progress': 0},
+        'personality': {'scores': {}, 'progress': 0}
+    })
+    career_matches = db.Column(db.JSON, default=[])
     last_updated = db.Column(db.DateTime)
-    assessments_completed = db.Column(db.Integer, default=0)
 
 @app.before_request
 def validate_inputs():
@@ -72,11 +71,11 @@ def dashboard():
 
 @app.route('/aptitude-test')
 def aptitude_test():
-    return render_template('aptitude.html', questions=APTITUDE_QUESTIONS)
+    return render_template('aptitude.html.jinga2', questions=APTITUDE_QUESTIONS)
 
 @app.route('/personality-test')
 def personality_test():
-    return render_template('personality.html', questions=PERSONALITY_QUESTIONS)
+    return render_template('personality.html.jinja2', questions=PERSONALITY_QUESTIONS)
 
 @app.route('/submit-assessment', methods=['POST'])
 def submit_assessment():
@@ -174,7 +173,7 @@ def results():
     user = User.query.get(session['user_id'])
     aptitude = user.assessments.get('aptitude_scores') if user.assessments else None
     personality = user.assessments.get('personality_scores') if user.assessments else None
-    return render_template('results.html',
+    return render_template('results.html.jinja2',
                            aptitude=aptitude,
                            personality=personality,
                            careers=CAREER_MAPPING)
@@ -241,35 +240,99 @@ def register():
 
 @app.route('/interview-prep')
 def interview_prep():
-    return render_template('careers/interview.html')
+    return render_template('assessments/interview.html')
 
 @app.route('/career-test')
 def career_test():
-    return render_template('careers/career_assessment.html')
+    return render_template('assessments/career_assessment.html')
 
 @app.route('/career-test/aptitude')
 def career_test_aptitude():
-    return render_template('careers/aptitude.html', questions=APTITUDE_QUESTIONS)
+    return render_template('assessments/aptitude.html.jinja2', questions=APTITUDE_QUESTIONS)
 
 @app.route('/career-test/personality')
 def career_test_personality():
-    return render_template('careers/personality.html', questions=PERSONALITY_QUESTIONS)
+    return render_template('assessments/personality.html.jinja2', questions=PERSONALITY_QUESTIONS)
 
 @app.route('/career-test/results')
 def career_test_results():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
     user = User.query.get(session['user_id'])
-    aptitude_scores = user.assessments.get('aptitude_scores') if user.assessments else None
-    personality_scores = user.assessments.get('personality_scores') if user.assessments else None
-    career_matches = match_careers(aptitude_scores, personality_scores)
-    skill_gaps = calculate_skill_gaps(career_matches, aptitude_scores, personality_scores)
-    return render_template('careers/results.html', 
-                           aptitude=aptitude_scores,
-                           personality=personality_scores,
-                           careers=career_matches,
-                           skill_gaps=skill_gaps)
+    if not user.assessments.get('aptitude_scores') or not user.assessments.get('personality_scores'):
+        flash('Complete both tests to view results', 'warning')
+        return redirect(url_for('career_test'))
+    
+    aptitude = user.assessments['aptitude_scores']
+    personality = user.assessments['personality_scores']
+    
+    # Get career matches
+    career_matches = []
+    skill_gaps = {}
+    
+    for career, details in CAREER_MAPPING.items():
+        apt_match = all(
+            aptitude.get(skill, 0) >= threshold
+            for skill, threshold in details['requirements']['aptitude'].items()
+        )
+        
+        pers_match = all(
+            personality.get(trait, 50) >= threshold if trait != 'N' else personality.get(trait, 50) <= threshold
+            for trait, threshold in details['requirements']['personality'].items()
+        )
+        
+        if apt_match and pers_match:
+            # Calculate skill gaps
+            gaps = {
+                'aptitude': {
+                    skill: max(0, threshold - aptitude.get(skill, 0))
+                    for skill, threshold in details['requirements']['aptitude'].items()
+                },
+                'personality': {
+                    trait: (
+                        max(0, threshold - personality.get(trait, 50)) if trait != 'N' 
+                        else max(0, personality.get(trait, 50) - threshold)
+                    )
+                    for trait, threshold in details['requirements']['personality'].items()
+                }
+            }
+            
+            career_matches.append({
+                'name': career,
+                'details': details,
+                'match_score': calculate_match_score(aptitude, personality, details),
+                'skill_gaps': gaps
+            })
+    
+    # Sort by match score descending
+    career_matches.sort(key=lambda x: x['match_score'], reverse=True)
+    
+    return render_template('assessments/results.html.jinja2',
+                           career_matches=career_matches,
+                           aptitude=aptitude,
+                           personality=personality)
 
+def calculate_match_score(aptitude, personality, career_details):
+    """Calculate percentage match for a career"""
+    total_points = 0
+    earned_points = 0
+    
+    # Calculate aptitude match
+    for skill, threshold in career_details['requirements']['aptitude'].items():
+        total_points += 100
+        earned_points += min(aptitude.get(skill, 0), threshold)
+    
+    # Calculate personality match
+    for trait, threshold in career_details['requirements']['personality'].items():
+        total_points += 100
+        if trait == 'N':
+            # Lower neuroticism is better
+            earned_points += max(0, 100 - abs(personality.get(trait, 50) - threshold) * 2)
+        else:
+            earned_points += max(0, 100 - abs(personality.get(trait, 50) - threshold) * 2)
+    
+    return (earned_points / total_points) * 100 if total_points > 0 else 0
 def calculate_skill_gaps(career_matches, aptitude_scores, personality_scores):
     """Calculate skill gaps based on career matches and user scores"""
     skill_gaps = {}
