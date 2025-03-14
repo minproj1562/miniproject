@@ -1,23 +1,33 @@
 <header>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('home') }}">Career Analytics</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('career_test') }}">Career Test</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Student Portal</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('degree') }}">Degrees</a></li>
-            {% if 'user_id' in session %}
-              <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
-            {% else %}
-              <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-            {% endif %}
-          </ul>
-        </div>
+          <a class="navbar-brand" href="{{ url_for('home') }}">Career Analytics</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+              <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+              <ul class="navbar-nav ms-auto">
+                  <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+                  <li class="nav-item dropdown">
+                      <a class="nav-link dropdown-toggle" href="#" id="careerTestDropdown" role="button" 
+                         data-bs-toggle="dropdown" aria-expanded="false">
+                          Career Test
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="careerTestDropdown">
+                          <li><a class="dropdown-item" href="{{ url_for('career_test_aptitude') }}">Aptitude Test</a></li>
+                          <li><a class="dropdown-item" href="{{ url_for('career_test_personality') }}">Personality Test</a></li>
+                          <li><a class="dropdown-item" href="{{ url_for('career_test_results') }}">Results</a></li>
+                      </ul>
+                  </li>
+                  <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Student Portal</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{{ url_for('degree') }}">Degrees</a></li>
+                  {% if 'user_id' in session %}
+                      <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                  {% else %}
+                      <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+                  {% endif %}
+              </ul>
+          </div>
       </div>
-    </nav>
+  </nav>
 </header>

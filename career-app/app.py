@@ -41,8 +41,8 @@ class User(db.Model):
     mobile_number = db.Column(db.String(15))
     pin_code = db.Column(db.String(6))
     dob = db.Column(db.String(10))
-    assessments = db.Column(db.JSON, default={})
-    api_data = db.Column(db.JSON, default={})
+    assessments = db.Column(db.JSON, default={} )
+    api_data = db.Column(db.JSON, default={} )
     last_updated = db.Column(db.DateTime)
     assessments_completed = db.Column(db.Integer, default=0)
 
@@ -96,7 +96,7 @@ def submit_assessment():
     user.assessments[f"{data['type']}_progress"] = 100
     db.session.commit()
     
-    return jsonify({'redirect': url_for('results')})
+    return jsonify({'redirect': url_for('career_test_results')})
 
 def calculate_personality(responses):
     """Calculate personality scores using validated psychometric methods"""
@@ -246,6 +246,49 @@ def interview_prep():
 @app.route('/career-test')
 def career_test():
     return render_template('careers/career_assessment.html')
+
+@app.route('/career-test/aptitude')
+def career_test_aptitude():
+    return render_template('careers/aptitude.html', questions=APTITUDE_QUESTIONS)
+
+@app.route('/career-test/personality')
+def career_test_personality():
+    return render_template('careers/personality.html', questions=PERSONALITY_QUESTIONS)
+
+@app.route('/career-test/results')
+def career_test_results():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    aptitude_scores = user.assessments.get('aptitude_scores') if user.assessments else None
+    personality_scores = user.assessments.get('personality_scores') if user.assessments else None
+    career_matches = match_careers(aptitude_scores, personality_scores)
+    skill_gaps = calculate_skill_gaps(career_matches, aptitude_scores, personality_scores)
+    return render_template('careers/results.html', 
+                           aptitude=aptitude_scores,
+                           personality=personality_scores,
+                           careers=career_matches,
+                           skill_gaps=skill_gaps)
+
+def calculate_skill_gaps(career_matches, aptitude_scores, personality_scores):
+    """Calculate skill gaps based on career matches and user scores"""
+    skill_gaps = {}
+    # Example logic (to be replaced with actual skill gap analysis)
+    for career in career_matches:
+        required_skills = CAREER_MAPPING[career].get('required_skills', {})
+        user_skills = {**aptitude_scores, **personality_scores}
+        gaps = {skill: required_skills[skill] - user_skills.get(skill, 0) for skill in required_skills}
+        skill_gaps[career] = gaps
+    return skill_gaps
+
+def match_careers(aptitude_scores, personality_scores):
+    """Match careers based on aptitude and personality scores"""
+    # Implement your career matching logic here
+    matched_careers = []
+    # Example logic (to be replaced with actual matching logic)
+    if aptitude_scores and personality_scores:
+        matched_careers = CAREER_MAPPING.get('example_career', [])
+    return matched_careers
 
 @app.route('/online-jobs')
 def online_jobs():
