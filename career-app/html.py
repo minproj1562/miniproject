@@ -1,5 +1,3 @@
-# import ctags  # Remove this line if ctags is not needed
-
 APTITUDE_QUESTIONS = {
     "Mathematics": {
         "easy": [
@@ -208,13 +206,6 @@ PERSONALITY_QUESTIONS = [
     
     # Continue with 8 items per trait following same pattern...
 ]
-
-# Add missing time_limit parameter for LR3-H
-APTITUDE_QUESTIONS["Logical Reasoning"]["hard"][0]["time_limit"] = 150
-APTITUDE_QUESTIONS["Logical Reasoning"]["hard"][0]["irt_params"] = {  # Fix typo
-    "difficulty": 2.0, 
-    "discrimination": 1.4
-}
 
 TRAIT_WEIGHTS = {
     "O": 1.0,  # Openness

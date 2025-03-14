@@ -12,7 +12,8 @@ from flask_limiter.util import get_remote_address
 from flask_caching import Cache
 
 # Local imports
-from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING
+from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING, SCORING_KEY, TRAIT_WEIGHTS, TRAIT_DEFINITIONS
+
 from apis import APIService, ONetAPI, PlagiarismChecker
 from config import SECRET_KEY, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 
@@ -97,23 +98,66 @@ def submit_assessment():
     
     return jsonify({'redirect': url_for('results')})
 
-def calculate_personality(results):
-    traits = {'O': [], 'C': [], 'E': [], 'A': [], 'N': []}
-    for question_id, response in results.items():
-        q = next((q for q in PERSONALITY_QUESTIONS if q['id'] == question_id), None)
-        if q is None:
+def calculate_personality(responses):
+    """Calculate personality scores using validated psychometric methods"""
+    trait_scores = {t: 0 for t in ["O", "C", "E", "A", "N"]}
+    
+    for q_id, response in responses.items():
+        try:
+            question = next(q for q in PERSONALITY_QUESTIONS if q["id"] == int(q_id))
+            trait = question["trait"]
+            
+            if trait == "V":  # Skip validation items
+                continue
+                
+            # Reverse score if needed
+            adjusted_score = response if question["direction"] else (4 - response)
+            trait_scores[trait] += adjusted_score * TRAIT_WEIGHTS[trait]
+            
+        except (StopIteration, ValueError):
+            app.logger.error(f"Invalid response ID: {q_id}")
             continue
-        # direction=True means direct scoring, direction=False means reverse scoring
-        score = response if q.get('direction', True) else (4 - response)
-        traits[q['trait']].append(score)
-    result_scores = {}
-    for trait, scores in traits.items():
-        if scores:
-            result_scores[trait] = (sum(scores) / len(scores)) * 20
-        else:
-            result_scores[trait] = 0
-    return result_scores
 
+    return trait_scores
+
+def interpret_scores(raw_scores):
+    """Convert raw scores to standardized interpretations"""
+    interpretations = {}
+    
+    for trait, score in raw_scores.items():
+        # Convert to T-score (M=50, SD=10)
+        t_score = 50 + ((score - SCORING_KEY[trait]["mean"]) / SCORING_KEY[trait]["sd"]) * 10
+        t_score = max(0, min(100, t_score))  # Clamp between 0-100
+        
+        # Find interpretation
+        for low, high, label in SCORING_KEY[trait]["norms"]:
+            if low <= t_score <= high:
+                interpretations[trait] = {
+                    "score": round(t_score, 1),
+                    "label": label,
+                    "definition": TRAIT_DEFINITIONS[trait]
+                }
+                break
+                
+    return interpretations
+
+@app.route('/submit-assessment', methods=['POST'])
+def submit_assessment():
+    data = request.get_json()
+    user = User.query.get(session['user_id'])
+    
+    if data['type'] == 'personality':
+        raw_scores = calculate_personality(data['responses'])
+        interpretations = interpret_scores(raw_scores)
+        
+        user.assessments['personality'] = {
+            'raw_scores': raw_scores,
+            'interpretations': interpretations,
+            'completed_at': datetime.datetime.utcnow()
+        }
+        
+    db.session.commit()
+    return jsonify(interpretations)
 def get_question(question_id):
     for domain, levels in APTITUDE_QUESTIONS.items():
         for difficulty_level, question_list in levels.items():
@@ -231,6 +275,10 @@ def software_engineer():
 @app.route('/introvert-careers')
 def introvert_careers():
     return render_template('careers/introvert.html')
+
+@app.route('/degree')
+def degree():
+    return render_template('degree.html')
 
 @app.route('/logout')
 def logout():

@@ -122,18 +122,12 @@
 
   function filterDegrees() {
       const searchInput = document.getElementById("searchInput").value.toLowerCase();
-      const degreeItems = document.querySelectorAll(".degree-item");
-      let found = false;
-      degreeItems.forEach(item => {
-        const text = item.textContent.toLowerCase();
-        if (text.includes(searchInput)) {
-          item.style.display = "";
-          found = true;
-        } else {
-          item.style.display = "none";
-        }
-      });
-      document.getElementById("no-results").style.display = found ? "none" : "block";
+      const filteredCourses = courses.filter(course => 
+          course.title.toLowerCase().includes(searchInput) || 
+          course.description.toLowerCase().includes(searchInput)
+      );
+      displayDegrees(filteredCourses);
+      document.getElementById("no-results").style.display = filteredCourses.length ? "none" : "block";
   }
 
   document.addEventListener('DOMContentLoaded', (event) => {
