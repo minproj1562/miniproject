@@ -13,9 +13,25 @@ from flask_caching import Cache
 
 # Local imports
 from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING, SCORING_KEY, TRAIT_WEIGHTS, TRAIT_DEFINITIONS
-
 from apis import APIService, ONetAPI, PlagiarismChecker
 from config import SECRET_KEY, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
+from questions import match_careers
+from functools import wraps
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+user_aptitude_scores = {"Mathematics": 80, "Logical Reasoning": 72, "Verbal Ability": 68}
+user_personality_scores = {"O": 70, "C": 75, "E": 60, "A": 68, "N": 35}
+matched = match_careers(user_aptitude_scores, user_personality_scores)
+print("Matched Careers:", matched)
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -29,95 +45,125 @@ db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
+
+# Use new Flask-Limiter usage: don't pass app into the constructor.
 limiter = Limiter(key_func=get_remote_address)
 limiter.init_app(app)
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # or 'RedisCache'
 
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+
+# ----------------- MODELS ----------------- #
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     assessments = db.Column(db.JSON, default={
-        'aptitude': {'scores': {}, 'progress': 0},
-        'personality': {'scores': {}, 'progress': 0}
+        'aptitude': {'scores': {}, 'progress': 0, 'answered_questions': []},
+        'personality': {'scores': {}, 'progress': 0, 'answered_questions': []}
     })
     career_matches = db.Column(db.JSON, default=[])
     last_updated = db.Column(db.DateTime)
 
+# ----------------- HOOKS ----------------- #
 @app.before_request
 def validate_inputs():
-    """Validate JSON inputs for routes that accept JSON."""
     if request.content_type == 'application/json':
         try:
             request.get_json()
         except Exception:
             abort(400, description="Invalid JSON format")
 
+# ----------------- ROUTES ----------------- #
 @app.route('/')
 def home():
-    return render_template('index.html')  # or whichever template is your home page
+    return render_template('index.html')
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
-    aptitude_progress = user.assessments.get('aptitude_progress', 0) if user.assessments else 0
-    personality_progress = user.assessments.get('personality_progress', 0) if user.assessments else 0
-    return render_template('dashboard.html', 
+    aptitude_progress = user.assessments['aptitude'].get('progress', 0)
+    personality_progress = user.assessments['personality'].get('progress', 0)
+    return render_template('results.html.jinja2',
                            aptitude_progress=aptitude_progress,
                            personality_progress=personality_progress)
 
-@app.route('/aptitude-test')
-def aptitude_test():
-    return render_template('aptitude.html.jinga2', questions=APTITUDE_QUESTIONS)
+# ------------------ APTITUDE TEST ------------------ #
+@app.route('/career-test/aptitude')
+@login_required
+def career_test_aptitude():
+    user = User.query.get(session['user_id'])
+    total_questions = sum(
+        len(q_list)
+        for category_data in APTITUDE_QUESTIONS.values()
+        for q_list in category_data.values()
+    )
+    answered_questions = user.assessments['aptitude'].get('answered_questions', [])
+    completed_questions = len(answered_questions)
+    return render_template(
+        'assessments/aptitude.html.jinja2',
+        questions=APTITUDE_QUESTIONS,
+        current_category='Mathematics',
+        initial_time=1800,  # 30 minutes
+        total_questions=total_questions,
+        completed_questions=completed_questions
+    )
 
-@app.route('/personality-test')
-def personality_test():
-    return render_template('personality.html.jinja2', questions=PERSONALITY_QUESTIONS)
+# ------------------ PERSONALITY TEST ------------------ #
+@app.route('/career-test/personality')
+@login_required
+def career_test_personality():
+    # Use query parameter "q" to determine which personality question to display
+    q = request.args.get('q', 0, type=int)
+    total = len(PERSONALITY_QUESTIONS)
+    if q < 0:
+        q = 0
+    if q >= total:
+        q = total - 1
+    question_obj = PERSONALITY_QUESTIONS[q]
+    return render_template(
+        'assessments/personality.html.jinja2',
+        questions=PERSONALITY_QUESTIONS,
+        question=question_obj,
+        current_question_index=q
+    )
 
+# ------------------ SAVE ANSWER (AJAX) ------------------ #
+@app.route('/save-answer', methods=['POST'])
+@login_required
+def save_answer():
+    data = request.get_json()
+    user = User.query.get(session['user_id'])
+    question_id = data.get('question_id')
+    if not question_id:
+        return jsonify({'error': 'No question_id provided'}), 400
+    answered = user.assessments['aptitude'].get('answered_questions', [])
+    if question_id not in answered:
+        answered.append(question_id)
+        user.assessments['aptitude']['answered_questions'] = answered
+        db.session.commit()
+    return jsonify({'message': 'Answer saved', 'answered_count': len(answered)})
+
+# ------------------ SUBMIT ASSESSMENT ------------------ #
 @app.route('/submit-assessment', methods=['POST'])
+@limiter.limit("5/minute")
+@login_required
 def submit_assessment():
     data = request.get_json()
-    if 'user_id' not in session:
-        abort(401)
     user = User.query.get(session['user_id'])
-    
-    if data['type'] == 'personality':
-        scores = calculate_personality(data['responses'])
+    test_type = data.get('type')
+    if test_type not in ['aptitude', 'personality']:
+        return jsonify({'error': 'Invalid test type'}), 400
+    responses = data.get('responses', [])
+    if test_type == 'aptitude':
+        # Placeholder: add your aptitude scoring logic here
+        user.assessments['aptitude']['progress'] = 100
     else:
-        scores = calculate_aptitude(data['responses'])
-    
-    if not user.assessments:
-        user.assessments = {}
-    user.assessments[f"{data['type']}_scores"] = scores
-    user.assessments[f"{data['type']}_progress"] = 100
+        # Placeholder: add your personality scoring logic here
+        user.assessments['personality']['progress'] = 100
     db.session.commit()
-    
-    return jsonify({'redirect': url_for('career_test_results')})
-
-def calculate_personality(responses):
-    """Calculate personality scores using validated psychometric methods"""
-    trait_scores = {t: 0 for t in ["O", "C", "E", "A", "N"]}
-    
-    for q_id, response in responses.items():
-        try:
-            question = next(q for q in PERSONALITY_QUESTIONS if q["id"] == int(q_id))
-            trait = question["trait"]
-            
-            if trait == "V":  # Skip validation items
-                continue
-                
-            # Reverse score if needed
-            adjusted_score = response if question["direction"] else (4 - response)
-            trait_scores[trait] += adjusted_score * TRAIT_WEIGHTS[trait]
-            
-        except (StopIteration, ValueError):
-            app.logger.error(f"Invalid response ID: {q_id}")
-            continue
-
-    return trait_scores
+    return jsonify({'success': True, 'redirect': url_for('career_test_results')})
 
 def interpret_scores(raw_scores):
     """Convert raw scores to standardized interpretations"""
@@ -139,7 +185,6 @@ def interpret_scores(raw_scores):
                 break
                 
     return interpretations
-
 def get_question(question_id):
     for domain, levels in APTITUDE_QUESTIONS.items():
         for difficulty_level, question_list in levels.items():
@@ -165,33 +210,7 @@ def calculate_aptitude(responses):
         # Using a simple log-odds approach for demonstration
         ability += math.log(p / (1 - p))
     return ability
-
-@app.route('/results')
-def results():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user = User.query.get(session['user_id'])
-    aptitude = user.assessments.get('aptitude_scores') if user.assessments else None
-    personality = user.assessments.get('personality_scores') if user.assessments else None
-    return render_template('results.html.jinja2',
-                           aptitude=aptitude,
-                           personality=personality,
-                           careers=CAREER_MAPPING)
-
-@app.route('/api/careers/<soc_code>')
-def career_details(soc_code):
-    return jsonify(ONetAPI().get_career_details(soc_code))
-
-@app.route('/api/job-market/<title>')
-def job_market(title):
-    return jsonify(APIService.get_linkedin_jobs(title))
-
-@app.route('/api/verify-answers', methods=['POST'])
-def verify_answers():
-    responses = request.json.get('answers')
-    scores = [PlagiarismChecker.verify_content(r) for r in responses]
-    return jsonify({"originality_scores": scores})
-
+# ------------------ AUTH & OTHER ROUTES ------------------ #
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -220,14 +239,7 @@ def register():
             flash('Passwords do not match!', 'danger')
             return redirect(url_for('register'))
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        new_user = User(
-            username=username,
-            email=email,
-            password=hashed_password,
-            mobile_number=request.form.get('mobile_number'),
-            pin_code=request.form.get('pin_code'),
-            dob=request.form.get('dob')
-        )
+        new_user = User(username=username, email=email, password=hashed_password)
         try:
             db.session.add(new_user)
             db.session.commit()
@@ -238,80 +250,66 @@ def register():
             db.session.rollback()
     return render_template('auth/register.html')
 
-@app.route('/interview-prep')
-def interview_prep():
-    return render_template('assessments/interview.html')
-
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+@app.route('/api/careers/<soc_code>')
+def career_details(soc_code):
+    return jsonify(ONetAPI().get_career_details(soc_code))
+@app.route('/api/verify-answers', methods=['POST'])
+def verify_answers():
+    responses = request.json.get('answers')
+    scores = [PlagiarismChecker.verify_content(r) for r in responses]
+    return jsonify({"originality_scores": scores})
 @app.route('/career-test')
 def career_test():
     return render_template('assessments/career_assessment.html')
 
-@app.route('/career-test/aptitude')
-def career_test_aptitude():
-    return render_template('assessments/aptitude.html.jinja2', questions=APTITUDE_QUESTIONS)
-
-@app.route('/career-test/personality')
-def career_test_personality():
-    return render_template('assessments/personality.html.jinja2', questions=PERSONALITY_QUESTIONS)
-
 @app.route('/career-test/results')
+@login_required
 def career_test_results():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
     user = User.query.get(session['user_id'])
-    if not user.assessments.get('aptitude_scores') or not user.assessments.get('personality_scores'):
+    if not user.assessments.get('aptitude', {}).get('scores') or not user.assessments.get('personality', {}).get('scores'):
         flash('Complete both tests to view results', 'warning')
         return redirect(url_for('career_test'))
     
-    aptitude = user.assessments['aptitude_scores']
-    personality = user.assessments['personality_scores']
-    
+    aptitude = user.assessments['aptitude']['scores']
+    personality = user.assessments['personality']['scores']
+    aptitude_interpretation = interpret_scores(aptitude)
+    personality_interpretation = interpret_scores(personality)
+
     # Get career matches
     career_matches = []
     skill_gaps = {}
-    
     for career, details in CAREER_MAPPING.items():
         apt_match = all(
-            aptitude.get(skill, 0) >= threshold
-            for skill, threshold in details['requirements']['aptitude'].items()
-        )
-        
-        pers_match = all(
-            personality.get(trait, 50) >= threshold if trait != 'N' else personality.get(trait, 50) <= threshold
-            for trait, threshold in details['requirements']['personality'].items()
-        )
-        
-        if apt_match and pers_match:
-            # Calculate skill gaps
-            gaps = {
-                'aptitude': {
-                    skill: max(0, threshold - aptitude.get(skill, 0))
-                    for skill, threshold in details['requirements']['aptitude'].items()
-                },
-                'personality': {
-                    trait: (
-                        max(0, threshold - personality.get(trait, 50)) if trait != 'N' 
-                        else max(0, personality.get(trait, 50) - threshold)
-                    )
-                    for trait, threshold in details['requirements']['personality'].items()
-                }
-            }
-            
-            career_matches.append({
-                'name': career,
-                'details': details,
-                'match_score': calculate_match_score(aptitude, personality, details),
-                'skill_gaps': gaps
-            })
-    
+        aptitude.get(skill, 0) >= threshold
+        for skill, threshold in details['requirements']['aptitude'].items()
+    )
+    pers_match = all(
+        personality.get(trait, 50) >= threshold if trait != 'N'
+        else personality.get(trait, 50) <= threshold
+        for trait, threshold in details['requirements']['personality'].items()
+    )
+    if apt_match and pers_match:
+        gaps = calculate_skill_gaps_for_career(aptitude, personality, details)
+        career_matches.append({
+            'name': career,
+            'details': details,
+            'match_score': calculate_match_score(aptitude, personality, details),
+            'skill_gaps': gaps
+        })
+
     # Sort by match score descending
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-    
     return render_template('assessments/results.html.jinja2',
-                           career_matches=career_matches,
-                           aptitude=aptitude,
-                           personality=personality)
+                       career_matches=career_matches,
+                       aptitude=aptitude,
+                       personality=personality,
+                       aptitude_interpretation=aptitude_interpretation,
+                       personality_interpretation=personality_interpretation)
+
 
 def calculate_match_score(aptitude, personality, career_details):
     """Calculate percentage match for a career"""
@@ -322,8 +320,7 @@ def calculate_match_score(aptitude, personality, career_details):
     for skill, threshold in career_details['requirements']['aptitude'].items():
         total_points += 100
         earned_points += min(aptitude.get(skill, 0), threshold)
-    
-    # Calculate personality match
+        # Calculate personality match
     for trait, threshold in career_details['requirements']['personality'].items():
         total_points += 100
         if trait == 'N':
@@ -331,28 +328,25 @@ def calculate_match_score(aptitude, personality, career_details):
             earned_points += max(0, 100 - abs(personality.get(trait, 50) - threshold) * 2)
         else:
             earned_points += max(0, 100 - abs(personality.get(trait, 50) - threshold) * 2)
-    
     return (earned_points / total_points) * 100 if total_points > 0 else 0
-def calculate_skill_gaps(career_matches, aptitude_scores, personality_scores):
-    """Calculate skill gaps based on career matches and user scores"""
-    skill_gaps = {}
-    # Example logic (to be replaced with actual skill gap analysis)
-    for career in career_matches:
-        required_skills = CAREER_MAPPING[career].get('required_skills', {})
-        user_skills = {**aptitude_scores, **personality_scores}
-        gaps = {skill: required_skills[skill] - user_skills.get(skill, 0) for skill in required_skills}
-        skill_gaps[career] = gaps
-    return skill_gaps
+def calculate_skill_gaps_for_career(aptitude, personality, career_details):
+    gaps = {
+        'aptitude': {
+            skill: max(0, threshold - aptitude.get(skill, 0))
+            for skill, threshold in career_details['requirements']['aptitude'].items()
+        },
+        'personality': {
+            trait: (max(0, threshold - personality.get(trait, 50))
+                    if trait != 'N'
+                    else max(0, personality.get(trait, 50) - threshold))
+            for trait, threshold in career_details['requirements']['personality'].items()
+        }
+    }
+    return gaps
 
-def match_careers(aptitude_scores, personality_scores):
-    """Match careers based on aptitude and personality scores"""
-    # Implement your career matching logic here
-    matched_careers = []
-    # Example logic (to be replaced with actual matching logic)
-    if aptitude_scores and personality_scores:
-        matched_careers = CAREER_MAPPING.get('example_career', [])
-    return matched_careers
-
+@app.route('/degree')
+def degree():
+    return render_template('degree.html')
 @app.route('/online-jobs')
 def online_jobs():
     return render_template('careers/online.html')
@@ -364,15 +358,6 @@ def software_engineer():
 @app.route('/introvert-careers')
 def introvert_careers():
     return render_template('careers/introvert.html')
-
-@app.route('/degree')
-def degree():
-    return render_template('degree.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('home'))
 
 @app.route('/protected-api', methods=['POST'])
 @jwt_required()

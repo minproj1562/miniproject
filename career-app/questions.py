@@ -737,3 +737,64 @@ CAREER_MAPPING = {
         "development_path": [...]
     }
 }
+def match_careers(aptitude_scores, personality_scores):
+    """
+    Match careers based on aptitude and personality scores.
+    CAREER_MAPPING is assumed to look like:
+    {
+      "Data Analyst": {
+        "requirements": {
+          "aptitude": {
+            "Mathematics": 75,
+            "Logical Reasoning": 70,
+            "Verbal Ability": 65
+          },
+          "personality": {
+            "C": 70,  # Conscientiousness
+            "O": 65,  # Openness
+            "N": 40   # Neuroticism (lower better)
+          }
+        },
+        "description": "Requires strong numerical analysis and pattern recognition skills",
+        "development_path": [...]
+      },
+      ...
+    }
+
+    :param aptitude_scores: dict of user's aptitude scores (e.g. {"Mathematics": 80, "Logical Reasoning": 72, "Verbal Ability": 68})
+    :param personality_scores: dict of user's personality scores (e.g. {"O": 70, "C": 75, "E": 60, "A": 68, "N": 35})
+    :return: a list of careers (keys in CAREER_MAPPING) for which the user meets or exceeds the requirements.
+    """
+    matched_careers = []
+
+    # Loop through each career and check if user meets the requirements
+    for career, details in CAREER_MAPPING.items():
+        # Retrieve thresholds for aptitude and personality
+        apt_req = details['requirements'].get('aptitude', {})
+        pers_req = details['requirements'].get('personality', {})
+
+        # Check aptitude: each required skill must be met or exceeded.
+        meets_apt = all(
+            aptitude_scores.get(skill, 0) >= threshold
+            for skill, threshold in apt_req.items()
+        )
+
+        # Check personality:
+        # For traits other than "N", user score should be >= threshold.
+        # For "N" (Neuroticism), lower scores are better, so user score should be <= threshold.
+        meets_pers = True
+        for trait, threshold in pers_req.items():
+            user_score = personality_scores.get(trait, 50)  # defaulting to 50 if missing
+            if trait == 'N':
+                if user_score > threshold:
+                    meets_pers = False
+                    break
+            else:
+                if user_score < threshold:
+                    meets_pers = False
+                    break
+
+        if meets_apt and meets_pers:
+            matched_careers.append(career)
+
+    return matched_careers
