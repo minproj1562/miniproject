@@ -4,6 +4,18 @@ from flask_wtf.csrf import CSRFProtect
 import json
 from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, CAREER_MAPPING
 import math
+from flask_limiter import Limiter
+from flask_caching import Cache
+from flask_jwt_extended import JWTManager, jwt_required)
+
+jwt = JWTManager(app)
+
+
+cache = Cache(config={'CACHE_TYPE': 'RedisCache'})
+
+
+limiter = Limiter(app=app, key_func=get_remote_address)
+
 
 app = Flask(__name__)
 app.config.update(
@@ -107,6 +119,14 @@ def calculate_aptitude(responses):
         p = 1/(1 + math.exp(-question['discrimination'] * (ability - question['difficulty'])))
         ability += math.log(p/(1-p)) * ADAPTIVE_TEST_SETTINGS['scaling_factors']['correct_answer']
     return ability
+# Modify CAREER_MAPPING to use API data
+def enhance_career_mapping():
+    for career in CAREER_MAPPING:
+        api_data = ONetAPI().get_career_details(career)
+        CAREER_MAPPING[career].update({
+            'growth_rate': api_data.get('growthRate'),
+            'median_salary': api_data.get('medianSalary')
+        })
 def calculate_score(responses):
     ability_estimate = 0
     for response in responses:
@@ -121,7 +141,12 @@ def calculate_score(responses):
                            question.time_limit * 0.1) * \
                            ADAPTIVE_TEST_SETTINGS["scaling_factors"]["time_penalty"]
     return ability_estimate
-
+@app.errorhandler(APIException)
+def handle_api_error(exc):
+    return jsonify({
+        "error": exc.message,
+        "status": exc.status_code
+    }), exc.status_code
 @app.route('/results')
 def results():
     user = User.query.get(session['user_id'])
@@ -132,6 +157,10 @@ def results():
 @app.route('/api/careers/<soc_code>')
 def career_details(soc_code):
     return jsonify(ONetAPI().get_career_details(soc_code))
+app.route('/api/*')
+@limiter.limit("100/hour")
+def api_endpoints():
+    pass
 
 @app.route('/api/job-market/<title>')
 def job_market(title):
@@ -145,6 +174,20 @@ def verify_answers():
 @app.route('/login')
 def login():
     return render_template('login.html')
+@app.before_request
+def validate_inputs():
+    if request.content_type == 'application/json':
+        try:
+            request.get_json()
+        except Exception as e:
+            abort(400, "Invalid JSON format")
+@app.route('/protected-api', methods=['POST'])
+@jwt_required()
+def protected_endpoint():
+    pass
+@cache.memoize(timeout=3600)
+def get_career_data(soc_code):
+    return ONetAPI().get_career_details(soc_code)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
