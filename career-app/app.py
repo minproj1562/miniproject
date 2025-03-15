@@ -127,6 +127,7 @@ def career_test_personality():
 ## Save Answer (AJAX)
 @app.route('/save-answer', methods=['POST'])
 @login_required
+@csrf.exempt  # Exempt AJAX POST from CSRF if needed (optional)
 def save_answer():
     data = request.get_json()
     user = User.query.get(session['user_id'])
@@ -144,6 +145,7 @@ def save_answer():
 @app.route('/submit-assessment', methods=['POST'])
 @limiter.limit("5/minute")
 @login_required
+@csrf.exempt  # Exempt AJAX POST from CSRF if needed (optional)
 def submit_assessment():
     data = request.get_json()
     user = User.query.get(session['user_id'])
@@ -156,7 +158,6 @@ def submit_assessment():
         user.assessments.setdefault('aptitude', {})['scores'] = {"Mathematics": ability, "Logical Reasoning": ability, "Verbal Ability": ability}
         user.assessments['aptitude']['progress'] = 100
     else:
-        # Placeholder for personality scoring
         user.assessments.setdefault('personality', {})['scores'] = {"O": 70, "C": 75, "E": 60, "A": 68, "N": 35}
         user.assessments['personality']['progress'] = 100
     user.last_updated = datetime.datetime.utcnow()
@@ -172,6 +173,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.password, password):
             session['user_id'] = user.id
+            flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
         flash('Invalid username or password', 'danger')
     return render_template('auth/login.html')
@@ -219,6 +221,7 @@ def register():
 @app.route('/logout')
 def logout():
     session.clear()
+    flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
 ## API Routes
@@ -272,9 +275,66 @@ def career_test_results():
                            aptitude_interpretation=aptitude_interpretation,
                            personality_interpretation=personality_interpretation)
 
+## Additional Routes
+@app.route('/student')
+@login_required
+def student():
+    return render_template('student.html')
+
+@app.route('/profile')
+@login_required
+def profile():
+    user = User.query.get(session['user_id'])
+    return render_template('profile.html', user=user)
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    user = User.query.get(session['user_id'])
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        mobile_number = request.form['mobile_number']
+        pin_code = request.form['pin_code']
+        dob = request.form['dob']
+        if username != user.username and User.query.filter_by(username=username).first():
+            flash("Username already taken!", "danger")
+            return redirect(url_for('settings'))
+        if email != user.email and User.query.filter_by(email=email).first():
+            flash("Email already registered!", "danger")
+            return redirect(url_for('settings'))
+        user.username = username
+        user.email = email
+        user.mobile_number = mobile_number
+        user.pin_code = pin_code
+        user.dob = dob
+        db.session.commit()
+        flash("Settings updated successfully!", "success")
+    return render_template('settings.html', user=user)
+
+@app.route('/degree')
+def degree():
+    return render_template('degree.html')
+
+@app.route('/online-jobs')
+def online_jobs():
+    return render_template('careers/online.html')
+
+@app.route('/software-engineer')
+def software_engineer():
+    return render_template('careers/software_engg.html')
+
+@app.route('/introvert-careers')
+def introvert_careers():
+    return render_template('careers/introvert.html')
+
+@app.route('/protected-api', methods=['POST'])
+@jwt_required()
+def protected_endpoint():
+    return jsonify({"message": "Protected endpoint accessed"})
+
 ## Helper Functions
 def interpret_scores(raw_scores):
-    """Convert raw scores to standardized interpretations."""
     interpretations = {}
     for trait, score in raw_scores.items():
         t_score = 50 + ((score - SCORING_KEY[trait]["mean"]) / SCORING_KEY[trait]["sd"]) * 10
@@ -327,28 +387,6 @@ def calculate_skill_gaps_for_career(aptitude, personality, career_details):
                         for trait, threshold in career_details['requirements']['personality'].items()}
     }
     return gaps
-
-## Additional Routes
-@app.route('/degree')
-def degree():
-    return render_template('degree.html')
-
-@app.route('/online-jobs')
-def online_jobs():
-    return render_template('careers/online.html')
-
-@app.route('/software-engineer')
-def software_engineer():
-    return render_template('careers/software_engg.html')
-
-@app.route('/introvert-careers')
-def introvert_careers():
-    return render_template('careers/introvert.html')
-
-@app.route('/protected-api', methods=['POST'])
-@jwt_required()
-def protected_endpoint():
-    return jsonify({"message": "Protected endpoint accessed"})
 
 ## Error Handlers
 @app.errorhandler(404)
