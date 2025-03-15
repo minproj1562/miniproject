@@ -1,137 +1,132 @@
 {% extends "base.html" %}
-{% block title %}Career Details - Courses in India{% endblock %}
-{% block extra_head %}
-<style>
-  .search-container {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-  }
-  .search-container input {
-      width: 60%;
-      padding: 12px;
-      border: 2px solid #007BFF;
-      border-radius: 25px;
-      font-size: 1em;
-      outline: none;
-  }
-  .search-container button {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-left: none;
-      border-radius: 0 5px 5px 0;
-      background-color: #3498db;
-      color: white;
-      cursor: pointer;
-  }
-  .search-container button:hover {
-      background-color: #2980b9;
-  }
-  .degree-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1rem;
-  }
-  .degree-item {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 1rem;
-      border-radius: 8px;
-      color: #2c5282;
-      text-decoration: none;
-      transition: background-color 0.3s ease;
-  }
-  .degree-item:hover {
-      background-color: #e2e8f0;
-  }
-  .degree-item h2 {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-  }
-  .degree-item p {
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-  }
-  .reviews {
-      font-size: 0.8rem;
-      color: #555;
-  }
-  .review {
-      margin-bottom: 0.5rem;
-  }
-  .rating {
-      color: #f39c12;
-  }
-  .user {
-      font-weight: bold;
-  }
-  .comment {
-      margin-left: 0.5rem;
-  }
-</style>
-{% endblock %}
+{% block title %}Degree Portal - Career Analytics{% endblock %}
+
 {% block content %}
-<h1>Career Details - Courses Offered in India</h1>
-<div class="search-container">
-  <input type="text" id="searchInput" placeholder="Search for courses...">
-  <button onclick="filterDegrees()">Search</button>
-</div>
-<div class="degree-list" id="degree-list"></div>
-<p id="no-results" style="display:none; color:red;">No degrees found.</p>
-{% endblock %}
-{% block extra_scripts %}
-<script>
-  const courses = [
-    {
-      title: "Computer Science Engineering",
-      description: "Focuses on software development, algorithms, and computer systems. Specializations include AI, Machine Learning, and Data Science.",
-      link: "https://www.shiksha.com/engineering/computer-science-engineering-chp",
-      icon: "fas fa-laptop",
-      reviews: [
-        { user: "Rahul", rating: 4.5, comment: "Great course with excellent faculty." },
-        { user: "Priya", rating: 5, comment: "Highly recommended for aspiring software engineers." }
-      ]
-    },
-    // ... (include all course objects as in your original code)
-  ];
+    <style>
+        .degree-main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .degree-main h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .content-section {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .content-section h2 {
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+        .content-section p {
+            font-size: 1.15rem;
+            color: #333;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 1rem;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .cta-button:hover {
+            background-color: var(--secondary);
+            transform: translateY(-3px);
+        }
+        .degree-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .degree-item {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: transform 0.3s ease;
+        }
+        .degree-item:hover {
+            transform: translateY(-5px);
+        }
+        .degree-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .degree-details {
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+    </style>
 
-  function displayDegrees(degrees) {
-      const degreeList = document.getElementById("degree-list");
-      degreeList.innerHTML = "";
-      degrees.forEach(degree => {
-        const degreeItem = document.createElement("a");
-        degreeItem.className = "degree-item";
-        degreeItem.href = degree.link;
-        degreeItem.target = "_blank";
-        degreeItem.innerHTML = `
-          <h2><i class="${degree.icon}"></i> ${degree.title}</h2>
-          <p>${degree.description}</p>
-          <div class="reviews">
-            ${degree.reviews.map(review => `
-              <div class="review">
-                <div class="rating">${'★'.repeat(Math.floor(review.rating))}${'☆'.repeat(5 - Math.floor(review.rating))}</div>
-                <div class="user">${review.user}:</div>
-                <div class="comment">${review.comment}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        degreeList.appendChild(degreeItem);
-      });
-  }
+    <div class="degree-main">
+        <h1>Explore Degrees</h1>
+        
+        <section class="content-section">
+            <h2>Find Your Perfect Degree</h2>
+            <p>Discover degree programs that align with your career goals and interests. Use our advanced search to filter by field of study, degree level, and more.</p>
+            <a href="#" class="cta-button">Advanced Search</a>
+        </section>
 
-  function filterDegrees() {
-      const searchInput = document.getElementById("searchInput").value.toLowerCase();
-      const filteredCourses = courses.filter(course => 
-          course.title.toLowerCase().includes(searchInput) || 
-          course.description.toLowerCase().includes(searchInput)
-      );
-      displayDegrees(filteredCourses);
-      document.getElementById("no-results").style.display = filteredCourses.length ? "none" : "block";
-  }
+        <section class="content-section">
+            <h2>Featured Degrees</h2>
+            <div class="degree-list">
+                <div class="degree-item">
+                    <div class="degree-title">Bachelor of Science in Computer Science</div>
+                    <div class="degree-details">
+                        <p>University of Technology</p>
+                        <p>Duration: 4 years</p>
+                    </div>
+                </div>
+                <div class="degree-item">
+                    <div class="degree-title">Master of Business Administration</div>
+                    <div class="degree-details">
+                        <p>Global Business School</p>
+                        <p>Duration: 2 years</p>
+                    </div>
+                </div>
+                <div class="degree-item">
+                    <div class="degree-title">Bachelor of Arts in Psychology</div>
+                    <div class="degree-details">
+                        <p>Riverside University</p>
+                        <p>Duration: 3 years</p>
+                    </div>
+                </div>
+                <div class="degree-item">
+                    <div class="degree-title">Master of Science in Data Science</div>
+                    <div class="degree-details">
+                        <p>Tech Institute</p>
+                        <p>Duration: 1.5 years</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  document.addEventListener('DOMContentLoaded', (event) => {
-      displayDegrees(courses);
-  });
-</script>
-{% endblock %}
+        <section class="content-section">
+            <h2>Degree Comparison Tool</h2>
+            <p>Compare different degree programs side by side to make an informed decision about your education.</p>
+            <a href="#" class="cta-button">Compare Degrees</a>
+        </section>
+
+        <section class="content-section">
+            <h2>Career Outlook</h2>
+            <p>Explore potential career paths and job prospects associated with different degree programs.</p>
+            <a href="#" class="cta-button">View Career Outlook</a>
+        </section>
+    </div>
+{% endblock %}                                                                                                                                                                     

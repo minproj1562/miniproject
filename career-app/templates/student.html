@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Student Portal - Career Analytics{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1>Student Portal</h1>
+        <p>Welcome to your student portal!</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+    </div>
+{% endblock %}

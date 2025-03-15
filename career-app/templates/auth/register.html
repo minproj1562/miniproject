@@ -1,31 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-</head>
-<body>
-    {% include 'header.html' %}
-    <h1>Register</h1>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <p class="{{ category }}">{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    <form method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-        <input type="text" name="mobile_number" placeholder="Mobile Number">
-        <input type="text" name="pin_code" placeholder="Pin Code">
-        <input type="date" name="dob" placeholder="Date of Birth">
-        <button type="submit">Register</button>
-    </form>
-    <a href="{{ url_for('login') }}">Login</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Register - Career Analytics{% endblock %}
+
+{% block content %}
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .register-container {
+            max-width: 550px;
+            margin: 4rem auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .register-container h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 2rem;
+        }
+        .register-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #1e3c72;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-group input:focus {
+            border-color: #2a5298;
+            box-shadow: 0 0 8px rgba(42, 82, 152, 0.3);
+            outline: none;
+        }
+        .btn-register {
+            padding: 0.75rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background-color: #2a5298;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            width: 100%;
+        }
+        .btn-register:hover {
+            background-color: #1e3c72;
+            transform: translateY(-3px);
+        }
+        .alert {
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .login-link a {
+            color: #2a5298;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+    </style>
+
+    <div class="register-container">
+        <h2>Register</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form class="register-form" method="POST" action="{{ url_for('register') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="mobile_number">Mobile Number</label>
+                <input type="text" id="mobile_number" name="mobile_number" placeholder="Enter your mobile number" class="form-control" pattern="\d{10}" title="Must be 10 digits">
+            </div>
+            <div class="form-group">
+                <label for="pin_code">Pin Code</label>
+                <input type="text" id="pin_code" name="pin_code" placeholder="Enter your pin code" class="form-control" pattern="\d{6}" title="Must be 6 digits">
+            </div>
+            <div class="form-group">
+                <label for="dob">Date of Birth</label>
+                <input type="date" id="dob" name="dob" class="form-control" required>
+            </div>
+            <button type="submit" class="btn-register">Register</button>
+        </form>
+        <div class="login-link">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+{% endblock %}

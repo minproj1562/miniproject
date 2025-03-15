@@ -1,128 +1,52 @@
 {% extends "base.html" %}
-{% block title %}Career Analytics{% endblock %}
-{% block extra_head %}
-<style>
-  .hero {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      flex-direction: column;
-      text-align: center;
-  }
-  .hero h1 {
-      font-size: 3rem;
-      animation: fadeIn 2s ease-in-out;
-  }
-  .hero p {
-      font-size: 1.2rem;
-      max-width: 600px;
-      margin: 20px auto;
-      animation: fadeIn 3s ease-in-out;
-  }
-  .cta-button {
-      background: #f8b400;
-      color: white;
-      padding: 12px 24px;
-      text-decoration: none;
-      font-size: 1.2rem;
-      border-radius: 25px;
-      transition: 0.3s;
-      animation: fadeIn 3.5s ease-in-out;
-  }
-  .cta-button:hover {
-      background: #ffcc00;
-  }
-  @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-  }
-  .info-section {
-      padding: 4rem 5%;
-      background: rgba(255, 255, 255, 0.1);
-      margin: 2rem 0;
-  }
-  .info-section h2 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-  }
-  .info-section p {
-      font-size: 1.1rem;
-      max-width: 800px;
-      margin: 0 auto;
-  }
-  .stats-section {
-      display: flex;
-      justify-content: space-around;
-      padding: 4rem 5%;
-      background: rgba(0, 0, 0, 0.5);
-  }
-  .stat {
-      text-align: center;
-  }
-  .stat h3 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-  }
-  .stat p {
-      font-size: 1rem;
-  }
-  .testimonials-section {
-      padding: 4rem 5%;
-      background: rgba(255, 255, 255, 0.1);
-  }
-  .testimonials-section h2 {
-      font-size: 2.5rem;
-      margin-bottom: 2rem;
-  }
-  .testimonial {
-      max-width: 600px;
-      margin: 0 auto 2rem;
-      font-style: italic;
-  }
-  .testimonial p {
-      font-size: 1.1rem;
-  }
-  .testimonial span {
-      display: block;
-      margin-top: 1rem;
-      font-weight: bold;
-  }
-</style>
+{% block title %}Home - Career Analytics{% endblock %}
+
+{% block custom_styles %}
+    body {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: #fff;
+    }
+    .hero {
+        padding: 6rem 2rem;
+        text-align: center;
+    }
+    .hero h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    .hero p {
+        font-size: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+    .hero .btn {
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+    }
+    .hero .btn:hover {
+        transform: translateY(-3px);
+    }
+    .hero .btn-warning:hover {
+        background-color: #e0a800;
+    }
+    .hero .btn-primary:hover {
+        background-color: #0056b3;
+    }
+    .hero .btn-success:hover {
+        background-color: #218838;
+    }
 {% endblock %}
+
 {% block content %}
-<section class="hero">
-    <h1>Discover Your Future Career</h1>
-    <p>Using AI-driven insights and career analytics, we help you find the perfect career path tailored to your skills, interests, and goals.</p>
-    <a href="/test" class="cta-button">Take the Career Test</a>
-</section>
-<section class="info-section">
-    <h2>Why Choose Career Analytics?</h2>
-    <p>Our platform leverages advanced AI algorithms to analyze your strengths, preferences, and market trends, providing you with personalized career recommendations. Whether you're a student exploring options or a professional considering a career change, we offer the tools and insights you need to make informed decisions.</p>
-</section>
-<section class="stats-section">
-    <div class="stat">
-        <h3>95%</h3>
-        <p>User Satisfaction Rate</p>
-    </div>
-    <div class="stat">
-        <h3>10,000+</h3>
-        <p>Successful Career Matches</p>
-    </div>
-    <div class="stat">
-        <h3>50+</h3>
-        <p>Industries Covered</p>
-    </div>
-</section>
-<section class="testimonials-section">
-    <h2>What Our Users Say</h2>
-    <div class="testimonial">
-        <p>"Career Analytics helped me discover a career path I never considered before. The insights were spot on, and I couldn't be happier with my new job!"</p>
-        <span>- Jane Doe, Marketing Manager</span>
-    </div>
-    <div class="testimonial">
-        <p>"The career test was incredibly accurate and easy to use. I highly recommend Career Analytics to anyone looking for career guidance."</p>
-        <span>- John Smith, Software Engineer</span>
-    </div>
-</section>
+    <section class="hero">
+        <h1>Discover Your Future Career</h1>
+        <p>Using AI-driven insights and career analytics, we help you find the perfect career path tailored to your skills, interests, and goals.</p>
+        <div class="d-flex flex-column flex-md-row gap-3 justify-content-center">
+            <a href="{{ url_for('test') }}" class="btn btn-warning">Take the Career Test</a>
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+            <a href="{{ url_for('register') }}" class="btn btn-success">Register</a>
+        </div>
+    </section>
 {% endblock %}

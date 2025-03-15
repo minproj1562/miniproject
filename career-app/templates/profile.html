@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Profile - Career Analytics{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1>Profile</h1>
+        <p>Username: {{ user.username }}</p>
+        <p>Email: {{ user.email }}</p>
+        <a href="{{ url_for('settings') }}" class="btn btn-primary">Edit Settings</a>
+    </div>
+{% endblock %}
