@@ -3,6 +3,10 @@
 
 {% block content %}
     <style>
+        :root {
+            --primary: #2a5298;
+            --secondary: #1e3c72;
+        }
         .degree-main {
             max-width: 1200px;
             margin: 2rem auto;
@@ -86,34 +90,19 @@
         <section class="content-section">
             <h2>Featured Degrees</h2>
             <div class="degree-list">
-                <div class="degree-item">
-                    <div class="degree-title">Bachelor of Science in Computer Science</div>
-                    <div class="degree-details">
-                        <p>University of Technology</p>
-                        <p>Duration: 4 years</p>
-                    </div>
-                </div>
-                <div class="degree-item">
-                    <div class="degree-title">Master of Business Administration</div>
-                    <div class="degree-details">
-                        <p>Global Business School</p>
-                        <p>Duration: 2 years</p>
-                    </div>
-                </div>
-                <div class="degree-item">
-                    <div class="degree-title">Bachelor of Arts in Psychology</div>
-                    <div class="degree-details">
-                        <p>Riverside University</p>
-                        <p>Duration: 3 years</p>
-                    </div>
-                </div>
-                <div class="degree-item">
-                    <div class="degree-title">Master of Science in Data Science</div>
-                    <div class="degree-details">
-                        <p>Tech Institute</p>
-                        <p>Duration: 1.5 years</p>
-                    </div>
-                </div>
+                {% if degrees %}
+                    {% for degree in degrees %}
+                        <div class="degree-item">
+                            <div class="degree-title">{{ degree.title|default('Unknown Degree') }}</div>
+                            <div class="degree-details">
+                                <p>{{ degree.institution|default('Unknown Institution') }}</p>
+                                <p>Duration: {{ degree.duration|default('N/A') }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No degrees available at the moment.</p>
+                {% endif %}
             </div>
         </section>
 
@@ -129,4 +118,4 @@
             <a href="#" class="cta-button">View Career Outlook</a>
         </section>
     </div>
-{% endblock %}                                                                                                                                                                     
+{% endblock %}

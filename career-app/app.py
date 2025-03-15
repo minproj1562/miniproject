@@ -442,7 +442,14 @@ def settings():
 @app.route('/degree')
 def degree():
     try:
-        return render_template('degree.html')
+        # Mock degree data (replace with database query later)
+        degrees = [
+            {'title': 'Bachelor of Science in Computer Science', 'institution': 'University of Technology', 'duration': '4 years'},
+            {'title': 'Master of Business Administration', 'institution': 'Global Business School', 'duration': '2 years'},
+            {'title': 'Bachelor of Arts in Psychology', 'institution': 'Riverside University', 'duration': '3 years'},
+            {'title': 'Master of Science in Data Science', 'institution': 'Tech Institute', 'duration': '1.5 years'}
+        ]
+        return render_template('degree.html', degrees=degrees)
     except Exception as e:
         flash(f"Error rendering degree page: {e}", 'danger')
         return render_template('500.html'), 500
