@@ -112,13 +112,33 @@ def dashboard():
         user = User.query.get(session['user_id'])
         aptitude_progress = user.assessments.get('aptitude', {}).get('progress', 0)
         personality_progress = user.assessments.get('personality', {}).get('progress', 0)
-        return render_template('results.html.jinja2',
-                               aptitude_progress=aptitude_progress,
-                               personality_progress=personality_progress)
+
+        # Mock data for dashboard (replace with actual database queries or calculations)
+        stats = {
+            'total_tests': 0,  # Replace with actual count
+            'avg_sample_score': 0,  # Replace with average
+            'avg_aptitude_score': aptitude_progress,
+            'total_time_spent': 0  # Replace with sum of time spent
+        }
+        test_results = []  # Replace with actual test history
+        sample_dates = []  # Replace with actual dates
+        sample_scores = []  # Replace with actual scores
+        aptitude_dates = []  # Replace with actual dates
+        aptitude_scores = []  # Replace with actual scores
+        date_range = request.args.get('date_range', 'all')
+
+        return render_template('dashboard.html',
+                              user=user,
+                              stats=stats,
+                              test_results=test_results,
+                              sample_dates=sample_dates,
+                              sample_scores=sample_scores,
+                              aptitude_dates=aptitude_dates,
+                              aptitude_scores=aptitude_scores,
+                              date_range=date_range)
     except Exception as e:
         flash(f"Error rendering dashboard: {e}", 'danger')
         return render_template('500.html'), 500
-
 ## Aptitude Test Route
 @app.route('/career-test/aptitude')
 @login_required
@@ -306,16 +326,22 @@ def career_test_results():
         if not user.assessments.get('aptitude', {}).get('scores') or not user.assessments.get('personality', {}).get('scores'):
             flash('Complete both tests to view results', 'warning')
             return redirect(url_for('career_test'))
-        
+
         aptitude = user.assessments['aptitude']['scores']
         personality = user.assessments['personality']['scores']
         aptitude_interpretation = interpret_scores(aptitude)
         personality_interpretation = interpret_scores(personality)
 
+        # Mock aptitude and personality sections/values (replace with actual data)
+        aptitude_sections = list(aptitude.keys())
+        aptitude_values = list(aptitude.values())
+        personality_traits = list(personality.keys())
+        personality_scores = [50 + ((score - 50) / 10) * 10 for score in personality.values()]  # Example T-score calculation
+
         career_matches = []
         for career, details in CAREER_MAPPING.items():
             apt_match = all(aptitude.get(skill, 0) >= threshold for skill, threshold in details['requirements']['aptitude'].items())
-            pers_match = all(personality.get(trait, 50) >= threshold if trait != 'N' else personality.get(trait, 50) <= threshold 
+            pers_match = all(personality.get(trait, 50) >= threshold if trait != 'N' else personality.get(trait, 50) <= threshold
                              for trait, threshold in details['requirements']['personality'].items())
             if apt_match and pers_match:
                 gaps = calculate_skill_gaps_for_career(aptitude, personality, details)
@@ -326,12 +352,15 @@ def career_test_results():
                     'skill_gaps': gaps
                 })
         career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-        return render_template('assessments/results.html.jinja2',
-                               career_matches=career_matches,
-                               aptitude=aptitude,
-                               personality=personality,
-                               aptitude_interpretation=aptitude_interpretation,
-                               personality_interpretation=personality_interpretation)
+
+        return render_template('career_results.html.jinja2',
+                              career_matches=career_matches,
+                              aptitude=aptitude,
+                              personality=personality,
+                              aptitude_sections=aptitude_sections,
+                              aptitude_values=aptitude_values,
+                              personality_traits=personality_traits,
+                              personality_scores=personality_scores)
     except Exception as e:
         flash(f"Error rendering career test results: {e}", 'danger')
         return render_template('500.html'), 500
