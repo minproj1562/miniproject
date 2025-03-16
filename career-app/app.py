@@ -20,6 +20,10 @@ app.config['MAIL_PASSWORD'] = 'your-app-password-here'  # REPLACE with your Gmai
 app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'  # REPLACE with your Gmail address
 
 db = SQLAlchemy(app)
+# Initialize database tables here instead of using before_first_request
+with app.app_context():
+    db.create_all()
+
 csrf = CSRFProtect(app)
 mail = Mail(app)
 login_manager = LoginManager()
@@ -333,18 +337,26 @@ def roadmap():
 @login_required
 def settings():
     if request.method == 'POST':
+        print("Form data received:", request.form)  # Debug output
+
         # Theme Toggle
         if 'theme' in request.form:
             theme = request.form['theme']
+            print(f"Updating theme to: {theme}")  # Debug output
             current_user.theme = theme
             db.session.commit()
             flash('Theme updated successfully!', 'success')
+            return redirect(url_for('settings'))
+
         # Animation Toggle
         elif 'animations' in request.form:
-            animations = request.form.get('animations') == 'on'
+            animations = request.form.get('animations') == 'on'  # Checkbox returns 'on' when checked
+            print(f"Updating animations to: {animations}")  # Debug output
             current_user.animations_enabled = animations
             db.session.commit()
             flash('Animation settings updated!', 'success')
+            return redirect(url_for('settings'))
+
         # Change Password
         elif 'current_password' in request.form:
             current_password = request.form['current_password']
@@ -360,11 +372,15 @@ def settings():
                 current_user.password = generate_password_hash(new_password)
                 db.session.commit()
                 flash('Password updated successfully!', 'success')
+            return redirect(url_for('settings'))
+
         # Reset Roadmap Progress
         elif 'reset_roadmap' in request.form:
-            current_user.tests = []  # Clear test results
+            TestResult.query.filter_by(user_id=current_user.id).delete()  # Clear test results using TestResult model
             db.session.commit()
             flash('Roadmap progress reset successfully!', 'success')
+            return redirect(url_for('settings'))
+
         # Delete Account
         elif 'delete_account' in request.form:
             db.session.delete(current_user)
@@ -372,6 +388,7 @@ def settings():
             logout_user()
             flash('Your account has been deleted.', 'info')
             return redirect(url_for('index'))
+
     return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
 
 @app.route('/favicon.ico')
@@ -386,5 +403,5 @@ def not_found(error):
 def internal_error(error):
     return render_template('500.html'), 500
 
-if __name__ == '_main_':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5001)  # Changed port to 5001 to avoid conflict

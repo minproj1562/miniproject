@@ -3,8 +3,28 @@
 
 {% block content %}
 <style>
+    /* Define theme-specific variables */
+    :root {
+        --container-bg: rgba(255, 255, 255, 0.1); /* Default for dark theme */
+        --text-color: #fff; /* Default for dark theme */
+        --divider-color: rgba(255, 255, 255, 0.2); /* Default for dark theme */
+        --flash-bg: rgba(255, 255, 255, 0.2); /* Default for dark theme */
+        --input-bg: rgba(255, 255, 255, 0.05); /* Default for dark theme */
+    }
+
+    /* Light theme adjustments */
+    {% if user.theme == 'light' %}
+    :root {
+        --container-bg: rgba(0, 0, 0, 0.7); /* Darker semi-transparent background for light theme */
+        --text-color: #333; /* Dark text for better contrast on light theme */
+        --divider-color: rgba(0, 0, 0, 0.3); /* Darker divider for light theme */
+        --flash-bg: rgba(0, 0, 0, 0.3); /* Darker flash message background for light theme */
+        --input-bg: rgba(0, 0, 0, 0.05); /* Slightly darker input background for light theme */
+    }
+    {% endif %}
+
     .settings-container {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--container-bg);
         backdrop-filter: blur(15px);
         border-radius: 20px;
         padding: 40px;
@@ -13,7 +33,7 @@
         margin: 4rem auto;
         box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
+        color: var(--text-color);
     }
     h2 {
         text-align: center;
@@ -45,8 +65,8 @@
         margin-bottom: 15px;
         border: 2px solid #00ffff;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
+        background: var(--input-bg);
+        color: var(--text-color);
         box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         transition: all 0.3s ease;
     }
@@ -82,11 +102,11 @@
         box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
     }
     .divider {
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        border-top: 1px solid var(--divider-color);
         margin: 20px 0;
     }
     .flash-message {
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--flash-bg);
         padding: 10px;
         border-radius: 5px;
         margin-bottom: 15px;
