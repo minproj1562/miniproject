@@ -1,23 +1,402 @@
 {% extends "base.html" %}
-{% block title %}Career Roadmap for Students{% endblock %}
-{% block extra_head %}
-<style>
-  /* Insert your existing roadmap.css content here */
-  h1 {
-      color: #1e3c72;
-      text-align: center;
-  }
-  /* ... Additional styles for roadmap ... */
-</style>
-{% endblock %}
+{% block title %}Career Roadmap{% endblock %}
 {% block content %}
-<main>
-    <h1>Career Roadmap for Students</h1>
-    <!-- Insert your existing roadmap code here -->
-</main>
-{% endblock %}
-{% block extra_scripts %}
-<script>
-  // Insert your existing roadmap JavaScript code here
-</script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            color: {% if session.user_id %}{% with user = get_user(session.user_id) %}{{ '#333' if user.theme == 'light' else '#fff' }}{% endwith %}{% else %}#fff{% endif %};
+        }
+        .roadmap-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            min-height: 80vh;
+            margin: 50px auto;
+            padding: 30px;
+            background: {% if session.user_id %}{% with user = get_user(session.user_id) %}{{ '#fff' if user.theme == 'light' else '#252f47' }}{% endwith %}{% else %}#252f47{% endif %};
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        .roadmap {
+            position: relative;
+            height: 100%;
+        }
+        .path {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .track {
+            position: absolute;
+            height: 4px;
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            z-index: 1;
+            transform-origin: left center;
+            {% if animations_enabled %}
+            animation: track-glow 2s infinite alternate, track-slide 4s infinite linear;
+            {% endif %}
+        }
+        .milestone {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: #3498db;
+            border: 3px solid #3498db;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.7), 0 0 25px rgba(52, 152, 219, 0.3);
+            {% if animations_enabled %}
+            animation: float 3s infinite ease-in-out;
+            {% endif %}
+        }
+        .milestone:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 20px rgba(52, 152, 219, 1), 0 0 30px rgba(52, 152, 219, 0.5);
+        }
+        .milestone.completed {
+            background: #2980b9;
+            border-color: #2980b9;
+            box-shadow: 0 0 15px rgba(41, 128, 185, 0.7), 0 0 25px rgba(41, 128, 185, 0.3);
+            {% if animations_enabled %}
+            animation: pulse 2s infinite;
+            {% endif %}
+        }
+        .milestone i {
+            font-size: 40px;
+            color: #fff;
+        }
+        .milestone.completed i {
+            color: #fff;
+        }
+        .milestone-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .milestone:hover .milestone-tooltip {
+            opacity: 1;
+        }
+        .destination {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 3;
+            {% if animations_enabled %}
+            animation: fadeIn 2s ease-in-out;
+            {% endif %}
+        }
+        .progress-text {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2em;
+            color: #ff00ff;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+            z-index: 3;
+            {% if animations_enabled %}
+            animation: bounce 1.5s infinite;
+            {% endif %}
+        }
+        .badge-container {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            display: flex;
+            gap: 5px;
+        }
+        .badge {
+            background: #e74c3c;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+            {% if animations_enabled %}
+            animation: glow 2s infinite alternate;
+            {% endif %}
+        }
+        @keyframes track-glow {
+            from { box-shadow: 0 0 5px #6a11cb; }
+            to { box-shadow: 0 0 20px #6a11cb; }
+        }
+        @keyframes track-slide {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100%); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(231, 76, 60, 0.8); }
+            to { box-shadow: 0 0 20px rgba(231, 76, 60, 1); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1001;
+        }
+        .modal.show {
+            display: block;
+        }
+        .modal-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+        }
+        .modal-content {
+            background: white;
+            color: #333;
+            border: 2px solid #6a11cb;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .modal-title {
+            font-size: 28px;
+            color: #6a11cb;
+            font-weight: bold;
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6a11cb;
+            cursor: pointer;
+            transition: color 0.3s, transform 0.3s;
+        }
+        .btn-close:hover {
+            color: #2575fc;
+            transform: scale(1.2);
+        }
+        .achievement-list {
+            list-style: none;
+            padding: 0;
+        }
+        .achievement-item {
+            background: rgba(106, 17, 203, 0.1);
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            color: #2a5298;
+            transition: background 0.3s;
+        }
+        .achievement-item:hover {
+            background: rgba(106, 17, 203, 0.2);
+        }
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border: 2px solid #6a11cb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .back-button:hover {
+            background: #6a11cb;
+            color: white;
+            transform: scale(1.1);
+        }
+        .back-button i {
+            font-size: 24px;
+            color: #6a11cb;
+        }
+        .back-button:hover i {
+            color: white;
+        }
+        .map-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            z-index: -1;
+        }
+    </style>
+
+    <!-- Back Button -->
+    <div class="back-button" onclick="window.location.href='{{ url_for('dashboard') }}'">
+        <i>←</i>
+    </div>
+
+    <!-- Roadmap Container -->
+    <div class="roadmap-container">
+        <div class="map-background"></div>
+        <div class="roadmap">
+            <!-- Curved path using SVG -->
+            <svg class="path" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                <path id="road-path" d="M 100 400 Q 300 200 500 400 Q 700 600 900 400" 
+                      fill="none" stroke="rgba(106, 17, 203, 0.3)" stroke-width="4"/>
+            </svg>
+
+            <!-- Milestones with tooltips -->
+            <div class="milestone {% if milestones_completed >= 1 %}completed{% endif %}" data-step="1" style="left: 10%; top: 75%">
+                <i>🎓</i>
+                <div class="milestone-tooltip">Education</div>
+                <div class="badge-container">
+                    <div class="badge">3 Courses</div>
+                </div>
+            </div>
+            <div class="milestone {% if milestones_completed >= 2 %}completed{% endif %}" data-step="2" style="left: 30%; top: 45%">
+                <i>💻</i>
+                <div class="milestone-tooltip">Projects</div>
+                <div class="badge-container">
+                    <div class="badge">5 Projects</div>
+                </div>
+            </div>
+            <div class="milestone {% if milestones_completed >= 3 %}completed{% endif %}" data-step="3" style="left: 50%; top: 75%">
+                <i>🏆</i>
+                <div class="milestone-tooltip">Achievements</div>
+                <div class="badge-container">
+                    <div class="badge">2 Awards</div>
+                </div>
+            </div>
+            <div class="milestone {% if milestones_completed >= 4 %}completed{% endif %}" data-step="4" style="left: 70%; top: 45%">
+                <i>💼</i>
+                <div class="milestone-tooltip">Experience</div>
+                <div class="badge-container">
+                    <div class="badge">1 Job</div>
+                </div>
+            </div>
+        </div>
+        <div class="destination">{{ destination | default('Junior Developer') }}</div>
+        <div class="progress-text">Progress: {{ (milestones_completed * 25) }}% Complete</div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="milestoneModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Milestone Details</h5>
+                    <button type="button" class="btn-close" onclick="document.getElementById('milestoneModal').classList.remove('show')">×</button>
+                </div>
+                <div class="modal-body">
+                    <ul class="achievement-list" id="achievementList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const milestonesData = {
+            1: {
+                title: "Education",
+                achievements: [
+                    "Completed CS50 Introduction to Computer Science",
+                    "Finished Full Stack Web Development Bootcamp",
+                    "Completed Algorithms Specialization"
+                ]
+            },
+            2: {
+                title: "Projects",
+                achievements: [
+                    "E-commerce Platform (React/Node.js)",
+                    "Machine Learning Model for Stock Prediction",
+                    "Mobile Fitness Tracking App"
+                ]
+            },
+            3: {
+                title: "Achievements",
+                achievements: [
+                    "1st Place in Hackathon 2023",
+                    "Best Capstone Project Award",
+                    "Top Contributor Open Source Project"
+                ]
+            },
+            4: {
+                title: "Experience",
+                achievements: [
+                    "Junior Developer at Tech Corp",
+                    "Lead Developer for Startup Project",
+                    "Freelance Client Projects"
+                ]
+            }
+        };
+
+        document.querySelectorAll('.milestone').forEach(milestone => {
+            milestone.addEventListener('click', () => {
+                const step = milestone.dataset.step;
+                const data = milestonesData[step];
+                const modal = new bootstrap.Modal(document.getElementById('milestoneModal'));
+                
+                document.querySelector('.modal-title').textContent = data.title;
+                const list = document.getElementById('achievementList');
+                list.innerHTML = data.achievements
+                    .map(achievement => `<li class="achievement-item">${achievement}</li>`)
+                    .join('');
+                
+                modal.show();
+            });
+        });
+
+        const milestonesCompleted = {{ milestones_completed | tojson }};
+        console.log("Milestones completed:", milestonesCompleted);
+    </script>
 {% endblock %}

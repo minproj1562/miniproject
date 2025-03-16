@@ -1,10 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Student Portal - Career Analytics{% endblock %}
-
+{% block title %}Student Portal{% endblock %}
 {% block content %}
-    <div class="container mt-5">
+    <style>
+        body {
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
+        .student-portal {
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        p {
+            font-size: 1.2rem;
+            margin-top: 20px;
+        }
+    </style>
+    <div class="student-portal">
         <h1>Student Portal</h1>
-        <p>Welcome to your student portal!</p>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        <p>Welcome to your personal hub, {{ user.username }}! Explore resources and track your progress here.</p>
     </div>
 {% endblock %}

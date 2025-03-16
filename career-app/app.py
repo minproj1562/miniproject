@@ -159,7 +159,7 @@ def career_test_aptitude():
         return render_template('500.html'), 500
 
 ## Personality Test Route
-@app.route('/career-test/personality')
+@app.route('/personality')
 @login_required
 def career_test_personality():
     try:
@@ -353,7 +353,7 @@ def career_test_results():
                 })
         career_matches.sort(key=lambda x: x['match_score'], reverse=True)
 
-        return render_template('career_results.html.jinja2',
+        return render_template('results.html.jinja2',
                               career_matches=career_matches,
                               aptitude=aptitude,
                               personality=personality,

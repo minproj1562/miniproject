@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Test Results - Career Analytics{% endblock %}
+{% block title %}Test Results{% endblock %}
 
 {% block content %}
     <style>
@@ -12,49 +12,24 @@
             min-height: 100vh;
         }
         .results-container {
-            max-width: 900px;
+            max-width: 700px;
             margin: 4rem auto;
             padding: 2rem;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
         .results-container h1 {
             font-size: 2.5rem;
             font-weight: 700;
             color: #1e3c72;
             margin-bottom: 2rem;
-            text-align: center;
         }
-        .card {
-            margin-bottom: 1.5rem;
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .card-header {
-            border-radius: 15px 15px 0 0;
-        }
-        .card-body canvas {
-            max-height: 300px;
-        }
-        .career-card {
-            background: #fff;
-            padding: 1rem;
-            border-radius: 10px;
+        .results-container p {
+            font-size: 1.2rem;
+            color: #333;
             margin-bottom: 1rem;
-        }
-        .career-card h4 {
-            font-size: 1.5rem;
-            color: #1e3c72;
-            margin-bottom: 0.5rem;
-        }
-        .badge {
-            margin-left: 1rem;
-        }
-        .list-group-item {
-            background: #f8f9fa;
-            border: none;
         }
         .btn-back {
             padding: 0.75rem 1.5rem;
@@ -74,133 +49,13 @@
             background-color: #1e3c72;
             transform: translateY(-3px);
         }
-        .alert {
-            margin-top: 1rem;
-        }
     </style>
 
     <div class="results-container">
-        <h1>Career Match Results</h1>
-
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h3>Aptitude Scores</h3>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="aptitudeRadar"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-info text-white">
-                        <h3>Personality Profile</h3>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="personalityChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow mt-4">
-            <div class="card-header bg-success text-white">
-                <h3>Recommended Careers</h3>
-            </div>
-            <div class="card-body">
-                {% if career_matches %}
-                    {% for career in career_matches %}
-                    <div class="career-card">
-                        <h4>{{ career.name }} 
-                            <span class="badge bg-primary">{{ career.match_score|round(2) }}% Match</span>
-                        </h4>
-                        <p>{{ career.details.get('description', 'No description available') }}</p>
-                        <div class="skill-gaps mt-3">
-                            <h5>Development Areas:</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>Aptitude Skills:</h6>
-                                    <ul class="list-group">
-                                        {% for skill, gap in career.skill_gaps.aptitude.items() %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            {{ skill }}
-                                            <span class="badge bg-danger">{{ gap|round(2) }} points</span>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>Personality Traits:</h6>
-                                    <ul class="list-group">
-                                        {% for trait, gap in career.skill_gaps.personality.items() %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            {{ TRAIT_DEFINITIONS.get(trait, trait) }}
-                                            <span class="badge bg-warning">{{ gap|round(2) }}%</span>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="development-path mt-3">
-                            <h5>Learning Path:</h5>
-                            <div class="list-group">
-                                {% for course in career.details.get('development_path', []) %}
-                                <a href="#" class="list-group-item list-group-item-action">
-                                    {{ course }}
-                                </a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-warning">
-                        No career matches found. Complete both assessments first.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <a href="{{ url_for('career_test') }}" class="btn-back">Back to Tests</a>
+        <h1>Aptitude Test Results</h1>
+        <p>Your Score: {{ score_data.score|round(2) }}%</p>
+        <p>Correct Answers: {{ score_data.correct }} out of {{ score_data.total }}</p>
+        <p>Time Spent: {{ score_data.time_spent }} seconds</p>
+        <a href="{{ url_for('test') }}" class="btn-back">Back to Tests</a>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Radar Chart for Aptitude
-        new Chart(document.getElementById('aptitudeRadar'), {
-            type: 'radar',
-            data: {
-                labels: {{ aptitude_sections|tojson|safe }},
-                datasets: [{
-                    label: 'Your Scores',
-                    data: {{ aptitude_values|tojson|safe }},
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                    borderColor: '#2563eb',
-                    pointBackgroundColor: '#2563eb'
-                }]
-            },
-            options: {
-                scales: { r: { beginAtZero: true, max: 100 } }
-            }
-        });
-
-        // Bar Chart for Personality
-        new Chart(document.getElementById('personalityChart'), {
-            type: 'bar',
-            data: {
-                labels: {{ personality_traits|tojson|safe }},
-                datasets: [{
-                    label: 'T-Scores',
-                    data: {{ personality_scores|tojson|safe }},
-                    backgroundColor: '#1d4ed8'
-                }]
-            },
-            options: {
-                scales: { y: { beginAtZero: true, max: 100 } }
-            }
-        });
-    </script>
 {% endblock %}
