@@ -3,7 +3,7 @@
 {% block content %}
     <style>
         body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #1e3c72, #2a5298); /* Darker, professional gradient */
             min-height: 100vh;
             margin: 0;
             font-family: 'Poppins', sans-serif;
@@ -38,9 +38,9 @@
         {% for degree in degrees %}
             <div class="degree-card">
                 <h3>{{ degree.title }}</h3>
-                <p><strong>Institution:</strong> {{ degree.institution }}</p>
+                <p><strong>University:</strong> {{ degree.university }}</p>
                 <p><strong>Duration:</strong> {{ degree.duration }}</p>
-                <p>{{ degree.description | default('No description available.') }}</p>
+                <p>{{ degree.description }}</p>
             </div>
         {% endfor %}
     </div>

@@ -36,7 +36,9 @@
             background: linear-gradient(90deg, #6a11cb, #2575fc);
             z-index: 1;
             transform-origin: left center;
+            {% if animations_enabled %}
             animation: track-glow 2s infinite alternate, track-slide 4s infinite linear;
+            {% endif %}
         }
         .milestone {
             position: absolute;
@@ -52,7 +54,9 @@
             transition: all 0.3s ease;
             z-index: 2;
             box-shadow: 0 0 15px rgba(52, 152, 219, 0.7), 0 0 25px rgba(52, 152, 219, 0.3);
+            {% if animations_enabled %}
             animation: float 3s infinite ease-in-out;
+            {% endif %}
         }
         .milestone:hover {
             transform: scale(1.1) rotate(5deg);
@@ -62,7 +66,9 @@
             background: #2980b9;
             border-color: #2980b9;
             box-shadow: 0 0 15px rgba(41, 128, 185, 0.7), 0 0 25px rgba(41, 128, 185, 0.3);
+            {% if animations_enabled %}
             animation: pulse 2s infinite;
+            {% endif %}
         }
         .milestone i {
             font-size: 40px;
@@ -103,7 +109,9 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             z-index: 3;
+            {% if animations_enabled %}
             animation: fadeIn 2s ease-in-out;
+            {% endif %}
         }
         .progress-text {
             position: absolute;
@@ -114,7 +122,9 @@
             color: #ff00ff;
             text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
             z-index: 3;
+            {% if animations_enabled %}
             animation: bounce 1.5s infinite;
+            {% endif %}
         }
         .badge-container {
             position: absolute;
@@ -130,7 +140,9 @@
             font-size: 0.8em;
             color: #fff;
             box-shadow: 0 0 10px rgba(231, 76, 60, 0.8), 0 0 20px rgba(231, 76, 60, 0.5);
+            {% if animations_enabled %}
             animation: glow 2s infinite alternate;
+            {% endif %}
         }
         @keyframes track-glow {
             from { box-shadow: 0 0 5px #6a11cb; }
@@ -267,41 +279,45 @@
         }
     </style>
 
+    <!-- Back Button -->
     <div class="back-button" onclick="window.location.href='{{ url_for('dashboard') }}'">
-        <i class="fas fa-arrow-left"></i>
+        <i>←</i>
     </div>
 
+    <!-- Roadmap Container -->
     <div class="roadmap-container">
         <div class="map-background"></div>
         <div class="roadmap">
+            <!-- Curved path using SVG -->
             <svg class="path" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
                 <path id="road-path" d="M 100 400 Q 300 200 500 400 Q 700 600 900 400" 
                       fill="none" stroke="rgba(106, 17, 203, 0.3)" stroke-width="4"/>
             </svg>
 
+            <!-- Milestones with tooltips -->
             <div class="milestone {% if milestones_completed >= 1 %}completed{% endif %}" data-step="1" style="left: 10%; top: 75%">
-                <i class="fas fa-graduation-cap"></i>
+                <i>🎓</i>
                 <div class="milestone-tooltip">Education</div>
                 <div class="badge-container">
                     <div class="badge">3 Courses</div>
                 </div>
             </div>
             <div class="milestone {% if milestones_completed >= 2 %}completed{% endif %}" data-step="2" style="left: 30%; top: 45%">
-                <i class="fas fa-laptop-code"></i>
+                <i>💻</i>
                 <div class="milestone-tooltip">Projects</div>
                 <div class="badge-container">
                     <div class="badge">5 Projects</div>
                 </div>
             </div>
             <div class="milestone {% if milestones_completed >= 3 %}completed{% endif %}" data-step="3" style="left: 50%; top: 75%">
-                <i class="fas fa-trophy"></i>
+                <i>🏆</i>
                 <div class="milestone-tooltip">Achievements</div>
                 <div class="badge-container">
                     <div class="badge">2 Awards</div>
                 </div>
             </div>
             <div class="milestone {% if milestones_completed >= 4 %}completed{% endif %}" data-step="4" style="left: 70%; top: 45%">
-                <i class="fas fa-briefcase"></i>
+                <i>💼</i>
                 <div class="milestone-tooltip">Experience</div>
                 <div class="badge-container">
                     <div class="badge">1 Job</div>
@@ -312,6 +328,7 @@
         <div class="progress-text">Progress: {{ (milestones_completed * 25) }}% Complete</div>
     </div>
 
+    <!-- Modal -->
     <div class="modal" id="milestoneModal">
         <div class="modal-dialog">
             <div class="modal-content">
