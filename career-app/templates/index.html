@@ -1,52 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Home - Career Analytics{% endblock %}
-
-{% block custom_styles %}
-    body {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        color: #fff;
-    }
-    .hero {
-        padding: 6rem 2rem;
-        text-align: center;
-    }
-    .hero h1 {
-        font-size: 3rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-    }
-    .hero p {
-        font-size: 1.25rem;
-        margin-bottom: 2.5rem;
-    }
-    .hero .btn {
-        padding: 0.75rem 2rem;
-        font-size: 1.1rem;
-        border-radius: 50px;
-        transition: all 0.3s ease;
-    }
-    .hero .btn:hover {
-        transform: translateY(-3px);
-    }
-    .hero .btn-warning:hover {
-        background-color: #e0a800;
-    }
-    .hero .btn-primary:hover {
-        background-color: #0056b3;
-    }
-    .hero .btn-success:hover {
-        background-color: #218838;
-    }
-{% endblock %}
-
+{% block title %}Career Analytics - Home{% endblock %}
 {% block content %}
-    <section class="hero">
-        <h1>Discover Your Future Career</h1>
-        <p>Using AI-driven insights and career analytics, we help you find the perfect career path tailored to your skills, interests, and goals.</p>
-        <div class="d-flex flex-column flex-md-row gap-3 justify-content-center">
-            <a href="{{ url_for('test') }}" class="btn btn-warning">Take the Career Test</a>
-            <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
-            <a href="{{ url_for('register') }}" class="btn btn-success">Register</a>
-        </div>
-    </section>
+    <style>
+        body {
+            background: linear-gradient(135deg, #4facfe, #8e2de2);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .hero {
+            padding: 100px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-in;
+        }
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.5rem;
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .btn-test {
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            background: #fff;
+            color: #8e2de2;
+            border: none;
+            border-radius: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-test:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            color: #4facfe;
+        }
+        .bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+            animation: pulse 10s infinite;
+            z-index: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.2; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+    </style>
+    <div class="bg-overlay"></div>
+    <div class="hero">
+        <h1>Discover Your Career Path</h1>
+        <p>Unleash your potential with our interactive tools and personalized career insights.</p>
+        <a href="{{ url_for('test', type='sample') }}" class="btn-test">Take a Sample Career Test</a>
+    </div>
 {% endblock %}

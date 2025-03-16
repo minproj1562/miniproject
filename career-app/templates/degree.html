@@ -1,121 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Degree Portal - Career Analytics{% endblock %}
-
+{% block title %}Degrees{% endblock %}
 {% block content %}
     <style>
-        :root {
-            --primary: #2a5298;
-            --secondary: #1e3c72;
-        }
-        .degree-main {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 2rem;
-        }
-        .degree-main h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
             color: #fff;
-            margin-bottom: 1rem;
+        }
+        .degree-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
             text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
         }
-        .content-section {
-            background-color: rgba(255, 255, 255, 0.95);
+        .degree-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            margin-bottom: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            transition: transform 0.3s;
         }
-        .content-section h2 {
-            color: var(--primary);
-            margin-top: 0;
-            font-size: 1.75rem;
-            font-weight: 600;
-        }
-        .content-section p {
-            font-size: 1.15rem;
-            color: #333;
-            line-height: 1.6;
-        }
-        .cta-button {
-            display: inline-block;
-            background-color: var(--primary);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            margin-top: 1rem;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        .cta-button:hover {
-            background-color: var(--secondary);
-            transform: translateY(-3px);
-        }
-        .degree-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-        .degree-item {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 1rem;
-            transition: transform 0.3s ease;
-        }
-        .degree-item:hover {
-            transform: translateY(-5px);
-        }
-        .degree-title {
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-        .degree-details {
-            font-size: 0.9rem;
-            color: #4a5568;
+        .degree-card:hover {
+            transform: scale(1.02);
         }
     </style>
-
-    <div class="degree-main">
+    <div class="degree-container">
         <h1>Explore Degrees</h1>
-        
-        <section class="content-section">
-            <h2>Find Your Perfect Degree</h2>
-            <p>Discover degree programs that align with your career goals and interests. Use our advanced search to filter by field of study, degree level, and more.</p>
-            <a href="#" class="cta-button">Advanced Search</a>
-        </section>
-
-        <section class="content-section">
-            <h2>Featured Degrees</h2>
-            <div class="degree-list">
-                {% if degrees %}
-                    {% for degree in degrees %}
-                        <div class="degree-item">
-                            <div class="degree-title">{{ degree.title|default('Unknown Degree') }}</div>
-                            <div class="degree-details">
-                                <p>{{ degree.institution|default('Unknown Institution') }}</p>
-                                <p>Duration: {{ degree.duration|default('N/A') }}</p>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No degrees available at the moment.</p>
-                {% endif %}
+        {% for degree in degrees %}
+            <div class="degree-card">
+                <h3>{{ degree.title }}</h3>
+                <p><strong>Institution:</strong> {{ degree.institution }}</p>
+                <p><strong>Duration:</strong> {{ degree.duration }}</p>
+                <p>{{ degree.description | default('No description available.') }}</p>
             </div>
-        </section>
-
-        <section class="content-section">
-            <h2>Degree Comparison Tool</h2>
-            <p>Compare different degree programs side by side to make an informed decision about your education.</p>
-            <a href="#" class="cta-button">Compare Degrees</a>
-        </section>
-
-        <section class="content-section">
-            <h2>Career Outlook</h2>
-            <p>Explore potential career paths and job prospects associated with different degree programs.</p>
-            <a href="#" class="cta-button">View Career Outlook</a>
-        </section>
+        {% endfor %}
     </div>
 {% endblock %}

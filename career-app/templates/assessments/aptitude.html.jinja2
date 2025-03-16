@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Career Aptitude Assessment{% endblock %}
+{% block title %}Aptitude Test{% endblock %}
 
 {% block content %}
     <style>
@@ -119,20 +119,12 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
         }
-        .option-card {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .form-check-input {
+            margin-right: 0.5rem;
+        }
+        .form-check-label {
+            font-size: 1rem;
             color: #333;
-        }
-        .option-card:hover {
-            background: #e9ecef;
-        }
-        .option-card.selected {
-            background: #d4edda;
-            border: 2px solid #28a745;
         }
         .assessment-controls {
             display: flex;
@@ -153,180 +145,163 @@
             background: #1e3c72;
             transform: translateY(-3px);
         }
-        .d-none {
-            display: none;
-        }
     </style>
 
     <div class="assessment-container">
-        <!-- Progress Bar -->
         <div class="progress-container">
-            <div class="progress-bar" style="width: 0%"></div>
+            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
         </div>
 
-        <!-- Timer -->
         <div class="timer-alert" id="timer">
             <i class="bi bi-clock"></i>
-            Time Left: <span id="time-left">00:00</span>
+            Time Left: <span id="time-left">{{ initial_time }}</span>
         </div>
 
-        <!-- Question Counter -->
         <div class="question-counter" id="question-counter">
             Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
         </div>
 
-        <!-- Category Navigation -->
-        <div class="category-nav mb-4">
-            {% for category in categories %}
-            <button class="category-btn {% if loop.first %}active{% endif %}" 
-                    data-category="{{ category }}">
-                {{ category }}
-            </button>
-            {% endfor %}
-        </div>
+        <form id="aptitude-form" action="{{ url_for('submit_assessment') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="type" value="aptitude">
+            <input type="hidden" name="time_spent" id="time-spent" value="0">
 
-        <!-- Questions Container -->
-        <div class="questions-wrapper">
-            {% for category, levels in questions.items() %}
-            <div class="category-section {% if not loop.first %}d-none{% endif %}" 
-                 id="category-{{ category }}">
-                <h2 class="category-title">{{ category }}</h2>
-                
-                <div class="questions-grid">
-                    {% for level, question_list in levels.items() %}
-                    <div class="difficulty-level">
-                        <h3 class="difficulty-title">{{ level|title }}</h3>
-                        
-                        {% for question in question_list %}
-                        <div class="question-card" data-question-id="{{ question.id }}">
-                            <div class="question-header">
-                                <span class="category-badge">{{ category }}</span>
-                                <span class="time-limit">⏱ {{ question.time_limit }}s</span>
-                            </div>
+            <div class="category-nav mb-4">
+                {% for category in ['Mathematics', 'Logical Reasoning', 'Verbal Ability'] %}
+                <button type="button" class="category-btn {% if current_category == category %}active{% endif %}" 
+                        data-category="{{ category }}">
+                    {{ category }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="questions-wrapper">
+                {% for category, levels in questions.items() %}
+                <div class="category-section {% if current_category != category %}d-none{% endif %}" 
+                     id="category-{{ category }}">
+                    <h2 class="category-title">{{ category }}</h2>
+                    
+                    <div class="questions-grid">
+                        {% for level, question_list in levels.items() %}
+                        <div class="difficulty-level">
+                            <h3 class="difficulty-title">{{ level|title }}</h3>
                             
-                            <h3 class="question-text">{{ question.text }}</h3>
-                            
-                            <div class="options-grid">
-                                {% for option in question.options %}
-                                <div class="option-card" 
-                                     data-question-id="{{ question.id }}"
-                                     data-option-index="{{ loop.index0 }}">
-                                    {{ option }}
+                            {% for question in question_list %}
+                            <div class="question-card">
+                                <div class="question-header">
+                                    <span class="category-badge">{{ category }}</span>
+                                    <span class="time-limit">⏱ {{ question.time_limit }}s</span>
                                 </div>
-                                {% endfor %}
+                                
+                                <h3 class="question-text">{{ question.text }}</h3>
+                                
+                                <div class="options-grid">
+                                    {% for option in question.options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" 
+                                               name="{{ question.id }}" 
+                                               value="{{ loop.index0 }}" 
+                                               id="{{ question.id }}-{{ loop.index0 }}"
+                                               data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
+                                               required>
+                                        <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
+                                            {{ option }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
+                            {% endfor %}
                         </div>
                         {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
 
-        <!-- Controls -->
-        <div class="assessment-controls">
-            <button class="nav-btn prev-category">← Previous Section</button>
-            <button class="submit-btn">Submit Assessment</button>
-            <button class="nav-btn next-category">Next Section →</button>
-        </div>
+            <div class="assessment-controls">
+                <button type="button" class="nav-btn prev-category">← Previous Section</button>
+                <button type="submit" class="submit-btn">Submit Assessment</button>
+                <button type="button" class="nav-btn next-category">Next Section →</button>
+            </div>
+        </form>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const timerElement = document.getElementById('time-left');
-            const answeredCountElement = document.getElementById('answered-count');
-            const progressBar = document.querySelector('.progress-bar');
-            let timeLeft = {{ initial_time }};
-            let answeredCount = 0;
-            const totalQuestions = {{ total_questions }};
-
-            // Timer logic
-            const timerInterval = setInterval(() => {
-                timeLeft--;
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    submitAssessment();
-                }
-            }, 1000);
-
-            // Option selection
-            document.querySelectorAll('.option-card').forEach(option => {
-                option.addEventListener('click', function() {
-                    const questionId = this.dataset.questionId;
-                    const alreadyAnswered = document.querySelector(`.option-card[data-question-id="${questionId}"].selected`);
-                    if (!alreadyAnswered) {
-                        answeredCount++;
-                        answeredCountElement.textContent = answeredCount;
-                        progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-                    }
-                    document.querySelectorAll(`.option-card[data-question-id="${questionId}"]`)
-                        .forEach(opt => opt.classList.remove('selected'));
-                    this.classList.add('selected');
-                });
-            });
-
-            // Category navigation
-            let currentCategoryIndex = 0;
-            const categories = Array.from(document.querySelectorAll('.category-section'));
+    document.addEventListener('DOMContentLoaded', () => {
+        const timerElement = document.getElementById('time-left');
+        const answeredCountElement = document.getElementById('answered-count');
+        const progressBar = document.getElementById('progress-bar');
+        const form = document.getElementById('aptitude-form');
+        const timeSpentInput = document.getElementById('time-spent');
+        let timeLeft = {{ initial_time }};
+        let answeredCount = 0;
+        const totalQuestions = {{ total_questions }};
+        
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             
-            document.querySelector('.next-category').addEventListener('click', () => {
-                if (currentCategoryIndex < categories.length - 1) {
-                    categories[currentCategoryIndex].classList.add('d-none');
-                    currentCategoryIndex++;
-                    categories[currentCategoryIndex].classList.remove('d-none');
-                }
-            });
-            
-            document.querySelector('.prev-category').addEventListener('click', () => {
-                if (currentCategoryIndex > 0) {
-                    categories[currentCategoryIndex].classList.add('d-none');
-                    currentCategoryIndex--;
-                    categories[currentCategoryIndex].classList.remove('d-none');
-                }
-            });
-
-            // Submission logic
-            async function submitAssessment() {
-                const responses = [];
-                
-                document.querySelectorAll('.option-card.selected').forEach(option => {
-                    const questionId = option.dataset.questionId;
-                    const optionIndex = option.dataset.optionIndex;
-                    responses.push({
-                        id: questionId,
-                        selected: parseInt(optionIndex)
-                    });
-                });
-
-                try {
-                    const response = await fetch("{{ url_for('submit_assessment') }}", {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            type: 'aptitude',
-                            responses: responses,
-                            time_spent: {{ initial_time }} - timeLeft
-                        })
-                    });
-
-                    if (response.ok) {
-                        window.location.href = "{{ url_for('career_test_results') }}";
-                    } else {
-                        console.error('Submission failed:', response.statusText);
-                    }
-                } catch (error) {
-                    console.error('Submission error:', error);
-                }
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                form.submit();
             }
+        }, 1000);
 
-            document.querySelector('.submit-btn').addEventListener('click', submitAssessment);
+        document.querySelectorAll('.form-check-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionId = this.name;
+                const alreadyAnswered = document.querySelector(`input[name="${questionId}"]:checked`);
+                if (!alreadyAnswered || document.querySelectorAll(`input[name="${questionId}"]:checked`).length === 1) {
+                    answeredCount++;
+                    answeredCountElement.textContent = answeredCount;
+                    progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+                }
+            });
         });
+
+        let currentCategoryIndex = 0;
+        const categories = Array.from(document.querySelectorAll('.category-section'));
+        
+        document.querySelector('.next-category').addEventListener('click', () => {
+            if (currentCategoryIndex < categories.length - 1) {
+                categories[currentCategoryIndex].classList.add('d-none');
+                currentCategoryIndex++;
+                categories[currentCategoryIndex].classList.remove('d-none');
+            }
+        });
+        
+        document.querySelector('.prev-category').addEventListener('click', () => {
+            if (currentCategoryIndex > 0) {
+                categories[currentCategoryIndex].classList.add('d-none');
+                currentCategoryIndex--;
+                categories[currentCategoryIndex].classList.remove('d-none');
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            timeSpentInput.value = {{ initial_time }} - timeLeft;
+            const data = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: data,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'  // Ensure CSRF token is sent with AJAX
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+            e.preventDefault();
+        });
+    });
     </script>
 {% endblock %}

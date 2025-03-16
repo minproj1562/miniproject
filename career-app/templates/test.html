@@ -1,10 +1,47 @@
 {% extends "base.html" %}
-{% block title %}Test - Career Analytics{% endblock %}
-
+{% block title %}Career Test{% endblock %}
 {% block content %}
-    <div class="container mt-5">
-        <h1>Test Page</h1>
-        <p>This is a placeholder test page.</p>
-        <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
+    <style>
+        body {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
+        .test-container {
+            padding: 50px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .test-options {
+            margin-top: 30px;
+        }
+        .btn-test {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #11998e;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: background 0.3s, color 0.3s;
+        }
+        .btn-test:hover {
+            background: #38ef7d;
+            color: #fff;
+        }
+    </style>
+    <div class="test-container">
+        <h1>Choose Your Career Test</h1>
+        <div class="test-options">
+            <a href="{{ url_for('test', type='sample') }}" class="btn-test">Sample Test (No Login Required)</a>
+            <a href="{{ url_for('test', type='aptitude') }}" class="btn-test">Aptitude Test</a>
+        </div>
     </div>
 {% endblock %}

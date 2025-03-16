@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+    <style>
+        .about-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, #d4a5ffee, #ff9a9eee);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1e3c72;
+            font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        p {
+            line-height: 1.8;
+            color: #2a5298;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+    </style>
+    <div class="about-container">
+        <h1>About Us</h1>
+        <p>Welcome to Career Analytics! We are passionate about empowering individuals to unlock their career potential through innovative tools and personalized insights. Our platform combines cutting-edge assessments with a user-friendly experience.</p>
+        <p>Our mission is to guide you—whether you're a student, professional, or career explorer—toward a fulfilling path with data-driven recommendations and a touch of inspiration.</p>
+    </div>
+{% endblock %}

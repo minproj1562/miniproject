@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}FAQ{% endblock %}
+{% block content %}
+    <style>
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, #ffe29fee, #ffa99eee);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1e3c72;
+            font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .faq-item {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        .faq-question {
+            font-weight: 600;
+            color: #2a5298;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .faq-answer {
+            color: #4a6278;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+    </style>
+    <div class="faq-container">
+        <h1>Frequently Asked Questions</h1>
+        <div class="faq-item">
+            <div class="faq-question">What is Career Analytics?</div>
+            <div class="faq-answer">A platform to assess your skills and explore career paths with tailored insights.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">How do I get started?</div>
+            <div class="faq-answer">Register, log in, and take a test to kickstart your career journey.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">Is it free?</div>
+            <div class="faq-answer">Yes, core features are free, with premium options coming soon.</div>
+        </div>
+    </div>
+{% endblock %}

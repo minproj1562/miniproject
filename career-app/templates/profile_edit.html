@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Login{% endblock %}
+{% block title %}Edit Profile{% endblock %}
 {% block content %}
     <style>
-        .login-container {
-            max-width: 450px;
+        .edit-profile-container {
+            max-width: 600px;
             margin: 0 auto;
             padding: 30px;
-            background: linear-gradient(to bottom, #89f7feee, #66a6ffee);
+            background: linear-gradient(to bottom, #66a6ffee, #b8ffc4ee);
             border-radius: 15px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(5px);
@@ -28,7 +28,7 @@
             font-weight: 600;
             font-size: 16px;
         }
-        input[type="text"], input[type="password"] {
+        input {
             width: 100%;
             padding: 12px;
             border: none;
@@ -41,25 +41,6 @@
         input:focus {
             box-shadow: 0 0 10px rgba(46, 137, 255, 0.5);
             outline: none;
-        }
-        .checkbox {
-            margin: 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .checkbox input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin: 0;
-            cursor: pointer;
-        }
-        .checkbox label {
-            margin: 0;
-            font-weight: normal;
-            color: #4a6278;
-            font-size: 16px;
-            line-height: 20px;
         }
         .btn-submit {
             display: block;
@@ -79,43 +60,32 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
         }
-        .links {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .link {
-            color: #2e89ff;
-            text-decoration: none;
-            font-size: 14px;
-            margin: 0 10px;
-            transition: color 0.3s;
-        }
-        .link:hover {
-            color: #1e3c72;
-            text-decoration: underline;
-        }
     </style>
-    <div class="login-container">
-        <h1>Login</h1>
+    <div class="edit-profile-container">
+        <h1>Edit Profile</h1>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{ user.email or '' }}">
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">New Password (leave blank to keep current)</label>
+                <input type="password" id="password" name="password">
             </div>
-            <div class="checkbox">
-                <input type="checkbox" id="remember_me" name="remember_me">
-                <label for="remember_me">Remember me</label>
+            <div class="form-group">
+                <label for="mobile_number">Mobile Number</label>
+                <input type="text" id="mobile_number" name="mobile_number" value="{{ user.mobile_number or '' }}">
             </div>
-            <button type="submit" class="btn-submit">Login</button>
+            <div class="form-group">
+                <label for="pin_code">Pin Code</label>
+                <input type="text" id="pin_code" name="pin_code" value="{{ user.pin_code or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="dob">Date of Birth (YYYY-MM-DD)</label>
+                <input type="text" id="dob" name="dob" value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}" class="datetimeinput">
+            </div>
+            <button type="submit" class="btn-submit">Save Changes</button>
         </form>
-        <div class="links">
-            <a href="{{ url_for('forgot_password') }}" class="link">Forgot Password?</a>
-            <a href="{{ url_for('register') }}" class="link">Register</a>
-        </div>
     </div>
 {% endblock %}

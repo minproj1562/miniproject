@@ -1,96 +1,102 @@
 {% extends "base.html" %}
-{% block title %}Login - Career Analytics{% endblock %}
-
+{% block title %}Login{% endblock %}
 {% block content %}
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
         .login-container {
             max-width: 450px;
-            margin: 4rem auto;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, #89f7feee, #66a6ffee);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
         }
-        .login-container h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
+        h1 {
             text-align: center;
+            margin-bottom: 30px;
             color: #1e3c72;
-            margin-bottom: 2rem;
+            font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+        .form-group {
+            margin-bottom: 20px;
         }
-        .form-group label {
-            font-weight: 600;
-            color: #1e3c72;
+        label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .form-group input:focus {
-            border-color: #2a5298;
-            box-shadow: 0 0 8px rgba(42, 82, 152, 0.3);
-            outline: none;
-        }
-        .btn-login {
-            padding: 0.75rem;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background-color: #2a5298;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            width: 100%;
-        }
-        .btn-login:hover {
-            background-color: #1e3c72;
-            transform: translateY(-3px);
-        }
-        .alert {
-            margin-bottom: 1.5rem;
-            border-radius: 12px;
-        }
-        .register-link {
-            text-align: center;
-            margin-top: 1.5rem;
-        }
-        .register-link a {
+            margin-bottom: 8px;
             color: #2a5298;
             font-weight: 600;
-            text-decoration: none;
+            font-size: 16px;
         }
-        .register-link a:hover {
+        input[type="text"], input[type="password"], input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 16px;
+            transition: box-shadow 0.3s;
+        }
+        input:focus {
+            box-shadow: 0 0 10px rgba(46, 137, 255, 0.5);
+            outline: none;
+        }
+        .checkbox {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .checkbox label {
+            margin: 0;
+            font-weight: normal;
+            color: #4a6278;
+            font-size: 16px;
+            line-height: 20px;
+        }
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #2e89ff, #1e3c72);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .link {
+            color: #2e89ff;
+            text-decoration: none;
+            font-size: 14px;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+        .link:hover {
             color: #1e3c72;
             text-decoration: underline;
         }
     </style>
-
     <div class="login-container">
-        <h2>Login</h2>
+        <h1>Login</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -98,20 +104,25 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form class="login-form" method="POST" action="{{ url_for('login') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" class="form-control" required>
+                <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" class="form-control" required>
+                <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn-login">Login</button>
+            <div class="checkbox">
+                <input type="checkbox" id="remember_me" name="remember_me">
+                <label for="remember_me">Remember me</label>
+            </div>
+            <button type="submit" class="btn-submit">Login</button>
         </form>
-        <div class="register-link">
-            <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+        <div class="links">
+            <a href="{{ url_for('forgot_password') }}" class="link">Forgot Password?</a>
+            <a href="{{ url_for('register') }}" class="link">Register</a>
         </div>
     </div>
 {% endblock %}

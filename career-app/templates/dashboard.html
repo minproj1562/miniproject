@@ -1,244 +1,176 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - Career Analytics{% endblock %}
-
+{% block title %}Dashboard{% endblock %}
 {% block content %}
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-        }
         .dashboard-container {
-            max-width: 900px;
-            margin: 4rem auto;
-            padding: 2rem;
-        }
-        .dashboard-container h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .stats-card {
-            background: rgba(255, 255, 255, 0.95);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, #74ebd5ee, #89f7feee);
             border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
         }
-        .stats-card h2 {
-            font-size: 1.75rem;
-            font-weight: 600;
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
             color: #1e3c72;
-            margin-bottom: 1rem;
+            font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .stats-card p {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 0.5rem;
+        h3 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 24px;
         }
         .chart-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 48%;
+            display: inline-block;
+            vertical-align: top;
+            margin: 10px;
+            padding: 20px;
+            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .chart-container h2 {
-            font-size: 1.75rem;
+        .recommendation {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(to right, #b8ffc4ee, #72d991ee);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            color: #1a6642;
+        }
+        .btn-toggle {
+            padding: 10px 20px;
+            background: linear-gradient(to right, #2e89ff, #1e3c72);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
             font-weight: 600;
-            color: #1e3c72;
-            margin-bottom: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.3s;
+            margin-bottom: 15px;
         }
-        .chart-controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            justify-content: center;
+        .btn-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
         }
-        .chart-controls select {
-            padding: 0.5rem;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .history-table {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .history-table h2 {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: #1e3c72;
-            margin-bottom: 1rem;
-        }
-        .history-table table {
+        .table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 30px;
+            background: linear-gradient(to bottom, #ffffffee, #f8f9faee);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
         }
-        .history-table th, .history-table td {
-            padding: 1rem;
+        .table th, .table td {
+            padding: 15px;
             text-align: left;
-            color: #333;
+            border-bottom: 1px solid #e9ecef;
         }
-        .history-table th {
-            background: #2a5298;
+        .table th {
+            background: linear-gradient(to right, #2a5298, #1e3c72);
             color: #fff;
+            font-weight: 600;
         }
-        .history-table tr:nth-child(even) {
-            background: #f8f9fa;
+        .table tr:nth-child(even) {
+            background: #f8f9faee;
+        }
+        .table tr:hover {
+            background: #e9ecefee;
+        }
+        .no-tests {
+            text-align: center;
+            padding: 20px;
+            color: #4a6278;
+            font-size: 16px;
+        }
+        .btn-link {
+            color: #2e89ff;
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+        .btn-link:hover {
+            color: #1e3c72;
+            text-decoration: underline;
         }
     </style>
-
     <div class="dashboard-container">
-        <h1>{{ user.username|default('User') }}'s Dashboard</h1>
-
-        <div class="stats-card">
-            <h2>Statistics</h2>
-            <p>Total Tests Taken: {{ stats.total_tests|default(0) }}</p>
-            <p>Average Sample Test Score: {{ stats.avg_sample_score|default(0)|round(2) }} / 30</p>
-            <p>Average Aptitude Test Score: {{ stats.avg_aptitude_score|default(0)|round(2) }}%</p>
-            <p>Total Time Spent on Aptitude Tests: {{ stats.total_time_spent|default(0) }} seconds</p>
-        </div>
-
+        <h1>Welcome, {{ user.username }}!</h1>
+        
+        <!-- Line/Bar Chart for Recent Test Scores -->
         <div class="chart-container">
-            <h2>Sample Test Scores Over Time</h2>
-            <div class="chart-controls">
-                <select id="sampleChartType">
-                    <option value="line">Line</option>
-                    <option value="bar">Bar</option>
-                </select>
-                <select id="dateRange" onchange="updateDateRange()">
-                    <option value="all" {% if date_range == 'all' %}selected{% endif %}>All Time</option>
-                    <option value="week" {% if date_range == 'week' %}selected{% endif %}>Last Week</option>
-                    <option value="month" {% if date_range == 'month' %}selected{% endif %}>Last Month</option>
-                </select>
-            </div>
-            <canvas id="sampleChart"></canvas>
+            <h3>Recent Test Scores</h3>
+            <button id="toggleChart" class="btn-toggle">Toggle Line/Bar</button>
+            <canvas id="testChart"></canvas>
         </div>
 
-        <div class="chart-container">
-            <h2>Aptitude Test Scores Over Time</h2>
-            <div class="chart-controls">
-                <select id="aptitudeChartType">
-                    <option value="line">Line</option>
-                    <option value="bar">Bar</option>
-                </select>
-            </div>
-            <canvas id="aptitudeChart"></canvas>
+        <!-- Career Recommendation -->
+        <div class="recommendation">
+            <h3>Career Recommendation</h3>
+            <p>{{ recommendation }}</p>
         </div>
 
-        <div class="history-table">
-            <h2>Test History</h2>
-            <table>
+        <!-- Recent Tests Table -->
+        {% if recent_tests %}
+            <h3>Recent Tests</h3>
+            <table class="table">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Test Type</th>
+                        <th>Type</th>
                         <th>Score</th>
-                        <th>Details</th>
+                        <th>Date</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for result in test_results|default([]) %}
-                    <tr>
-                        <td>{{ result.date_taken.strftime('%Y-%m-%d %H:%M:%S')|default('N/A') }}</td>
-                        <td>{{ result.test_type|title|default('N/A') }}</td>
-                        <td>{{ result.score|round(2)|default(0) }}{% if result.test_type == 'aptitude' %}%{% else %}/30{% endif %}</td>
-                        <td>
-                            {% if result.test_type == 'aptitude' %}
-                                {{ result.correct_answers|default(0) }} / {{ result.total_questions|default(0) }} correct, {{ result.time_spent|default(0) }}s
-                            {% endif %}
-                        </td>
-                    </tr>
+                    {% for test in recent_tests %}
+                        <tr>
+                            <td>{{ test.test_type }}</td>
+                            <td>{{ test.score }} / {{ 9 if test.test_type == 'sample' else 8 }}</td>
+                            <td>{{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
+        {% else %}
+            <div class="no-tests">
+                <p>No tests taken yet. Try a <a href="{{ url_for('test', type='sample') }}" class="btn-link">Sample Test</a> or <a href="{{ url_for('test', type='aptitude') }}" class="btn-link">Aptitude Test</a>!</p>
+            </div>
+        {% endif %}
     </div>
 
-    <!-- Include Chart.js -->
+    <!-- Chart.js and Custom Script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let sampleChart, aptitudeChart;
-
-        function updateCharts() {
-            const sampleCtx = document.getElementById('sampleChart').getContext('2d');
-            const aptitudeCtx = document.getElementById('aptitudeChart').getContext('2d');
-            const sampleChartType = document.getElementById('sampleChartType').value;
-            const aptitudeChartType = document.getElementById('aptitudeChartType').value;
-
-            // Destroy existing charts if they exist
-            if (sampleChart) sampleChart.destroy();
-            if (aptitudeChart) aptitudeChart.destroy();
-
-            // Sample Test Chart
-            sampleChart = new Chart(sampleCtx, {
-                type: sampleChartType,
-                data: {
-                    labels: {{ sample_dates|tojson|default('[]')|safe }},
-                    datasets: [{
-                        label: 'Sample Test Scores',
-                        data: {{ sample_scores|tojson|default('[]')|safe }},
-                        borderColor: '#2a5298',
-                        backgroundColor: 'rgba(42, 82, 152, 0.2)',
-                        fill: sampleChartType === 'line',
-                        tension: sampleChartType === 'line' ? 0.4 : 0
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 30,
-                            title: { display: true, text: 'Score (out of 30)' }
-                        },
-                        x: { title: { display: true, text: 'Date' } }
-                    }
+        const ctx = document.getElementById('testChart').getContext('2d');
+        let chartType = 'line';
+        const testChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: {{ test_data.labels|tojson|safe }},
+                datasets: [{
+                    label: 'Score (%)',
+                    data: {{ test_data.scores|tojson|safe }},
+                    borderColor: '#2e89ff',
+                    backgroundColor: 'rgba(46, 137, 255, 0.2)',
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
                 }
-            });
-
-            // Aptitude Test Chart
-            aptitudeChart = new Chart(aptitudeCtx, {
-                type: aptitudeChartType,
-                data: {
-                    labels: {{ aptitude_dates|tojson|default('[]')|safe }},
-                    datasets: [{
-                        label: 'Aptitude Test Scores',
-                        data: {{ aptitude_scores|tojson|default('[]')|safe }},
-                        borderColor: '#dc3545',
-                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
-                        fill: aptitudeChartType === 'line',
-                        tension: aptitudeChartType === 'line' ? 0.4 : 0
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100,
-                            title: { display: true, text: 'Score (%)' }
-                        },
-                        x: { title: { display: true, text: 'Date' } }
-                    }
-                }
-            });
-        }
-
-        function updateDateRange() {
-            const dateRange = document.getElementById('dateRange').value;
-            window.location.href = "{{ url_for('dashboard') }}?date_range=" + dateRange;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            updateCharts();
-            document.getElementById('sampleChartType').addEventListener('change', updateCharts);
-            document.getElementById('aptitudeChartType').addEventListener('change', updateCharts);
+            }
+        });
+        document.getElementById('toggleChart').addEventListener('click', () => {
+            chartType = chartType === 'line' ? 'bar' : 'line';
+            testChart.config.type = chartType;
+            testChart.update();
         });
     </script>
 {% endblock %}
