@@ -2,111 +2,185 @@
 {% block title %}Settings{% endblock %}
 
 {% block content %}
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .settings-container {
-            max-width: 550px;
-            margin: 4rem auto;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-        .settings-container h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            color: #1e3c72;
-            margin-bottom: 2rem;
-        }
-        .settings-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        .form-group label {
-            font-weight: 600;
-            color: #1e3c72;
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .form-group input:focus {
-            border-color: #2a5298;
-            box-shadow: 0 0 8px rgba(42, 82, 152, 0.3);
-            outline: none;
-        }
-        .btn-save {
-            padding: 0.75rem;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background-color: #2a5298;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        .btn-save:hover {
-            background-color: #1e3c72;
-            transform: translateY(-3px);
-        }
-    </style>
+<style>
+    .settings-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        padding: 40px;
+        width: 100%;
+        max-width: 600px;
+        margin: 4rem auto;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+    }
+    h2 {
+        text-align: center;
+        color: #00ffff;
+        text-shadow: 0 0 10px #00ffff;
+        margin-bottom: 30px;
+        font-size: 2.2em;
+    }
+    .section {
+        margin-bottom: 30px;
+    }
+    .section h3 {
+        color: #ff00ff;
+        text-shadow: 0 0 5px #ff00ff;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+    }
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #00ffff;
+        text-shadow: 0 0 5px #00ffff;
+    }
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 2px solid #00ffff;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        transition: all 0.3s ease;
+    }
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #ff00ff;
+        box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+    }
+    input[type="radio"],
+    input[type="checkbox"] {
+        margin-right: 10px;
+        accent-color: #00ffff;
+    }
+    .radio-group {
+        margin-bottom: 15px;
+    }
+    button {
+        background: linear-gradient(45deg, #00ffff, #ff00ff);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        color: #fff;
+        font-size: 1.1em;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        transition: all 0.3s ease;
+        display: block;
+        margin: 15px auto;
+    }
+    button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
+    }
+    .divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin: 20px 0;
+    }
+    .flash-message {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .flash-message.success { color: #00ff00; }
+    .flash-message.danger { color: #ff0000; }
+    .flash-message.info { color: #00ffff; }
+</style>
 
-    <div class="settings-container">
-        <h2>Settings</h2>
-        <form class="settings-form" action="{{ url_for('settings') }}" method="post">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" value="{{ user.username }}" required>
+<div class="settings-container">
+    <h2>Settings</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Theme Selection -->
+    <div class="section">
+        <h3>Theme Preferences</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="theme" value="dark" {% if user.theme == 'dark' %}checked{% endif %}>
+                    Dark Theme
+                </label>
+                <label>
+                    <input type="radio" name="theme" value="light" {% if user.theme == 'light' %}checked{% endif %}>
+                    Light Theme
+                </label>
             </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="{{ user.email }}" required>
-            </div>
-            <div class="form-group">
-                <label for="mobile_number">Mobile Number</label>
-                <input type="text" id="mobile_number" name="mobile_number" value="{{ user.mobile_number }}" required pattern="\d{10}" title="Must be 10 digits">
-            </div>
-            <div class="form-group">
-                <label for="pin_code">Pin Code</label>
-                <input type="text" id="pin_code" name="pin_code" value="{{ user.pin_code }}" required pattern="\d{6}" title="Must be 6 digits">
-            </div>
-            <div class="form-group">
-                <label for="dob">Date of Birth</label>
-                <input type="date" id="dob" name="dob" value="{{ user.dob }}" required>
-            </div>
-            <div class="form-group">
-                <label for="current_password">Current Password (required for sensitive changes)</label>
-                <input type="password" id="current_password" name="current_password" placeholder="Enter current password" required>
-            </div>
-            <div class="form-group">
-                <label for="new_password">New Password (leave blank to keep current)</label>
-                <input type="password" id="new_password" name="new_password" placeholder="Enter new password">
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
-            </div>
-            <button type="submit" class="btn-save">Save Changes</button>
+            <button type="submit">Update Theme</button>
         </form>
     </div>
-{% endblock %}                                                                                                                                                                      settings.html
+
+    <div class="divider"></div>
+
+    <!-- Animation Toggle -->
+    <div class="section">
+        <h3>Animations</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>
+                <input type="checkbox" name="animations" {% if user.animations_enabled %}checked{% endif %}>
+                Enable Animations
+            </label>
+            <button type="submit">Update Animations</button>
+        </form>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Change Password -->
+    <div class="section">
+        <h3>Change Password</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="current_password">Current Password:</label>
+            <input type="password" name="current_password" id="current_password" required>
+            <label for="new_password">New Password:</label>
+            <input type="password" name="new_password" id="new_password" required>
+            <label for="confirm_password">Confirm New Password:</label>
+            <input type="password" name="confirm_password" id="confirm_password" required>
+            <button type="submit">Update Password</button>
+        </form>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Reset Roadmap Progress -->
+    <div class="section">
+        <h3>Reset Roadmap Progress</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="reset_roadmap" value="true">
+            <button type="submit">Reset Progress</button>
+        </form>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Delete Account -->
+    <div class="section">
+        <h3>Delete Account</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="delete_account" value="true">
+            <button type="submit">Delete Account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
