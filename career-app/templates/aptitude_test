@@ -13,10 +13,10 @@
             max-width: 900px;
             margin: 4rem auto;
             padding: 2rem;
-            color: {% if user.theme == 'light' %}#333{% else %}#fff{% endif %};
+            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
         }
         .progress-container {
-            background: {% if user.theme == 'light' %}rgba(0, 0, 0, 0.2){% else %}rgba(255, 255, 255, 0.2){% endif %};
+            background: {% if user.theme == 'light' or user.theme is not defined %}rgba(0, 0, 0, 0.2){% else %}rgba(255, 255, 255, 0.2){% endif %};
             border-radius: 10px;
             height: 20px;
             margin-bottom: 1.5rem;
@@ -31,13 +31,13 @@
             text-align: center;
             font-size: 1.2rem;
             margin-bottom: 1rem;
-            color: {% if user.theme == 'light' %}#333{% else %}#fff{% endif %};
+            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
         }
         .question-counter {
             text-align: center;
             font-size: 1.1rem;
             margin-bottom: 2rem;
-            color: {% if user.theme == 'light' %}#333{% else %}#fff{% endif %};
+            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
         }
         .category-nav {
             display: flex;
@@ -50,7 +50,7 @@
             border-radius: 20px;
             border: 2px solid #2a5298;
             background: transparent;
-            color: {% if user.theme == 'light' %}#333{% else %}#fff{% endif %};
+            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -59,7 +59,7 @@
             color: #fff;
         }
         .category-section {
-            background: {% if user.theme == 'light' %}rgba(255, 255, 255, 0.8){% else %}rgba(255, 255, 255, 0.95){% endif %};
+            background: {% if user.theme == 'light' or user.theme is not defined %}rgba(255, 255, 255, 0.8){% else %}rgba(255, 255, 255, 0.95){% endif %};
             border-radius: 15px;
             padding: 2rem;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -145,82 +145,84 @@
     </style>
 
     <div class="assessment-container">
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-        </div>
-
-        <div class="timer-alert" id="timer">
-            <i class="bi bi-clock"></i>
-            Time Left: <span id="time-left">{{ initial_time }}</span>
-        </div>
-
-        <div class="question-counter" id="question-counter">
-            Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
-        </div>
-
-        <form id="aptitude-form" action="{{ url_for('test', type='aptitude') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="time_spent" id="time-spent" value="0">
-
-            <div class="category-nav mb-4">
-                {% for category in ['Mathematics', 'Logical Reasoning', 'Verbal Ability'] %}
-                <button type="button" class="category-btn {% if current_category == category %}active{% endif %}" 
-                        data-category="{{ category }}">
-                    {{ category }}
-                </button>
-                {% endfor %}
+        {% if total_questions == 0 %}
+            <p>No questions available for this test.</p>
+        {% else %}
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
             </div>
 
-            <div class="questions-wrapper">
-                {% for category, levels in questions.items() %}
-                <div class="category-section {% if current_category != category %}d-none{% endif %}" 
-                     id="category-{{ category }}">
-                    <h2 class="category-title">{{ category }}</h2>
-                    
-                    <div class="questions-grid">
-                        {% for level, question_list in levels.items() %}
-                        <div class="difficulty-level">
-                            <h3 class="difficulty-title">{{ level|title }}</h3>
-                            
-                            {% for question in question_list %}
-                            <div class="question-card">
-                                <div class="question-header">
-                                    <span class="category-badge">{{ category }}</span>
-                                    <span class="time-limit">⏱ {{ question.time_limit }}s</span>
-                                </div>
-                                
-                                <h3 class="question-text">{{ question.text }}</h3>
-                                
-                                <div class="options-grid">
-                                    {% for option in question.options %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" 
-                                               name="{{ question.id }}" 
-                                               value="{{ loop.index0 }}" 
-                                               id="{{ question.id }}-{{ loop.index0 }}"
-                                               data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
-                                               required>
-                                        <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
-                                            {{ option }}
-                                        </label>
+            <div class="timer-alert" id="timer">
+                <i class="bi bi-clock"></i>
+                Time Left: <span id="time-left">{{ initial_time }}</span>
+            </div>
+
+            <div class="question-counter" id="question-counter">
+                Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
+            </div>
+
+            <form id="aptitude-form" action="{{ url_for('test', type='aptitude') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="time_spent" id="time-spent" value="0">
+
+                <div class="category-nav mb-4">
+                    {% for category in ['Mathematics', 'Logical Reasoning', 'Verbal Ability'] %}
+                    <button type="button" class="category-btn {% if current_category == category %}active{% endif %}" 
+                            data-category="{{ category }}">
+                        {{ category }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div class="questions-wrapper">
+                    {% for category, levels in questions.items() %}
+                    <div class="category-section {% if current_category != category %}d-none{% endif %}" 
+                         id="category-{{ category|replace(' ', '-') }}">
+                        <h2 class="category-title">{{ category }}</h2>
+                        <div class="questions-grid">
+                            {% for level, question_list in levels.items() %}
+                            {% if question_list %}
+                            <div class="difficulty-level">
+                                <h3 class="difficulty-title">{{ level|title }}</h3>
+                                {% for question in question_list %}
+                                <div class="question-card">
+                                    <div class="question-header">
+                                        <span class="category-badge">{{ category }}</span>
+                                        <span class="time-limit">⏱ {{ question.time_limit }}s</span>
                                     </div>
-                                    {% endfor %}
+                                    <h3 class="question-text">{{ question.text }}</h3>
+                                    <div class="options-grid">
+                                        {% for option in question.options %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="{{ question.id }}" 
+                                                   value="{{ loop.index0 }}" 
+                                                   id="{{ question.id }}-{{ loop.index0 }}"
+                                                   data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
+                                                   required>
+                                            <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
+                                                {{ option }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
+                                {% endfor %}
                             </div>
+                            {% endif %}
                             {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
 
-            <div class="assessment-controls">
-                <button type="button" class="nav-btn prev-category">← Previous Section</button>
-                <button type="submit" class="submit-btn">Submit Assessment</button>
-                <button type="button" class="nav-btn next-category">Next Section →</button>
-            </div>
-        </form>
+                <div class="assessment-controls">
+                    <button type="button" class="nav-btn prev-category">← Previous Section</button>
+                    <button type="submit" class="submit-btn">Submit Assessment</button>
+                    <button type="button" class="nav-btn next-category">Next Section →</button>
+                </div>
+            </form>
+        {% endif %}
     </div>
 
     <script>
@@ -230,56 +232,65 @@
         const progressBar = document.getElementById('progress-bar');
         const form = document.getElementById('aptitude-form');
         const timeSpentInput = document.getElementById('time-spent');
-        let timeLeft = {{ initial_time }};
+        let timeLeft = {{ initial_time|default(60) }};
         let answeredCount = 0;
-        const totalQuestions = {{ total_questions }};
-        
-        const timerInterval = setInterval(() => {
-            timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                form.submit();
-            }
-        }, 1000);
+        const totalQuestions = {{ total_questions|default(0) }};
 
-        document.querySelectorAll('.form-check-input').forEach(input => {
-            input.addEventListener('change', function() {
-                const questionId = this.name;
-                const alreadyAnswered = document.querySelector(`input[name="${questionId}"]:checked`);
-                if (!alreadyAnswered || document.querySelectorAll(`input[name="${questionId}"]:checked`).length === 1) {
-                    answeredCount++;
-                    answeredCountElement.textContent = answeredCount;
-                    progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+        if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    form.submit();
                 }
+            }, 1000);
+
+            document.querySelectorAll('.form-check-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const questionId = this.name;
+                    const alreadyAnswered = document.querySelector(`input[name="${questionId}"]:checked`);
+                    if (!alreadyAnswered || document.querySelectorAll(`input[name="${questionId}"]:checked`).length === 1) {
+                        answeredCount++;
+                        answeredCountElement.textContent = answeredCount;
+                        progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+                    }
+                });
             });
-        });
 
-        let currentCategoryIndex = 0;
-        const categories = Array.from(document.querySelectorAll('.category-section'));
-        
-        document.querySelector('.next-category').addEventListener('click', () => {
-            if (currentCategoryIndex < categories.length - 1) {
-                categories[currentCategoryIndex].classList.add('d-none');
-                currentCategoryIndex++;
-                categories[currentCategoryIndex].classList.remove('d-none');
-            }
-        });
-        
-        document.querySelector('.prev-category').addEventListener('click', () => {
-            if (currentCategoryIndex > 0) {
-                categories[currentCategoryIndex].classList.add('d-none');
-                currentCategoryIndex--;
-                categories[currentCategoryIndex].classList.remove('d-none');
-            }
-        });
+            let currentCategoryIndex = 0;
+            const categories = Array.from(document.querySelectorAll('.category-section'));
+            const nextButton = document.querySelector('.next-category');
+            const prevButton = document.querySelector('.prev-category');
 
-        form.addEventListener('submit', (e) => {
-            timeSpentInput.value = {{ initial_time }} - timeLeft;
-        });
+            if (nextButton) {
+                nextButton.addEventListener('click', () => {
+                    if (currentCategoryIndex < categories.length - 1) {
+                        categories[currentCategoryIndex].classList.add('d-none');
+                        currentCategoryIndex++;
+                        categories[currentCategoryIndex].classList.remove('d-none');
+                    }
+                });
+            }
+
+            if (prevButton) {
+                prevButton.addEventListener('click', () => {
+                    if (currentCategoryIndex > 0) {
+                        categories[currentCategoryIndex].classList.add('d-none');
+                        currentCategoryIndex--;
+                        categories[currentCategoryIndex].classList.remove('d-none');
+                    }
+                });
+            }
+
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    timeSpentInput.value = {{ initial_time|default(60) }} - timeLeft;
+                });
+            }
+        }
     });
     </script>
 {% endblock %}
