@@ -8,10 +8,16 @@ APTITUDE_QUESTIONS = {
                 "options": ["21", "18.5", "19.5", "20.25"],
                 "correct": 2,
                 "time_limit": 60,
-                "irt_params": {
-                    "difficulty": -1.2,
-                    "discrimination": 0.8
-                }
+                "irt_params": {"difficulty": -1.2, "discrimination": 0.8}
+            },
+            {
+                "id": "M4-E",
+                "type": "geometry",
+                "text": "What is the area of a rectangle with length 5 cm and width 3 cm?",
+                "options": ["15 cm²", "16 cm²", "18 cm²", "20 cm²"],
+                "correct": 0,
+                "time_limit": 45,
+                "irt_params": {"difficulty": -1.0, "discrimination": 0.9}
             }
         ],
         "moderate": [
@@ -22,10 +28,16 @@ APTITUDE_QUESTIONS = {
                 "options": ["7", "8", "9", "10"],
                 "correct": 0,
                 "time_limit": 90,
-                "irt_params": {
-                    "difficulty": 0.5,
-                    "discrimination": 1.2
-                }
+                "irt_params": {"difficulty": 0.5, "discrimination": 1.2}
+            },
+            {
+                "id": "M5-M",
+                "type": "statistics",
+                "text": "Find the median of: 3, 7, 2, 8, 5",
+                "options": ["5", "6", "7", "8"],
+                "correct": 0,
+                "time_limit": 75,
+                "irt_params": {"difficulty": 0.6, "discrimination": 1.1}
             }
         ],
         "hard": [
@@ -36,10 +48,16 @@ APTITUDE_QUESTIONS = {
                 "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"],
                 "correct": 0,
                 "time_limit": 120,
-                "irt_params": {
-                    "difficulty": 1.8,
-                    "discrimination": 1.5
-                }
+                "irt_params": {"difficulty": 1.8, "discrimination": 1.5}
+            },
+            {
+                "id": "M6-H",
+                "type": "probability",
+                "text": "A bag has 4 red and 6 blue balls. What’s the probability of drawing 2 red balls in a row without replacement?",
+                "options": ["1/15", "2/15", "4/45", "6/45"],
+                "correct": 2,
+                "time_limit": 150,
+                "irt_params": {"difficulty": 2.1, "discrimination": 1.4}
             }
         ]
     },
@@ -52,10 +70,16 @@ APTITUDE_QUESTIONS = {
                 "options": ["H", "I", "J", "K"],
                 "correct": 1,
                 "time_limit": 45,
-                "irt_params": {
-                    "difficulty": -1.0,
-                    "discrimination": 0.9
-                }
+                "irt_params": {"difficulty": -1.0, "discrimination": 0.9}
+            },
+            {
+                "id": "LR4-E",
+                "type": "analogy",
+                "text": "Bird is to Fly as Fish is to ___",
+                "options": ["Swim", "Walk", "Jump", "Crawl"],
+                "correct": 0,
+                "time_limit": 40,
+                "irt_params": {"difficulty": -0.9, "discrimination": 0.8}
             }
         ],
         "moderate": [
@@ -71,10 +95,16 @@ APTITUDE_QUESTIONS = {
                 ],
                 "correct": 1,
                 "time_limit": 75,
-                "irt_params": {
-                    "difficulty": 0.7,
-                    "discrimination": 1.1
-                }
+                "irt_params": {"difficulty": 0.7, "discrimination": 1.1}
+            },
+            {
+                "id": "LR5-M",
+                "type": "syllogism",
+                "text": "Some A are B. All B are C. Therefore:",
+                "options": ["All A are C", "Some A are C", "No A are C", "All C are A"],
+                "correct": 1,
+                "time_limit": 90,
+                "irt_params": {"difficulty": 0.8, "discrimination": 1.2}
             }
         ],
         "hard": [
@@ -85,10 +115,16 @@ APTITUDE_QUESTIONS = {
                 "options": ["44", "46", "48", "50"],
                 "correct": 1,
                 "time_limit": 150,
-                "irt_params": {
-                    "difficulty": 2.0,
-                    "discrimination": 1.4
-                }
+                "irt_params": {"difficulty": 2.0, "discrimination": 1.4}
+            },
+            {
+                "id": "LR6-H",
+                "type": "logic_puzzle",
+                "text": "Three friends rank 1st, 2nd, 3rd in a race. A is not last, B is ahead of C. Who is 2nd?",
+                "options": ["A", "B", "C", "Cannot determine"],
+                "correct": 0,
+                "time_limit": 180,
+                "irt_params": {"difficulty": 2.2, "discrimination": 1.5}
             }
         ]
     },
@@ -101,31 +137,43 @@ APTITUDE_QUESTIONS = {
                 "options": ["Transient", "Enduring", "Fleeting", "Momentary"],
                 "correct": 1,
                 "time_limit": 45,
-                "irt_params": {
-                    "difficulty": -0.8,
-                    "discrimination": 0.7
-                }
+                "irt_params": {"difficulty": -0.8, "discrimination": 0.7}
+            },
+            {
+                "id": "VA4-E",
+                "type": "synonym",
+                "text": "Find a synonym for 'Benevolent':",
+                "options": ["Kind", "Harsh", "Greedy", "Silent"],
+                "correct": 0,
+                "time_limit": 40,
+                "irt_params": {"difficulty": -0.7, "discrimination": 0.8}
             }
         ],
         "moderate": [
             {
                 "id": "VA2-M",
                 "type": "comprehension",
-                "text": "'The company's pecuniary situation was precarious.' What does 'pecuniary' mean?",
+                "text": "'The company’s pecuniary situation was precarious.' What does 'pecuniary' mean?",
                 "options": ["Legal", "Financial", "Ethical", "Structural"],
                 "correct": 1,
                 "time_limit": 60,
-                "irt_params": {
-                    "difficulty": 0.6,
-                    "discrimination": 1.0
-                }
+                "irt_params": {"difficulty": 0.6, "discrimination": 1.0}
+            },
+            {
+                "id": "VA5-M",
+                "type": "sentence_completion",
+                "text": "Her ___ attitude inspired the team to exceed their goals.",
+                "options": ["apathetic", "motivating", "indifferent", "hostile"],
+                "correct": 1,
+                "time_limit": 70,
+                "irt_params": {"difficulty": 0.7, "discrimination": 1.1}
             }
         ],
         "hard": [
             {
                 "id": "VA3-H",
                 "type": "critical_reasoning",
-                "text": "Which statement weakens the argument: 'Remote work increases productivity because employees save commute time'?",
+                "text": "Which weakens: 'Remote work increases productivity because employees save commute time'?",
                 "options": [
                     "Commute time averages 45 minutes daily",
                     "Home distractions reduce focused work hours",
@@ -133,10 +181,17 @@ APTITUDE_QUESTIONS = {
                     "Video conferencing tools improve collaboration"
                 ],
                 "correct": 1,
-                "irt_params": {
-                    "difficulty": 1.5,
-                    "discrimination": 1.3
-                }
+                "time_limit": 120,
+                "irt_params": {"difficulty": 1.5, "discrimination": 1.3}
+            },
+            {
+                "id": "VA6-H",
+                "type": "analogies",
+                "text": "Mitigate : Severity :: Amplify : ___",
+                "options": ["Volume", "Calmness", "Silence", "Weakness"],
+                "correct": 0,
+                "time_limit": 100,
+                "irt_params": {"difficulty": 1.7, "discrimination": 1.4}
             }
         ]
     }

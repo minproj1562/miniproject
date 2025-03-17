@@ -7,22 +7,22 @@
         body {
             {% if current_user.is_authenticated %}
                 {% if current_user.theme == 'light' %}
-                    background: linear-gradient(135deg, #3f72af, #5a88c7); /* Soft blue gradient for light mode */
-                    color: #3a3a3a;  /* Darker text color for readability */
+                    background: linear-gradient(135deg, #3f72af, #5a88c7);
+                    color: #3a3a3a;
                 {% else %}
-                    background: linear-gradient(135deg, #2c3e52, #34495e); /* Darker blue gradient for dark mode */
-                    color: #fff;  /* White text for dark mode */
+                    background: linear-gradient(135deg, #2c3e52, #34495e);
+                    color: #fff;
                 {% endif %}
             {% else %}
-                background: linear-gradient(135deg, #3f72af, #5a88c7); /* Soft blue gradient for non-logged-in users */
-                color: #3a3a3a;  /* Darker text color for readability */
+                background: linear-gradient(135deg, #3f72af, #5a88c7);
+                color: #3a3a3a;
             {% endif %}
             min-height: 100vh;
             margin: 0;
             font-family: 'Poppins', sans-serif;
             position: relative;
             overflow-x: hidden;
-            transition: background 0.3s ease, color 0.3s ease; /* Smooth transition between themes */
+            transition: background 0.3s ease, color 0.3s ease;
         }
         
         .hero {
@@ -31,42 +31,45 @@
             position: relative;
             z-index: 1;
             animation: fadeIn 1s ease-in;
-            background: #f4f1e1; /* Light beige background for the hero section */
+            background: #f4f1e1;
             border-radius: 10px;
-            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 800px;
         }
         
         h1 {
             font-size: 3.5rem;
             font-weight: 700;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2); /* Subtle shadow for the title */
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
             margin-bottom: 20px;
-            color: #2e3c56; /* Slightly darker text color for h1 */
+            color: #2e3c56;
         }
         
         p {
             font-size: 1.5rem;
             max-width: 600px;
             margin: 0 auto 40px;
-            color: #5a5a5a; /* Darker grey text for better readability */
+            color: #5a5a5a;
         }
         
-        .btn-test {
+        .btn-test, .btn {
             font-size: 1.2rem;
             padding: 12px 30px;
-            background: #f4f1e1; /* Beige background for the button */
-            color: #4a78b8; /* Medium blue for button text */
+            background: #f4f1e1;
+            color: #4a78b8;
             border: none;
             border-radius: 25px;
             transition: transform 0.3s, box-shadow 0.3s;
             text-decoration: none;
             display: inline-block;
+            margin: 10px;
         }
         
-        .btn-test:hover {
+        .btn-test:hover, .btn:hover {
             transform: scale(1.1);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            color: #5b8fce; /* Darker blue on hover */
+            color: #5b8fce;
         }
         
         .bg-overlay {
@@ -81,13 +84,29 @@
         }
 
         .content-box {
-            background: #f4f1e1; /* Pebble-white/beige background for the content boxes */
+            background: #f4f1e1;
             padding: 20px;
             margin: 20px auto;
             border-radius: 8px;
             width: 90%;
             max-width: 800px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Light shadow for depth */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #2e3c56;
+            font-size: 2rem;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        li {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            color: #5a5a5a;
         }
         
         @keyframes fadeIn {
@@ -100,6 +119,36 @@
             50% { transform: scale(1.2); opacity: 0.2; }
             100% { transform: scale(1); opacity: 0.5; }
         }
+        
+        nav {
+            background: #f4f1e1;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        nav a {
+            margin: 0 15px;
+            color: #4a78b8;
+            text-decoration: none;
+            font-size: 1.1rem;
+        }
+        
+        nav a:hover {
+            color: #5b8fce;
+        }
+        
+        .alert {
+            padding: 10px;
+            margin: 10px auto;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .alert-warning { background: #fff3cd; color: #856404; }
     </style>
 
     <div class="bg-overlay"></div>
@@ -111,8 +160,26 @@
     </div>
 
     <div class="content-box">
-        <h2>Explore Career Insights</h2>
-        <p>Get detailed reports and analysis based on your career test results. Our tools provide insights that guide you towards success.</p>
+        <h2>Why Choose Career Analytics?</h2>
+        <ul>
+            <li>Personalized career recommendations based on your strengths</li>
+            <li>Interactive aptitude and personality tests backed by science</li>
+            <li>Detailed reports to guide your career decisions</li>
+        </ul>
     </div>
 
+    <div class="content-box">
+        <h2>What Our Users Say</h2>
+        <p>"The aptitude test helped me identify my analytical skills!" - Alex, Data Analyst</p>
+        <p>"I loved the personality insights. Registering was worth it!" - Jamie, Marketing Specialist</p>
+    </div>
+
+    {% if not current_user.is_authenticated %}
+    <div class="content-box">
+        <h2>Ready to Unlock More?</h2>
+        <p>Sign up to access advanced features and personalized career insights.</p>
+        <a href="{{ url_for('register') }}" class="btn">Register</a>
+        <a href="{{ url_for('login') }}" class="btn">Login</a>
+    </div>
+    {% endif %}
 {% endblock %}

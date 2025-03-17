@@ -2,17 +2,22 @@
 
 {% block content %}
 <div class="assessment-container">
+    <!-- Instructions -->
+    <div class="instructions">
+        <h3>Instructions</h3>
+        <p><strong>Time Limit:</strong> {{ instructions.time_limit }}</p>
+        <p><strong>Honesty:</strong> {{ instructions.honesty }}</p>
+        <p><strong>Scientific Accuracy:</strong> {{ instructions.scientific_accuracy }}</p>
+    </div>
+
     <!-- Progress Bar -->
     <div class="progress-container">
-        <!-- We pass `current_question_index` and `questions` from app.py -->
-        <div class="progress-bar" style="width: {{ (current_question_index / questions|length) * 100 }}%"></div>
+        <div class="progress-bar" style="width: {{ (current_question_index / (questions|length)) * 100 }}%"></div>
     </div>
 
     <!-- Single Question Card -->
     <div class="question-card">
         <h2 class="question-text">{{ question.text }}</h2>
-
-        <!-- Likert Scale Options (if the question has a 'likert_scale') -->
         <div class="options-grid">
             {% if question.likert_scale %}
                 {% for option in question.likert_scale %}
@@ -20,10 +25,8 @@
                      data-question-id="{{ question.id }}"
                      data-option-value="{{ loop.index0 }}">
                     <span class="option-text">{{ option }}</span>
-
                     {% if question.direction == false %}
                     <div class="direction-indicator">
-                        <!-- Example icon indicating reverse-coded question -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
                         </svg>
@@ -42,7 +45,6 @@
         {% if current_question_index > 0 %}
         <button class="nav-btn prev-btn" onclick="navigate(-1)">Previous</button>
         {% endif %}
-
         {% if current_question_index < (questions|length - 1) %}
         <button class="nav-btn next-btn" onclick="navigate(1)">Next</button>
         {% else %}
@@ -66,27 +68,20 @@ document.querySelectorAll('.option-card').forEach(card => {
     card.addEventListener('click', function() {
         const questionId = this.dataset.questionId;
         const value = parseInt(this.dataset.optionValue);
-
-        // Clear previous selection for this question
         document.querySelectorAll(`[data-question-id="${questionId}"]`)
             .forEach(opt => opt.classList.remove('selected'));
-
         this.classList.add('selected');
-        // Store response
         responses[questionId] = value;
     });
 });
 
 // Navigation logic
 function navigate(direction) {
-    // direction is +1 for next, -1 for prev
     const newIndex = {{ current_question_index }} + direction;
-    // Build a new URL with updated ?q= param
     window.location.href = `{{ url_for('personality_test') }}?q=${newIndex}`;
 }
 
 function submitAssessment() {
-    // Example final submission to /submit-assessment
     fetch("{{ url_for('submit_assessment') }}", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,7 +103,7 @@ function submitAssessment() {
     .catch(err => console.error(err));
 }
 
-// Update timer every second
+// Update timer
 setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
     const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
@@ -116,5 +111,4 @@ setInterval(() => {
     document.getElementById('time-display').textContent = `${minutes}:${seconds}`;
 }, 1000);
 </script>
-
 {% endblock %}

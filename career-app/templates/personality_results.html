@@ -7,17 +7,17 @@
     <div class="card">
         <div class="card-body">
             <h3 class="card-title">Your Personality Profile</h3>
-            <p>Your dominant trait is <strong>{{ dominant_trait }}</strong> with a score of {{ scores[dominant_trait] | round(2) }}%.</p>
+            <p>Your dominant trait is <strong>{{ trait_names[dominant_trait] }}</strong> with a score of {{ scores[dominant_trait] | round(2) }}%.</p>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item"><strong>Openness:</strong> {{ scores['Openness'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>Conscientiousness:</strong> {{ scores['Conscientiousness'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>Extraversion:</strong> {{ scores['Extraversion'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>Agreeableness:</strong> {{ scores['Agreeableness'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>Neuroticism:</strong> {{ scores['Neuroticism'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['O'] }}:</strong> {{ scores['O'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['C'] }}:</strong> {{ scores['C'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['E'] }}:</strong> {{ scores['E'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['A'] }}:</strong> {{ scores['A'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['N'] }}:</strong> {{ scores['N'] | round(2) }}%</li>
             </ul>
             <div class="text-center mt-4">
-                <a href="{{ url_for('test') }}" class="btn btn-primary">Take Another Test</a>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                <a href="{{ url_for('test', type='personality') }}" class="btn btn-primary">Take Another Test</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
             </div>
         </div>
     </div>

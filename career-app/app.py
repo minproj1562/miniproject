@@ -1,3 +1,8 @@
+import os
+import sys
+print(f"Python path: {sys.path}")
+print(f"Current directory: {os.getcwd()}")
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -6,8 +11,10 @@ from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
-import os
 from datetime import datetime
+import requests
+import random
+import copy
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -88,7 +95,127 @@ def get_onet_api():
     from apis import ONetAPI
     return ONetAPI()
 
-# Generate test questions
+# Aptitude Questions Definition
+APTITUDE_QUESTIONS = {
+    "Mathematics": {
+        "easy": [
+            {"id": "M1-E", "type": "numerical", "text": "Solve: 15 + 8 × 3 ÷ 4", "options": ["21", "18.5", "19.5", "20.25"], "correct": 2, "time_limit": 60},
+            {"id": "M4-E", "type": "geometry", "text": "What is the area of a rectangle with length 5 cm and width 3 cm?", "options": ["15 cm²", "16 cm²", "18 cm²", "20 cm²"], "correct": 0, "time_limit": 45}
+        ],
+        "moderate": [
+            {"id": "M2-M", "type": "algebra", "text": "If x + y = 15 and 2x - y = 6, what is the value of x?", "options": ["7", "8", "9", "10"], "correct": 0, "time_limit": 90},
+            {"id": "M5-M", "type": "statistics", "text": "Find the median of: 3, 7, 2, 8, 5", "options": ["5", "6", "7", "8"], "correct": 0, "time_limit": 75}
+        ],
+        "hard": [
+            {"id": "M3-H", "type": "calculus", "text": "What is the derivative of f(x) = 3x² + 2eˣ - ln(x)?", "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"], "correct": 0, "time_limit": 120},
+            {"id": "M6-H", "type": "probability", "text": "A bag has 4 red and 6 blue balls. What’s the probability of drawing 2 red balls in a row without replacement?", "options": ["1/15", "2/15", "4/45", "6/45"], "correct": 2, "time_limit": 150}
+        ]
+    },
+    "Logical Reasoning": {
+        "easy": [
+            {"id": "LR1-E", "type": "pattern", "text": "Complete the sequence: A, C, E, G, ___", "options": ["H", "I", "J", "K"], "correct": 1, "time_limit": 45},
+            {"id": "LR4-E", "type": "analogy", "text": "Bird is to Fly as Fish is to ___", "options": ["Swim", "Walk", "Jump", "Crawl"], "correct": 0, "time_limit": 40}
+        ],
+        "moderate": [
+            {"id": "LR2-M", "type": "deductive", "text": "All managers are leaders. Some leaders are visionary. Therefore:", "options": ["All managers are visionary", "Some managers may be visionary", "No managers are visionary", "Visionary people cannot be managers"], "correct": 1, "time_limit": 75},
+            {"id": "LR5-M", "type": "syllogism", "text": "Some A are B. All B are C. Therefore:", "options": ["All A are C", "Some A are C", "No A are C", "All C are A"], "correct": 1, "time_limit": 90}
+        ],
+        "hard": [
+            {"id": "LR3-H", "type": "analytical", "text": "If 3★5 = 16, 4★7 = 30, then 5★9 = ___", "options": ["44", "46", "48", "50"], "correct": 1, "time_limit": 150},
+            {"id": "LR6-H", "type": "logic_puzzle", "text": "Three friends rank 1st, 2nd, 3rd in a race. A is not last, B is ahead of C. Who is 2nd?", "options": ["A", "B", "C", "Cannot determine"], "correct": 0, "time_limit": 180}
+        ]
+    },
+    "Verbal Ability": {
+        "easy": [
+            {"id": "VA1-E", "type": "vocabulary", "text": "Select the antonym of EPHEMERAL:", "options": ["Transient", "Enduring", "Fleeting", "Momentary"], "correct": 1, "time_limit": 45},
+            {"id": "VA4-E", "type": "synonym", "text": "Find a synonym for 'Benevolent':", "options": ["Kind", "Harsh", "Greedy", "Silent"], "correct": 0, "time_limit": 40}
+        ],
+        "moderate": [
+            {"id": "VA2-M", "type": "comprehension", "text": "'The company’s pecuniary situation was precarious.' What does 'pecuniary' mean?", "options": ["Legal", "Financial", "Ethical", "Structural"], "correct": 1, "time_limit": 60},
+            {"id": "VA5-M", "type": "sentence_completion", "text": "Her ___ attitude inspired the team to exceed their goals.", "options": ["apathetic", "motivating", "indifferent", "hostile"], "correct": 1, "time_limit": 70}
+        ],
+        "hard": [
+            {"id": "VA3-H", "type": "critical_reasoning", "text": "Which weakens: 'Remote work increases productivity because employees save commute time'?", "options": ["Commute time averages 45 minutes daily", "Home distractions reduce focused work hours", "Companies report higher profits with remote teams", "Video conferencing tools improve collaboration"], "correct": 1, "time_limit": 120},
+            {"id": "VA6-H", "type": "analogies", "text": "Mitigate : Severity :: Amplify : ___", "options": ["Volume", "Calmness", "Silence", "Weakness"], "correct": 0, "time_limit": 100}
+        ]
+    }
+}
+
+# Personality Questions (Big Five Inventory)
+PERSONALITY_QUESTIONS = [
+    # Openness (O) - 8 items
+    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 2, "trait": "Openness", "text": "I avoid philosophical discussions", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 3, "trait": "Openness", "text": "I have a vivid imagination", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 4, "trait": "Openness", "text": "I prefer routine over variety", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 6, "trait": "Openness", "text": "I dislike complex theoretical concepts", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 7, "trait": "Openness", "text": "I enjoy trying new cultural experiences", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 8, "trait": "Openness", "text": "I prefer practical over creative tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    
+    # Conscientiousness (C) - 8 items
+    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 12, "trait": "Conscientiousness", "text": "I often forget to put things back in their proper place", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 13, "trait": "Conscientiousness", "text": "I complete tasks thoroughly", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 14, "trait": "Conscientiousness", "text": "I often procrastinate important tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 15, "trait": "Conscientiousness", "text": "I follow through on my commitments", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 16, "trait": "Conscientiousness", "text": "I struggle with time management", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 17, "trait": "Conscientiousness", "text": "I keep my living space organized", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 18, "trait": "Conscientiousness", "text": "I often make careless mistakes", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    
+    # Extraversion (E) - 8 items
+    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 22, "trait": "Extraversion", "text": "I prefer quiet evenings at home to parties", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 23, "trait": "Extraversion", "text": "I am the life of the party", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 24, "trait": "Extraversion", "text": "Large social gatherings drain my energy", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 25, "trait": "Extraversion", "text": "I enjoy being the center of attention", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 26, "trait": "Extraversion", "text": "I find it hard to start conversations", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 27, "trait": "Extraversion", "text": "I make friends easily", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 28, "trait": "Extraversion", "text": "I prefer working alone rather than in teams", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    
+    # Agreeableness (A) - 8 items
+    {"id": 31, "trait": " Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 32, "trait": " Agreeableness", "text": "I often argue with authority figures", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 33, "trait": " Agreeableness", "text": "I trust others' intentions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 34, "trait": " Agreeableness", "text": "I enjoy competitive situations more than cooperative ones", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 35, "trait": " Agreeableness", "text": "I go out of my way to help others", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 36, "trait": " Agreeableness", "text": "I sometimes take advantage of others", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 37, "trait": " Agreeableness", "text": "I value harmony in relationships", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 38, "trait": " Agreeableness", "text": "I enjoy debating controversial topics", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    
+    # Neuroticism (N) - 8 items
+    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 42, "trait": "Neuroticism", "text": "I remain calm under pressure", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 43, "trait": "Neuroticism", "text": "I worry about things that might go wrong", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 44, "trait": "Neuroticism", "text": "I rarely feel sad or depressed", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 45, "trait": "Neuroticism", "text": "I often feel emotionally vulnerable", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 46, "trait": "Neuroticism", "text": "I handle stress well", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 47, "trait": "Neuroticism", "text": "I often feel overwhelmed by my emotions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 48, "trait": "Neuroticism", "text": "I rarely experience mood swings", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]}
+]
+
+# Fetch additional aptitude questions from OpenTDB
+def fetch_opentdb_questions(category_id, amount=5):
+    url = f'https://opentdb.com/api.php?amount={amount}&category={category_id}&type=multiple'
+    response = requests.get(url)
+    data = response.json()
+    if data['response_code'] == 0:
+        questions = []
+        for q in data['results']:
+            options = q['incorrect_answers'] + [q['correct_answer']]
+            random.shuffle(options)
+            correct_idx = options.index(q['correct_answer'])
+            questions.append({
+                "id": f"OTDB-{random.randint(1000, 9999)}",
+                "text": q['question'],
+                "options": options,
+                "correct": correct_idx,
+                "time_limit": 60
+            })
+        return questions
+    return []
+
+# Generate dynamic test questions
 def generate_questions(test_type):
     if test_type == 'sample':
         return [
@@ -104,38 +231,37 @@ def generate_questions(test_type):
             {"id": "q10", "question": "How do you ensure your work maintains high quality under pressure?", "options": ["Double-check everything", "Stick to a proven process", "Focus on speed over perfection", "Ask for feedback before submission"]}
         ]
     elif test_type == 'aptitude':
-        return {
-            "Mathematics": {
-                "easy": [
-                    {"id": "m1", "text": "2 + 2 = ?", "options": ["3", "4", "5"], "correct": 1, "time_limit": 10},
-                    {"id": "m2", "text": "10 - 3 = ?", "options": ["6", "7", "8"], "correct": 1, "time_limit": 10}
-                ],
-                "medium": [
-                    {"id": "m3", "text": "5 * 6 = ?", "options": ["30", "25", "35"], "correct": 0, "time_limit": 15},
-                    {"id": "m4", "text": "12 / 3 = ?", "options": ["4", "5", "3"], "correct": 0, "time_limit": 15}
-                ]
-            },
-            "Logical Reasoning": {
-                "easy": [
-                    {"id": "l1", "text": "If A then B. A is true. Is B true?", "options": ["Yes", "No"], "correct": 0, "time_limit": 20},
-                    {"id": "l2", "text": "All cats are mammals. Tom is a cat. Is Tom a mammal?", "options": ["Yes", "No"], "correct": 0, "time_limit": 20}
-                ]
-            },
-            "Verbal Ability": {
-                "easy": [
-                    {"id": "v1", "text": "Synonym of 'Happy'?", "options": ["Sad", "Joyful", "Angry"], "correct": 1, "time_limit": 10},
-                    {"id": "v2", "text": "Antonym of 'Big'?", "options": ["Large", "Small", "Huge"], "correct": 1, "time_limit": 10}
-                ]
-            }
-        }
+        questions = copy.deepcopy(APTITUDE_QUESTIONS)
+        # Ensure at least one question per category and difficulty
+        for category in questions:
+            for difficulty in questions[category]:
+                q_list = questions[category][difficulty]
+                if q_list:
+                    questions[category][difficulty] = [random.choice(q_list)]
+        
+        # Fetch additional questions from OpenTDB
+        category_mapping = {"Mathematics": 19, "Logical Reasoning": 25, "Verbal Ability": 10}
+        for category, cat_id in category_mapping.items():
+            opentdb_qs = fetch_opentdb_questions(cat_id, 2)
+            if opentdb_qs:
+                questions[category]["easy"].extend(opentdb_qs[:2])  # Add 2 OpenTDB questions
+        
+        # Flatten and shuffle all questions
+        flat_questions = [q for cat in questions.values() for lvl in cat.values() for q in lvl]
+        random.shuffle(flat_questions)
+        return flat_questions[:10]  # Limit to 10 questions
     elif test_type == 'personality':
-        return [
-            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p4", "trait": "Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": False}
-        ]
+        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], ' Agreeableness': [], 'Neuroticism': []}
+        for q in PERSONALITY_QUESTIONS:
+            traits[q['trait']].append(q)
+        
+        selected_questions = []
+        for trait in traits:
+            trait_qs = traits[trait]
+            selected_questions.extend(random.sample(trait_qs, min(2, len(trait_qs))))  # 2 questions per trait for brevity
+        
+        random.shuffle(selected_questions)
+        return selected_questions
     return []
 
 # Routes
@@ -263,21 +389,37 @@ def test():
     test_type = request.args.get('type')
     if test_type == 'sample':
         questions = generate_questions('sample')
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
+        instructions = {
+            "time_limit": "You have 10 minutes to complete this test.",
+            "honesty": "Please answer all questions honestly and without external assistance.",
+            "scientific_accuracy": "This test is designed to assess work ethics with standard questions."
+        }
+        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
     elif test_type == 'aptitude':
         if not current_user.is_authenticated:
             flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
             return redirect(url_for('login', next=request.url))
         questions = generate_questions('aptitude')
-        total_questions = sum(len(lvl) for cat in questions.values() for lvl in cat.values())
-        return render_template('aptitude_test.html', questions=questions, initial_time=60, 
-                              total_questions=total_questions, current_category="Mathematics", 
-                              completed_questions=0, csrf_token=generate_csrf())
+        session['aptitude_questions'] = questions
+        instructions = {
+            "time_limit": "You have 10 minutes to complete this test.",
+            "honesty": "Please answer all questions honestly and without external assistance.",
+            "scientific_accuracy": "This test combines validated questions from our database and the Open Trivia Database for scientific accuracy."
+        }
+        return render_template('aptitude_test.html', questions=questions, initial_time=600,  # 10 minutes in seconds
+                              total_questions=10, current_category="Mathematics", 
+                              completed_questions=0, csrf_token=generate_csrf(), instructions=instructions)
     elif test_type == 'personality':
         if not current_user.is_authenticated:
             flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
             return redirect(url_for('login', next=request.url))
         questions = generate_questions('personality')
+        session['personality_questions'] = questions
+        instructions = {
+            "time_limit": "There is no strict time limit, but aim to complete in one sitting.",
+            "honesty": "Answer honestly for the most accurate results.",
+            "scientific_accuracy": "This test uses validated Big Five Inventory items for scientific accuracy."
+        }
         current_question_index = int(request.args.get('q', 0))
         if current_question_index < 0 or current_question_index >= len(questions):
             current_question_index = 0
@@ -286,7 +428,7 @@ def test():
                               questions=questions, 
                               question=question, 
                               current_question_index=current_question_index, 
-                              csrf_token=generate_csrf())
+                              csrf_token=generate_csrf(), instructions=instructions)
     return render_template('test.html')
 
 @app.route('/test', methods=['POST'])
@@ -318,12 +460,15 @@ def test_post():
         if not current_user.is_authenticated:
             flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
             return redirect(url_for('login', next=request.url))
-        questions = generate_questions('aptitude')
+        questions = session.get('aptitude_questions', generate_questions('aptitude'))
         if request.form:
             time_spent = int(request.form.get('time_spent', 0))
-            all_questions = [q for cat in questions.values() for lvl in cat.values() for q in lvl]
-            correct = sum(1 for q in all_questions if request.form.get(q['id']) == str(q['correct']))
-            total = len(all_questions)
+            correct = 0
+            total = len(questions)
+            for i, q in enumerate(questions):
+                answer_key = f'answer_{i}'
+                if answer_key in request.form and int(request.form[answer_key]) == q['correct']:
+                    correct += 1
             score = correct
             score_data = {
                 'score': (correct / total) * 100,
@@ -335,8 +480,8 @@ def test_post():
             db.session.add(result)
             db.session.commit()
             return render_template('results.html', score_data=score_data)
-        total_questions = sum(len(lvl) for cat in questions.values() for lvl in cat.values())
-        return render_template('aptitude_test.html', questions=questions, initial_time=60, 
+        total_questions = 10
+        return render_template('aptitude_test.html', questions=questions, initial_time=600, 
                               total_questions=total_questions, current_category="Mathematics", 
                               completed_questions=0, csrf_token=generate_csrf())
     flash('Invalid test type.', 'danger')
@@ -353,9 +498,9 @@ def submit_assessment():
     if test_type != 'personality':
         return jsonify({'error': 'Invalid test type'}), 400
 
-    questions = generate_questions('personality')
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
-    question_traits = {q['id']: (q['trait'], q['direction']) for q in questions}
+    questions = session.get('personality_questions', generate_questions('personality'))
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
+    question_traits = {str(q['id']): (q['trait'], q['direction']) for q in questions}
 
     for response in responses:
         question_id = response['questionId']
@@ -363,11 +508,11 @@ def submit_assessment():
         trait, direction = question_traits.get(question_id, (None, True))
         if trait:
             if not direction:
-                value = 4 - value
+                value = 4 - value  # Reverse scoring
             scores[trait] += value
 
     for trait in scores:
-        scores[trait] = (scores[trait] / 4) * 100
+        scores[trait] = (scores[trait] / 2) * 100  # Normalize to 100% based on 2 questions per trait
 
     dominant_trait = max(scores, key=scores.get)
 
@@ -406,14 +551,14 @@ def progress_tracking():
     for test_type in test_types:
         tests = [test for test in test_history if test.test_type == test_type]
         if tests:
-            max_score = 9 if test_type == 'sample' else (5 if test_type == 'personality' else 8)
+            max_score = 9 if test_type == 'sample' else (5 if test_type == 'personality' else 10)
             avg_scores[test_type] = sum(test.score for test in tests) / len(tests) / max_score * 100
         else:
             avg_scores[test_type] = 0
 
     progress_data = {
         'labels': [test.completed_at.strftime('%Y-%m-%d') for test in test_history],
-        'scores': [(test.score / (9 if test.test_type == 'sample' else (5 if test.test_type == 'personality' else 8)) * 100) for test in test_history],
+        'scores': [(test.score / (9 if test.test_type == 'sample' else (5 if test.test_type == 'personality' else 10)) * 100) for test in test_history],
         'types': [test.test_type for test in test_history]
     }
 
