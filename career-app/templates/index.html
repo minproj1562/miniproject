@@ -1,16 +1,30 @@
 {% extends "base.html" %}
+
 {% block title %}Career Analytics - Home{% endblock %}
+
 {% block content %}
     <style>
         body {
-            background: linear-gradient(135deg, #4facfe, #8e2de2);
+            {% if current_user.is_authenticated %}
+                {% if current_user.theme == 'light' %}
+                    background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Light blue gradient for light theme */
+                    color: #fff;
+                {% else %}
+                    background: linear-gradient(135deg, #3a4f79, #3c5c7b); /* Darker blue gradient for dark theme */
+                    color: #fff;
+                {% endif %}
+            {% else %}
+                background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Light blue gradient for non-logged-in users */
+                color: #fff;
+            {% endif %}
             min-height: 100vh;
             margin: 0;
             font-family: 'Poppins', sans-serif;
-            color: #fff;
             position: relative;
             overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease; /* Smooth transition between themes */
         }
+        
         .hero {
             padding: 100px 20px;
             text-align: center;
@@ -18,33 +32,38 @@
             z-index: 1;
             animation: fadeIn 1s ease-in;
         }
+        
         h1 {
             font-size: 4rem;
             font-weight: 700;
             text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
             margin-bottom: 20px;
         }
+        
         p {
             font-size: 1.5rem;
             max-width: 600px;
             margin: 0 auto 40px;
         }
+        
         .btn-test {
             font-size: 1.2rem;
             padding: 12px 30px;
-            background: #fff;
-            color: #8e2de2;
+            background: #ffffff;
+            color: #4a78b8; /* Medium blue */
             border: none;
             border-radius: 25px;
             transition: transform 0.3s, box-shadow 0.3s;
             text-decoration: none;
             display: inline-block;
         }
+        
         .btn-test:hover {
             transform: scale(1.1);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            color: #4facfe;
+            color: #5b8fce; /* Darker blue on hover */
         }
+        
         .bg-overlay {
             position: absolute;
             top: 0;
@@ -55,16 +74,19 @@
             animation: pulse 10s infinite;
             z-index: 0;
         }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         @keyframes pulse {
             0% { transform: scale(1); opacity: 0.5; }
             50% { transform: scale(1.2); opacity: 0.2; }
             100% { transform: scale(1); opacity: 0.5; }
         }
     </style>
+
     <div class="bg-overlay"></div>
     <div class="hero">
         <h1>Discover Your Career Path</h1>

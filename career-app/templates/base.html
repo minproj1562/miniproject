@@ -12,24 +12,29 @@
         }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            {% if current_user.is_authenticated %}
-                {% if current_user.theme == 'light' %}
-                    background: #A4C8E1; /* Medium blue for light theme */
-                    color: #333;
-                {% else %}
-                    background: #4A6A8C; /* Medium blue for dark theme */
-                    background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); /* Starry texture */
-                    color: #fff;
-                {% endif %}
+            {% if is_homepage %}
+                background: linear-gradient(135deg, #A1CFF0 0%, #E0F7FA 100%); /* Cool Blue to Light Cyan gradient for homepage */
+                color: #333333; /* Dark gray contrast color for readability */
             {% else %}
-                background: #7FA9D1; /* Medium blue for non-logged-in users */
-                color: #333;
+                {% if current_user.is_authenticated %}
+                    {% if current_user.theme == 'light' %}
+                        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Light theme gradient */
+                        color: #333;
+                    {% else %}
+                        background: #1a2333; /* Dark navy blue for dark theme */
+                        background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); /* Starry texture */
+                        color: #fff;
+                    {% endif %}
+                {% else %}
+                    background: #B0E0E6; /* Default to powder blue for non-authenticated users on other pages */
+                    color: #333;
+                {% endif %}
             {% endif %}
             min-height: 100vh;
             transition: background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
         }
         .navbar {
-            background: #3C5A75; /* Medium blue shade for navbar */
+            background: linear-gradient(to right, #1e3c72, #2a5298);
             padding: 20px;
             position: fixed;
             width: 100%;
@@ -98,7 +103,7 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background: linear-gradient(to right, #4A6A8C, #3C5A75); /* Medium blue gradient */
+            background: linear-gradient(to right, #2a5298, #1e3c72);
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             min-width: 160px;
@@ -140,6 +145,9 @@
             max-width: 1200px;
             margin-left: auto;
             margin-right: auto;
+            background: rgba(255, 255, 255, 0.9); /* Added for readability against gradient on homepage */
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         .alert {
             padding: 15px 20px;
@@ -152,19 +160,19 @@
             {% endif %}
         }
         .alert-info {
-            background: linear-gradient(to right, #3A6D88, #4A7B94); /* Medium blue gradient for info alert */
-            color: #fff;
+            background: linear-gradient(to right, #04282b, #3e7fdb);
+            color: #1e3c72;
         }
         .alert-success {
-            background: linear-gradient(to right, #3E8C5A, #2D7D49); /* Medium greenish-blue gradient for success alert */
-            color: #fff;
+            background: linear-gradient(to right, #0e681d, #628a6e);
+            color: #1a6642;
         }
         .alert-danger {
-            background: linear-gradient(to right, #B23A44, #9E3B41); /* Medium reddish-blue for danger alert */
-            color: #fff;
+            background: linear-gradient(to right, #721e21, #c95d3f);
+            color: #721c24;
         }
         .alert-warning {
-            background: linear-gradient(to right, #F2A23B, #F1A93F); /* Medium yellowish-blue gradient for warning alert */
+            background: linear-gradient(to right, #ffe29f, #ffa99e);
             color: #856404;
         }
         .alert-dismissible .close-btn {
@@ -196,7 +204,7 @@
                 position: absolute;
                 top: 100%;
                 left: 0;
-                background: linear-gradient(to right, #3C5A75, #4A6A8C); /* Medium blue gradient for mobile navbar */
+                background: linear-gradient(to right, #1e3c72, #2a5298);
                 padding: 20px;
                 box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             }
