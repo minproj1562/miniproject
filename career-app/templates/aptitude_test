@@ -1,296 +1,79 @@
-{% extends "base.html" %}
-{% block title %}Aptitude Test{% endblock %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const timerElement = document.getElementById('time-left');
+    const answeredCountElement = document.getElementById('answered-count');
+    const progressBar = document.getElementById('progress-bar');
+    const form = document.getElementById('aptitude-form');
+    const timeSpentInput = document.getElementById('time-spent');
+    let timeLeft = {{ initial_time|default(60) }};
+    let answeredCount = {{ completed_questions|default(0) }};
+    const totalQuestions = {{ total_questions|default(0) }};
 
-{% block content %}
-    <style>
-        .assessment-container {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            max-width: 900px;
-            margin: 4rem auto;
-            padding: 2rem;
-            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
-        }
-        .progress-container {
-            background: {% if user.theme == 'light' or user.theme is not defined %}rgba(0, 0, 0, 0.2){% else %}rgba(255, 255, 255, 0.2){% endif %};
-            border-radius: 10px;
-            height: 20px;
-            margin-bottom: 1.5rem;
-        }
-        .progress-bar {
-            background: #2a5298;
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-        .timer-alert {
-            text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
-        }
-        .question-counter {
-            text-align: center;
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
-        }
-        .category-nav {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-        .category-btn {
-            padding: 0.8rem 1.5rem;
-            border-radius: 20px;
-            border: 2px solid #2a5298;
-            background: transparent;
-            color: {% if user.theme == 'light' or user.theme is not defined %}#333{% else %}#fff{% endif %};
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .category-btn.active {
-            background: #2a5298;
-            color: #fff;
-        }
-        .category-section {
-            background: {% if user.theme == 'light' or user.theme is not defined %}rgba(255, 255, 255, 0.8){% else %}rgba(255, 255, 255, 0.95){% endif %};
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .category-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e3c72;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        .difficulty-title {
-            font-size: 1.5rem;
-            color: #2a5298;
-            border-bottom: 2px solid #2a5298;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .question-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-        }
-        .question-card:hover {
-            transform: translateY(-5px);
-        }
-        .question-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-        .category-badge {
-            background: #2a5298;
-            color: #fff;
-            padding: 0.3rem 0.8rem;
-            border-radius: 10px;
-        }
-        .time-limit {
-            background: #dc3545;
-            color: #fff;
-            padding: 0.3rem 0.8rem;
-            border-radius: 10px;
-        }
-        .question-text {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 1rem;
-        }
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-        .form-check-input {
-            margin-right: 0.5rem;
-        }
-        .form-check-label {
-            font-size: 1rem;
-            color: #333;
-        }
-        .assessment-controls {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 2rem;
-        }
-        .nav-btn, .submit-btn {
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
-            border-radius: 20px;
-            border: none;
-            background: #2a5298;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .nav-btn:hover, .submit-btn:hover {
-            background: #1e3c72;
-            transform: translateY(-3px);
-        }
-    </style>
+    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                form.submit();
+            }
+        }, 1000);
 
-    <div class="assessment-container">
-        {% if total_questions == 0 %}
-            <p>No questions available for this test.</p>
-        {% else %}
-            <div class="progress-container">
-                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-            </div>
-
-            <div class="timer-alert" id="timer">
-                <i class="bi bi-clock"></i>
-                Time Left: <span id="time-left">{{ initial_time }}</span>
-            </div>
-
-            <div class="question-counter" id="question-counter">
-                Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
-            </div>
-
-            <form id="aptitude-form" action="{{ url_for('test', type='aptitude') }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="time_spent" id="time-spent" value="0">
-
-                <div class="category-nav mb-4">
-                    {% for category in ['Mathematics', 'Logical Reasoning', 'Verbal Ability'] %}
-                    <button type="button" class="category-btn {% if current_category == category %}active{% endif %}" 
-                            data-category="{{ category }}">
-                        {{ category }}
-                    </button>
-                    {% endfor %}
-                </div>
-
-                <div class="questions-wrapper">
-                    {% for category, levels in questions.items() %}
-                    <div class="category-section {% if current_category != category %}d-none{% endif %}" 
-                         id="category-{{ category|replace(' ', '-') }}">
-                        <h2 class="category-title">{{ category }}</h2>
-                        <div class="questions-grid">
-                            {% for level, question_list in levels.items() %}
-                            {% if question_list %}
-                            <div class="difficulty-level">
-                                <h3 class="difficulty-title">{{ level|title }}</h3>
-                                {% for question in question_list %}
-                                <div class="question-card">
-                                    <div class="question-header">
-                                        <span class="category-badge">{{ category }}</span>
-                                        <span class="time-limit">⏱ {{ question.time_limit }}s</span>
-                                    </div>
-                                    <h3 class="question-text">{{ question.text }}</h3>
-                                    <div class="options-grid">
-                                        {% for option in question.options %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" 
-                                                   name="{{ question.id }}" 
-                                                   value="{{ loop.index0 }}" 
-                                                   id="{{ question.id }}-{{ loop.index0 }}"
-                                                   data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
-                                                   required>
-                                            <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
-                                                {{ option }}
-                                            </label>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <div class="assessment-controls">
-                    <button type="button" class="nav-btn prev-category">← Previous Section</button>
-                    <button type="submit" class="submit-btn">Submit Assessment</button>
-                    <button type="button" class="nav-btn next-category">Next Section →</button>
-                </div>
-            </form>
-        {% endif %}
-    </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const timerElement = document.getElementById('time-left');
-        const answeredCountElement = document.getElementById('answered-count');
-        const progressBar = document.getElementById('progress-bar');
-        const form = document.getElementById('aptitude-form');
-        const timeSpentInput = document.getElementById('time-spent');
-        let timeLeft = {{ initial_time|default(60) }};
-        let answeredCount = 0;
-        const totalQuestions = {{ total_questions|default(0) }};
-
-        if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
-            const timerInterval = setInterval(() => {
-                timeLeft--;
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    form.submit();
+        document.querySelectorAll('.form-check-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const questionId = this.name;
+                const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
+                if (!alreadyAnswered) {
+                    answeredCount++;
+                    answeredCountElement.textContent = answeredCount;
+                    progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
                 }
-            }, 1000);
-
-            document.querySelectorAll('.form-check-input').forEach(input => {
-                input.addEventListener('change', function() {
-                    const questionId = this.name;
-                    const alreadyAnswered = document.querySelector(`input[name="${questionId}"]:checked`);
-                    if (!alreadyAnswered || document.querySelectorAll(`input[name="${questionId}"]:checked`).length === 1) {
-                        answeredCount++;
-                        answeredCountElement.textContent = answeredCount;
-                        progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-                    }
-                });
             });
+        });
 
-            let currentCategoryIndex = 0;
-            const categories = Array.from(document.querySelectorAll('.category-section'));
-            const nextButton = document.querySelector('.next-category');
-            const prevButton = document.querySelector('.prev-category');
-
-            if (nextButton) {
-                nextButton.addEventListener('click', () => {
-                    if (currentCategoryIndex < categories.length - 1) {
-                        categories[currentCategoryIndex].classList.add('d-none');
-                        currentCategoryIndex++;
-                        categories[currentCategoryIndex].classList.remove('d-none');
-                    }
-                });
+        let currentCategoryIndex = 0;
+        const categories = Array.from(document.querySelectorAll('.category-section'));
+        
+        document.querySelector('.next-category').addEventListener('click', () => {
+            if (currentCategoryIndex < categories.length - 1) {
+                categories[currentCategoryIndex].classList.add('d-none');
+                currentCategoryIndex++;
+                categories[currentCategoryIndex].classList.remove('d-none');
+                document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.category-btn[data-category="${categories[currentCategoryIndex].id.replace('category-', '').replace('-', ' ')}"]`).classList.add('active');
             }
-
-            if (prevButton) {
-                prevButton.addEventListener('click', () => {
-                    if (currentCategoryIndex > 0) {
-                        categories[currentCategoryIndex].classList.add('d-none');
-                        currentCategoryIndex--;
-                        categories[currentCategoryIndex].classList.remove('d-none');
-                    }
-                });
+        });
+        
+        document.querySelector('.prev-category').addEventListener('click', () => {
+            if (currentCategoryIndex > 0) {
+                categories[currentCategoryIndex].classList.add('d-none');
+                currentCategoryIndex--;
+                categories[currentCategoryIndex].classList.remove('d-none');
+                document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.category-btn[data-category="${categories[currentCategoryIndex].id.replace('category-', '').replace('-', ' ')}"]`).classList.add('active');
             }
+        });
 
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                    timeSpentInput.value = {{ initial_time|default(60) }} - timeLeft;
-                });
-            }
-        }
-    });
-    </script>
-{% endblock %}
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newCategory = btn.getAttribute('data-category').replace('-', ' ');
+                const newIndex = categories.findIndex(cat => cat.id === `category-${newCategory.replace(' ', '-')}`);
+                if (newIndex !== -1 && newIndex !== currentCategoryIndex) {
+                    categories[currentCategoryIndex].classList.add('d-none');
+                    currentCategoryIndex = newIndex;
+                    categories[currentCategoryIndex].classList.remove('d-none');
+                    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+            });
+        });
+
+        form.addEventListener('submit', (e) => {
+            timeSpentInput.value = {{ initial_time|default(60) }} - timeLeft;
+        });
+    }
+});
+</script>

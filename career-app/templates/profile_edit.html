@@ -1,91 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Edit Profile{% endblock %}
+
 {% block content %}
-    <style>
-        .edit-profile-container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px;
-            background: linear-gradient(to bottom, #66a6ffee, #b8ffc4ee);
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(5px);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #1e3c72;
-            font-size: 32px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2a5298;
-            font-weight: 600;
-            font-size: 16px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-            font-size: 16px;
-            transition: box-shadow 0.3s;
-        }
-        input:focus {
-            box-shadow: 0 0 10px rgba(46, 137, 255, 0.5);
-            outline: none;
-        }
-        .btn-submit {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(to right, #2e89ff, #1e3c72);
-            color: #fff;
-            border: none;
-            border-radius: 25px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
-            transition: transform 0.2s, box-shadow 0.3s;
-        }
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
-        }
-    </style>
-    <div class="edit-profile-container">
-        <h1>Edit Profile</h1>
-        <form method="POST">
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Edit Profile</h1>
+    <div class="card p-4 mx-auto" style="max-width: 500px;">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="{{ user.email or '' }}">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>
             </div>
-            <div class="form-group">
-                <label for="password">New Password (leave blank to keep current)</label>
-                <input type="password" id="password" name="password">
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user.email else '' }}">
             </div>
-            <div class="form-group">
-                <label for="mobile_number">Mobile Number</label>
-                <input type="text" id="mobile_number" name="mobile_number" value="{{ user.mobile_number or '' }}">
+            <div class="mb-3">
+                <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                <input type="password" class="form-control" id="password" name="password">
             </div>
-            <div class="form-group">
-                <label for="pin_code">Pin Code</label>
-                <input type="text" id="pin_code" name="pin_code" value="{{ user.pin_code or '' }}">
+            <div class="mb-3">
+                <label for="mobile_number" class="form-label">Mobile Number</label>
+                <input type="text" class="form-control" id="mobile_number" name="mobile_number" value="{{ user.mobile_number if user.mobile_number else '' }}">
             </div>
-            <div class="form-group">
-                <label for="dob">Date of Birth (YYYY-MM-DD)</label>
-                <input type="text" id="dob" name="dob" value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}">
+            <div class="mb-3">
+                <label for="pin_code" class="form-label">Pin Code</label>
+                <input type="text" class="form-control" id="pin_code" name="pin_code" value="{{ user.pin_code if user.pin_code else '' }}">
             </div>
-            <button type="submit" class="btn-submit">Save Changes</button>
+            <div class="mb-3">
+                <label for="dob" class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" id="dob" name="dob" value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="profile_image" class="form-label">Profile Image</label>
+                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                {% if user.profile_image %}
+                    <img src="{{ url_for('static', filename=user.profile_image) }}" alt="Profile Image" class="img-thumbnail mt-2" style="max-width: 150px;">
+                {% endif %}
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Update Profile</button>
+                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Cancel</a>
+            </div>
         </form>
     </div>
+</div>
 {% endblock %}

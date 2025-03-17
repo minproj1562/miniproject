@@ -55,24 +55,37 @@
             background: #3498db;
             color: #fff !important;
         }
+        /* Fix for nested dropdowns */
+        .dropdown-submenu {
+            position: relative;
+        }
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+        }
+        .dropdown-submenu:hover > .dropdown-menu {
+            display: block;
+        }
         .profile-icon {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: #fff;
+            background: linear-gradient(45deg, #f1c40f, #e67e22);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #2c3e50;
+            color: #fff;
             font-weight: bold;
             transition: all 0.3s ease;
             cursor: pointer;
-            margin-left: auto; /* Pushes to the right extreme */
+            margin-left: auto;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.5);
+            border: 2px solid #fff;
         }
         .profile-icon:hover {
-            background: #f1c40f;
-            color: #fff;
             transform: scale(1.1);
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.8);
         }
         .navbar-toggler {
             border: none;
@@ -104,19 +117,18 @@
                         <a class="nav-link" href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact Us</a>
                     </li>
                     {% if current_user.is_authenticated %}
-                        <!-- Student Dropdown (Visible when logged in) -->
+                        <!-- Student Dropdown -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="studentDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
                                <i class="fas fa-user-graduate"></i> Student
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="studentDropdown">
-                                <li class="dropdown-item dropdown">
-                                    <a class="dropdown-item dropdown-toggle" href="#" id="testsDropdown" role="button" 
-                                       data-bs-toggle="dropdown" aria-expanded="false">
-                                       <i class="fas fa-vial"></i> Tests
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle" href="#" id="testsDropdown">
+                                        <i class="fas fa-vial"></i> Tests
                                     </a>
-                                    <ul class="dropdown-menu" aria-labelledby="testsDropdown">
+                                    <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="{{ url_for('test', type='sample') }}"><i class="fas fa-flask"></i> Sample Test</a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('test', type='aptitude') }}"><i class="fas fa-brain"></i> Aptitude Test</a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('test', type='personality') }}"><i class="fas fa-user"></i> Personality Test</a></li>
@@ -125,15 +137,15 @@
                                 <li><a class="dropdown-item" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
                             </ul>
                         </li>
-                        <!-- Dashboard Tab (Visible when logged in) -->
+                        <!-- Dashboard Tab -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                         </li>
-                        <!-- Profile Dropdown (Top-right extreme) -->
+                        <!-- Profile Dropdown -->
                         <li class="nav-item dropdown">
                             <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
-                                {{ current_user.username[0] | upper }}
+                                <i class="fas fa-user"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('progress_tracking') }}"><i class="fas fa-chart-line"></i> Progress Tracking</a></li>
@@ -143,7 +155,7 @@
                             </ul>
                         </li>
                     {% else %}
-                        <!-- Profile Dropdown (Top-right extreme when not logged in) -->
+                        <!-- Profile Dropdown (Not Logged In) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
@@ -182,5 +194,31 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Enable nested dropdowns
+        document.addEventListener('DOMContentLoaded', function () {
+            var dropdowns = document.querySelectorAll('.dropdown-submenu .dropdown-toggle');
+            dropdowns.forEach(function (dropdown) {
+                dropdown.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var submenu = this.nextElementSibling;
+                    if (submenu.classList.contains('dropdown-menu')) {
+                        submenu.classList.toggle('show');
+                    }
+                });
+            });
+
+            // Close submenus when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.dropdown-submenu')) {
+                    document.querySelectorAll('.dropdown-submenu .dropdown-menu.show')
+                        .forEach(function (menu) {
+                            menu.classList.remove('show');
+                        });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

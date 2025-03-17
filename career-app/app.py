@@ -15,6 +15,7 @@ load_dotenv()
 print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
 print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
+# Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
@@ -26,6 +27,7 @@ app.config['MAIL_USERNAME'] = 'abc@gmail.com'
 app.config['MAIL_PASSWORD'] = 'your-app-password-here'
 app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
 
+# Initialize extensions
 db = SQLAlchemy(app)
 with app.app_context():
     db.create_all()
@@ -37,12 +39,14 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 migrate = Migrate(app, db)
 
+# Custom Jinja filter
 def datetimeformat(value, format='%Y'):
     if value == 'now':
         return datetime.now().strftime(format)
     return value
 app.jinja_env.filters['datetimeformat'] = datetimeformat
 
+# User model (no profile_image field)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -56,6 +60,7 @@ class User(UserMixin, db.Model):
     theme = db.Column(db.String(20), default='dark')
     animations_enabled = db.Column(db.Boolean, default=True)
 
+# TestResult model
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -68,12 +73,20 @@ class TestResult(db.Model):
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
+# Generate test questions
 def generate_questions(test_type):
     if test_type == 'sample':
         return [
-            {"id": "q1", "question": "How often do you meet deadlines?", "options": ["Always", "Usually", "Sometimes", "Rarely"]},
-            {"id": "q2", "question": "Do you take initiative at work?", "options": ["Always", "Usually", "Sometimes", "Rarely"]},
-            {"id": "q3", "question": "How well do you collaborate?", "options": ["Always", "Usually", "Sometimes", "Rarely"]}
+            {"id": "q1", "question": "How do you prioritize tasks when faced with tight deadlines?", "options": ["Focus on the most urgent first", "Delegate to others", "Work on multiple tasks simultaneously", "Ask for an extension"]},
+            {"id": "q2", "question": "What do you do if you notice a coworker slacking off?", "options": ["Report them to the supervisor", "Offer to help them", "Ignore it and focus on my work", "Confront them directly"]},
+            {"id": "q3", "question": "How often do you take initiative on projects without being asked?", "options": ["Always", "Often", "Sometimes", "Rarely"]},
+            {"id": "q4", "question": "What’s your approach to handling a mistake you made at work?", "options": ["Admit it and fix it immediately", "Fix it quietly without telling anyone", "Blame external factors", "Wait for someone to notice"]},
+            {"id": "q5", "question": "How do you balance work and personal life?", "options": ["Set strict boundaries", "Work late when needed", "Integrate work into personal time", "Prioritize personal life over work"]},
+            {"id": "q6", "question": "How do you respond to constructive criticism from a manager?", "options": ["Accept it and improve", "Defend my actions", "Feel discouraged but try to adapt", "Ignore it unless it’s repeated"]},
+            {"id": "q7", "question": "What motivates you to meet a challenging deadline?", "options": ["Personal satisfaction", "Team success", "Avoiding consequences", "Recognition from others"]},
+            {"id": "q8", "question": "How do you handle a situation where you disagree with a team decision?", "options": ["Voice my opinion and push back", "Go along but document my concerns", "Support it fully despite disagreement", "Stay silent and follow through"]},
+            {"id": "q9", "question": "What’s your approach to learning new skills required for your job?", "options": ["Proactively seek training", "Learn on the job as needed", "Wait for company-provided training", "Rely on colleagues to teach me"]},
+            {"id": "q10", "question": "How do you ensure your work maintains high quality under pressure?", "options": ["Double-check everything", "Stick to a proven process", "Focus on speed over perfection", "Ask for feedback before submission"]}
         ]
     elif test_type == 'aptitude':
         return {
@@ -102,14 +115,15 @@ def generate_questions(test_type):
         }
     elif test_type == 'personality':
         return [
-            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p4", "trait": "Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
-            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": False}
+            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
+            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
+            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
+            {"id": "p4", "trait": " Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
+            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": False}
         ]
     return []
 
+# Routes
 @app.route('/')
 def index():
     if not current_user.is_authenticated and not session.get('_flashes'):
@@ -266,7 +280,15 @@ def test_post():
     if test_type == 'sample':
         questions = generate_questions('sample')
         if request.form:
-            score = sum(3 - int(request.form.get(q['id'], 0)) for q in questions)
+            answers = {}
+            for q in questions:
+                answer = request.form.get(q['id'])
+                if answer is not None:
+                    answers[q['id']] = int(answer)
+                else:
+                    flash('Please answer all questions before submitting.', 'danger')
+                    return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
+            score = sum(3 - answers[q['id']] for q in questions)  # Reverse scoring: 3=Always, 0=Rarely
             result = TestResult(
                 user_id=current_user.id if current_user.is_authenticated else None,
                 test_type='sample', 
@@ -317,7 +339,7 @@ def submit_assessment():
         return jsonify({'error': 'Invalid test type'}), 400
 
     questions = generate_questions('personality')
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
     question_traits = {q['id']: (q['trait'], q['direction']) for q in questions}
 
     for response in responses:
@@ -398,6 +420,7 @@ def profile_edit():
         mobile_number = request.form.get('mobile_number')
         pin_code = request.form.get('pin_code')
         dob = request.form.get('dob')
+
         if email and email != current_user.email and User.query.filter_by(email=email).first():
             flash('Email already in use by another account.', 'danger')
         else:

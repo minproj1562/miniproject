@@ -1,390 +1,739 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flask_mail import Mail, Message
-from flask_migrate import Migrate
-import os
-from datetime import datetime
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'  # Replace with a secure key
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'abc@gmail.com'  # REPLACE with your Gmail address
-app.config['MAIL_PASSWORD'] = 'your-app-password-here'  # REPLACE with your Gmail App Password
-app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'  # REPLACE with your Gmail address
-
-db = SQLAlchemy(app)
-csrf = CSRFProtect(app)
-mail = Mail(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-migrate = Migrate(app, db)  # Initialize Flask-Migrate
-
-# Add custom Jinja2 filter for datetime formatting
-def datetimeformat(value, format='%Y'):
-    if value == 'now':
-        return datetime.now().strftime(format)
-    return value
-app.jinja_env.filters['datetimeformat'] = datetimeformat
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=True)
-    mobile_number = db.Column(db.String(15), nullable=True)
-    pin_code = db.Column(db.String(10), nullable=True)
-    dob = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    tests = db.relationship('TestResult', backref='user', lazy=True)
-    theme = db.Column(db.String(20), default='dark')
-    animations_enabled = db.Column(db.Boolean, default=True)
-
-class TestResult(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    test_type = db.Column(db.String(50), nullable=False)
-    score = db.Column(db.Integer, nullable=False)
-    time_spent = db.Column(db.Integer, nullable=True)
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
-
-def generate_questions(test_type):
-    if test_type == 'sample':
-        return [
-            {"id": "q1", "question": "How often do you meet deadlines?", "options": ["Always", "Usually", "Sometimes", "Rarely"]},
-            {"id": "q2", "question": "Do you take initiative at work?", "options": ["Always", "Usually", "Sometimes", "Rarely"]},
-            {"id": "q3", "question": "How well do you collaborate?", "options": ["Always", "Usually", "Sometimes", "Rarely"]}
+APTITUDE_QUESTIONS = {
+    "Mathematics": {
+        "easy": [
+            {
+                "id": "M1-E",
+                "type": "numerical",
+                "text": "Solve: 15 + 8 × 3 ÷ 4",
+                "options": ["21", "18.5", "19.5", "20.25"],
+                "correct": 2,
+                "time_limit": 60,
+                "irt_params": {
+                    "difficulty": -1.2,
+                    "discrimination": 0.8
+                }
+            }
+        ],
+        "moderate": [
+            {
+                "id": "M2-M",
+                "type": "algebra",
+                "text": "If x + y = 15 and 2x - y = 6, what is the value of x?",
+                "options": ["7", "8", "9", "10"],
+                "correct": 0,
+                "time_limit": 90,
+                "irt_params": {
+                    "difficulty": 0.5,
+                    "discrimination": 1.2
+                }
+            }
+        ],
+        "hard": [
+            {
+                "id": "M3-H",
+                "type": "calculus",
+                "text": "What is the derivative of f(x) = 3x² + 2eˣ - ln(x)?",
+                "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"],
+                "correct": 0,
+                "time_limit": 120,
+                "irt_params": {
+                    "difficulty": 1.8,
+                    "discrimination": 1.5
+                }
+            }
         ]
-    elif test_type == 'aptitude':
-        return {
-            "Mathematics": {
-                "easy": [
-                    {"id": "m1", "text": "2 + 2 = ?", "options": ["3", "4", "5"], "correct": 1, "time_limit": 10},
-                    {"id": "m2", "text": "10 - 3 = ?", "options": ["6", "7", "8"], "correct": 1, "time_limit": 10}
+    },
+    "Logical Reasoning": {
+        "easy": [
+            {
+                "id": "LR1-E",
+                "type": "pattern",
+                "text": "Complete the sequence: A, C, E, G, ___",
+                "options": ["H", "I", "J", "K"],
+                "correct": 1,
+                "time_limit": 45,
+                "irt_params": {
+                    "difficulty": -1.0,
+                    "discrimination": 0.9
+                }
+            }
+        ],
+        "moderate": [
+            {
+                "id": "LR2-M",
+                "type": "deductive",
+                "text": "All managers are leaders. Some leaders are visionary. Therefore:",
+                "options": [
+                    "All managers are visionary",
+                    "Some managers may be visionary",
+                    "No managers are visionary",
+                    "Visionary people cannot be managers"
                 ],
-                "medium": [
-                    {"id": "m3", "text": "5 * 6 = ?", "options": ["30", "25", "35"], "correct": 0, "time_limit": 15},
-                    {"id": "m4", "text": "12 / 3 = ?", "options": ["4", "5", "3"], "correct": 0, "time_limit": 15}
-                ]
-            },
-            "Logical Reasoning": {
-                "easy": [
-                    {"id": "l1", "text": "If A then B. A is true. Is B true?", "options": ["Yes", "No"], "correct": 0, "time_limit": 20},
-                    {"id": "l2", "text": "All cats are mammals. Tom is a cat. Is Tom a mammal?", "options": ["Yes", "No"], "correct": 0, "time_limit": 20}
-                ]
-            },
-            "Verbal Ability": {
-                "easy": [
-                    {"id": "v1", "text": "Synonym of 'Happy'?", "options": ["Sad", "Joyful", "Angry"], "correct": 1, "time_limit": 10},
-                    {"id": "v2", "text": "Antonym of 'Big'?", "options": ["Large", "Small", "Huge"], "correct": 1, "time_limit": 10}
-                ]
+                "correct": 1,
+                "time_limit": 75,
+                "irt_params": {
+                    "difficulty": 0.7,
+                    "discrimination": 1.1
+                }
             }
-        }
-    return []
-
-@app.route('/')
-def index():
-    if not current_user.is_authenticated and not session.get('_flashes'):
-        flash('Kindly log in to unlock comprehensive access to all features.', 'info')
-    return render_template('index.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user, remember=request.form.get('remember_me') == 'on')
-            next_page = request.args.get('next', url_for('dashboard'))
-            return redirect(next_page)
-        else:
-            flash('Invalid username or password.', 'danger')
-    return render_template('login.html', csrf_token=generate_csrf())
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        email = request.form.get('email', None)
-        captcha = request.form.get('captcha')
-        if password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-        elif captcha != '5':
-            flash('Verification failed. Please enter the correct answer (2 + 3 = 5).', 'danger')
-        elif User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'danger')
-        elif email and User.query.filter_by(email=email).first():
-            flash('Email already registered.', 'danger')
-        else:
-            hashed_password = generate_password_hash(password)
-            new_user = User(username=username, password=hashed_password, email=email)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('login'))
-    return render_template('register.html', csrf_token=generate_csrf())
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    recent_tests = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).limit(5).all()
-    test_data = {
-        'labels': [test.completed_at.strftime('%Y-%m-%d %H:%M') for test in recent_tests[::-1]],
-        'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
-        'types': [test.test_type for test in recent_tests[::-1]]
+        ],
+        "hard": [
+            {
+                "id": "LR3-H",
+                "type": "analytical",
+                "text": "If 3★5 = 16, 4★7 = 30, then 5★9 = ___",
+                "options": ["44", "46", "48", "50"],
+                "correct": 1,
+                "time_limit": 150,
+                "irt_params": {
+                    "difficulty": 2.0,
+                    "discrimination": 1.4
+                }
+            }
+        ]
+    },
+    "Verbal Ability": {
+        "easy": [
+            {
+                "id": "VA1-E",
+                "type": "vocabulary",
+                "text": "Select the antonym of EPHEMERAL:",
+                "options": ["Transient", "Enduring", "Fleeting", "Momentary"],
+                "correct": 1,
+                "time_limit": 45,
+                "irt_params": {
+                    "difficulty": -0.8,
+                    "discrimination": 0.7
+                }
+            }
+        ],
+        "moderate": [
+            {
+                "id": "VA2-M",
+                "type": "comprehension",
+                "text": "'The company's pecuniary situation was precarious.' What does 'pecuniary' mean?",
+                "options": ["Legal", "Financial", "Ethical", "Structural"],
+                "correct": 1,
+                "time_limit": 60,
+                "irt_params": {
+                    "difficulty": 0.6,
+                    "discrimination": 1.0
+                }
+            }
+        ],
+        "hard": [
+            {
+                "id": "VA3-H",
+                "type": "critical_reasoning",
+                "text": "Which statement weakens the argument: 'Remote work increases productivity because employees save commute time'?",
+                "options": [
+                    "Commute time averages 45 minutes daily",
+                    "Home distractions reduce focused work hours",
+                    "Companies report higher profits with remote teams",
+                    "Video conferencing tools improve collaboration"
+                ],
+                "correct": 1,
+                "irt_params": {
+                    "difficulty": 1.5,
+                    "discrimination": 1.3
+                }
+            }
+        ]
     }
-    recommendation = "Take more tests for personalized advice!"
-    if len(recent_tests) >= 3:
-        recommendation = "You're doing great! Consider exploring advanced career options."
-    return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, test_data=test_data, recommendation=recommendation)
+}
 
-@app.route('/student')
-@login_required
-def student():
-    return render_template('student.html', user=current_user)
+ADAPTIVE_TEST_SETTINGS = {
+    "initial_difficulty": "easy",
+    "ability_estimation": "bayesian",
+    "scaling_factors": {
+        "correct_answer": +0.3,
+        "wrong_answer": -0.2,
+        "time_penalty": -0.1  # per 10% over time limit
+    },
+    "proficiency_levels": {
+        "Mathematics": {"thresholds": [40, 70]},  # 0-40: easy, 40-70: moderate, 70+: hard
+        "Logical Reasoning": {"thresholds": [45, 75]},
+        "Verbal Ability": {"thresholds": [35, 65]}
+    }
+}
+# Big Five Personality Inventory
+# Updated Big Five Inventory with validated items
+PERSONALITY_QUESTIONS = [
+    # Openness (10 items)
+    {
+        "id": 1,
+        "trait": "O",
+        "text": "I enjoy trying new and foreign foods",
+        "direction": True,
+        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+        "source": "NEO-PI-R"
+    },
+    {
+        "id": 2,
+        "trait": "O",
+        "text": "I prefer to stick with things I know rather than try new experiences",
+        "direction": False,
+        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+        "source": "IPIP"
+    },
+    # Additional validated items
+    {
+        "id": 3,
+        "trait": "O",
+        "text": "I have a vivid imagination",
+        "direction": True,
+        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+        "source": "NEO-PI-R"
+    },
 
-@app.route('/degree')
-@login_required
-def degree():
-    degrees = [
-        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems."},
-        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles."},
-        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior."},
-        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data."}
-    ]
-    return render_template('degree.html', user=current_user, degrees=degrees)
+    # Conscientiousness (10 items)
+    {
+        "id": 11,
+        "trait": "C",
+        "text": "I pay attention to details",
+        "direction": True,
+        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+        "source": "NEO-PI-R"
+    },
+    {
+        "id": 12,
+        "trait": "C",
+        "text": "I often forget to put things back in their proper place",
+        "direction": False,
+        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+        "source": "IPIP"
+    },
+    
+    # Continue with 8 items per trait following same pattern...
+]
 
-@app.route('/test', methods=['GET'])
-def test():
-    test_type = request.args.get('type')
-    if test_type == 'sample':
-        questions = generate_questions('sample')
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
-    elif test_type == 'aptitude':
-        if not current_user.is_authenticated:
-            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
-            return redirect(url_for('login', next=request.url))
-        questions = generate_questions('aptitude')
-        total_questions = sum(len(lvl) for cat in questions.values() for lvl in cat.values())
-        return render_template('aptitude_test.html', questions=questions, initial_time=60, 
-                              total_questions=total_questions, current_category="Mathematics", 
-                              completed_questions=0, csrf_token=generate_csrf())
-    return render_template('test.html')
+PERSONALITY_QUESTIONS = [
+    # Openness to Experience (O)
+    {
+        "id": 1,
+        "trait": "O",
+        "text": "I enjoy hearing new ideas",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.87,
+        "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]
+    },
+    {
+        "id": 2,
+        "trait": "O",
+        "text": "I avoid philosophical discussions",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.85
+    },
+    {
+        "id": 2,
+        "trait": "O",
+        "text": "I avoid philosophical discussions",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.85
+    },
 
-@app.route('/test', methods=['POST'])
-def test_post():
-    test_type = request.args.get('type')
-    if test_type == 'sample':
-        questions = generate_questions('sample')
-        if request.form:
-            score = sum(3 - int(request.form.get(q['id'], 0)) for q in questions)
-            result = TestResult(
-                user_id=current_user.id if current_user.is_authenticated else None,
-                test_type='sample', 
-                score=score
-            )
-            db.session.add(result)
-            db.session.commit()
-            flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
-            return redirect(url_for('index'))
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
-    elif test_type == 'aptitude':
-        if not current_user.is_authenticated:
-            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
-            return redirect(url_for('login', next=request.url))
-        questions = generate_questions('aptitude')
-        if request.form:
-            time_spent = int(request.form.get('time_spent', 0))
-            all_questions = [q for cat in questions.values() for lvl in cat.values() for q in lvl]
-            correct = sum(1 for q in all_questions if request.form.get(q['id']) == str(q['correct']))
-            total = len(all_questions)
-            score = correct
-            score_data = {
-                'score': (correct / total) * 100,
-                'correct': correct,
-                'total': total,
-                'time_spent': time_spent
+    # Conscientiousness (C)
+    {
+        "id": 11,
+        "trait": "C",
+        "text": "I pay attention to details",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.89
+    },
+    {
+        "id": 12,
+        "trait": "C",
+        "text": "I often forget to put things back in their proper place",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.83
+    },
+
+    # Extraversion (E)
+    {
+        "id": 21,
+        "trait": "E",
+        "text": "I feel comfortable around people",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.88
+    },
+    {
+        "id": 22,
+        "trait": "E",
+        "text": "I prefer quiet evenings at home to parties",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.84
+    },
+
+    # Agreeableness (A)
+    {
+        "id": 31,
+        "trait": "A",
+        "text": "I sympathize with others' feelings",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.86
+    },
+    {
+        "id": 32,
+        "trait": "A",
+        "text": "I often argue with authority figures",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.82
+    },
+
+    # Neuroticism (N)
+    {
+        "id": 41,
+        "trait": "N",
+        "text": "I often feel tense or anxious",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.90
+    },
+    {
+        "id": 42,
+        "trait": "N",
+        "text": "I remain calm under pressure",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.84
+    },
+{
+        "id": 43,
+        "trait": "O",
+        "text": "I enjoy hearing new ideas",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.87
+    },
+    {
+        "id": 44,
+        "trait": "O",
+        "text": "I avoid philosophical discussions",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.85
+    },
+    {
+        "id": 45,
+        "trait": "O",
+        "text": "I have a vivid imagination",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.83
+    },
+    {
+        "id": 46,
+        "trait": "O",
+        "text": "I prefer routine over variety",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.84
+    },
+    {
+        "id": 47,
+        "trait": "O",
+        "text": "I appreciate abstract art",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.81
+    },
+    {
+        "id": 48,
+        "trait": "O",
+        "text": "I dislike complex theoretical concepts",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.82
+    },
+    {
+        "id": 49,
+        "trait": "O",
+        "text": "I enjoy trying new cultural experiences",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.86
+    },
+    {
+        "id": 50,
+        "trait": "O",
+        "text": "I prefer practical over creative tasks",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.84
+    },
+
+    # Conscientiousness (C) - 8 items
+    {
+        "id": 51,
+        "trait": "C",
+        "text": "I pay attention to details",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.89
+    },
+    {
+        "id": 52,
+        "trait": "C",
+        "text": "I often forget to put things back in their proper place",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.83
+    },
+    {
+        "id": 53,
+        "trait": "C",
+        "text": "I complete tasks thoroughly",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.85
+    },
+    {
+        "id": 54,
+        "trait": "C",
+        "text": "I often procrastinate important tasks",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.82
+    },
+    {
+        "id": 55,
+        "trait": "C",
+        "text": "I follow through on my commitments",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.86
+    },
+    {
+        "id": 56,
+        "trait": "C",
+        "text": "I struggle with time management",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.84
+    },
+    {
+        "id": 57,
+        "trait": "C",
+        "text": "I keep my living space organized",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.83
+    },
+    {
+        "id": 58,
+        "trait": "C",
+        "text": "I often make careless mistakes",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.81
+    },
+
+    # Extraversion (E) - 8 items
+    {
+        "id": 59,
+        "trait": "E",
+        "text": "I feel comfortable around people",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.88
+    },
+    {
+        "id": 60,
+        "trait": "E",
+        "text": "I prefer quiet evenings at home to parties",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.84
+    },
+    {
+        "id": 62,
+        "trait": "E",
+        "text": "I am the life of the party",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.83
+    },
+    {
+        "id": 63,
+        "trait": "E",
+        "text": "Large social gatherings drain my energy",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.85
+    },
+    {
+        "id": 64,
+        "trait": "E",
+        "text": "I enjoy being the center of attention",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.82
+    },
+    {
+        "id": 65,
+        "trait": "E",
+        "text": "I find it hard to start conversations",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.84
+    },
+    {
+        "id": 66,
+        "trait": "E",
+        "text": "I make friends easily",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.86
+    },
+    {
+        "id": 67,
+        "trait": "E",
+        "text": "I prefer working alone rather than in teams",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.83
+    },
+
+    # Agreeableness (A) - 8 items
+    {
+        "id": 68,
+        "trait": "A",
+        "text": "I sympathize with others' feelings",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.86
+    },
+    {
+        "id": 69,
+        "trait": "A",
+        "text": "I often argue with authority figures",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.82
+    },
+    {
+        "id": 70,
+        "trait": "A",
+        "text": "I trust others' intentions",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.84
+    },
+    {
+        "id": 71,
+        "trait": "A",
+        "text": "I enjoy competitive situations more than cooperative ones",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.83
+    },
+    {
+        "id": 72,
+        "trait": "A",
+        "text": "I go out of my way to help others",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.85
+    },
+    {
+        "id": 73,
+        "trait": "A",
+        "text": "I sometimes take advantage of others",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.81
+    },
+    {
+        "id": 74,
+        "trait": "A",
+        "text": "I value harmony in relationships",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.84
+    },
+    {
+        "id": 75,
+        "trait": "A",
+        "text": "I enjoy debating controversial topics",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.83
+    },
+
+    # Neuroticism (N) - 8 items
+    {
+        "id": 76,
+        "trait": "N",
+        "text": "I often feel tense or anxious",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.90
+    },
+    {
+        "id": 77,
+        "trait": "N",
+        "text": "I remain calm under pressure",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.84
+    },
+    {
+        "id": 78,
+        "trait": "N",
+        "text": "I worry about things that might go wrong",
+        "direction": True,
+        "source": "BFI-2",
+        "reliability": 0.86
+    },
+    {
+        "id": 79,
+        "trait": "N",
+        "text": "I rarely feel sad or depressed",
+        "direction": False,
+        "source": "IPIP-NEO",
+        "reliability": 0.83
+    },
+    {
+        "id": 80,
+        "trait": "N",
+        "text": "I often feel emotionally vulnerable",
+        "direction": True,
+        "source": "NEO-PI-R",
+        "reliability": 0.85
+    },
+    {
+        "id": 81,
+        "trait": "N",
+        "text": "I handle stress well",
+        "direction": False,
+        "source": "BFI-2",
+        "reliability": 0.84
+    },
+    {
+        "id": 82,
+        "trait": "N",
+        "text": "I often feel overwhelmed by my emotions",
+        "direction": True,
+        "source": "IPIP-NEO",
+        "reliability": 0.87
+    },
+    {
+        "id": 83,
+        "trait": "N",
+        "text": "I rarely experience mood swings",
+        "direction": False,
+        "source": "NEO-PI-R",
+        "reliability": 0.82
+    },
+
+    # Attention Check Items (3)
+    {
+        "id": 84,
+        "trait": "V",
+        "text": "Please select 'Strongly Agree' to verify you're paying attention",
+        "direction": True,
+        "source": "Validity Check",
+        "correct_response": 4
+    },
+    {
+        "id": 85,
+        "trait": "V",
+        "text": "I always answer questionnaires honestly",
+        "direction": True,
+        "source": "Validity Check",
+        "correct_response": 4
+    },
+    {
+        "id": 86,
+        "trait": "V",
+        "text": "I have never used a computer before",
+        "direction": True,
+        "source": "Validity Check",
+        "correct_response": 0
+    },
+    {
+        "id": 87,
+        "trait": "V",
+        "text": "I always double-check my answers on questionnaires",
+        "direction": True,
+        "source": "Attention Check",
+        "reliability": "N/A"
+    }
+]
+
+SCORING_KEY = {
+    "O": {
+        "max": 32,  # 8 items * 4 points max
+        "norms": [(0,16,"Very Low"), (17,23,"Low"), (24,29,"Average"), (30,35,"High"), (36,40,"Very High")],
+        "mean": 24.5,
+        "sd": 6.2
+    },
+    "C": {
+        "max": 32,
+        "norms": [(0,15,"Very Low"), (16,22,"Low"), (23,28,"Average"), (29,34,"High"), (35,40,"Very High")],
+        "mean": 25.1,
+        "sd": 5.8
+    },
+    "E": {
+        "max": 32,
+        "norms": [(0,14,"Very Low"), (15,21,"Low"), (22,27,"Average"), (28,33,"High"), (34,40,"Very High")],
+        "mean": 23.8,
+        "sd": 6.5
+    },
+    "A": {
+        "max": 32,
+        "norms": [(0,16,"Very Low"), (17,23,"Low"), (24,29,"Average"), (30,35,"High"), (36,40,"Very High")],
+        "mean": 25.3,
+        "sd": 5.9
+    },
+    "N": {
+        "max": 32,
+        "norms": [(0,13,"Very Low"), (14,20,"Low"), (21,26,"Average"), (27,32,"High"), (33,40,"Very High")],
+        "mean": 22.7,
+        "sd": 7.1
+    }
+}
+
+TRAIT_WEIGHTS = {
+    "O": 1.0,
+    "C": 1.0,
+    "E": 1.0,
+    "A": 1.0,
+    "N": 1.0
+}
+
+TRAIT_DEFINITIONS = {
+    "O": "Openness - Imagination, creativity, and preference for variety",
+    "C": "Conscientiousness - Organization, dependability, and self-discipline",
+    "E": "Extraversion - Sociability, assertiveness, and emotional expressiveness",
+    "A": "Agreeableness - Compassion, cooperation, and trust",
+    "N": "Neuroticism - Anxiety, emotional instability, and negative affect"
+}
+
+CAREER_MAPPING = {
+    "Data Analyst": {
+        "requirements": {
+            "aptitude": {
+                "Mathematics": 75,
+                "Logical Reasoning": 80,
+                "Verbal Ability": 65
+            },
+            "personality": {
+                "C": 70,  # Conscientiousness
+                "O": 65,  # Openness
+                "N": 40   # Neuroticism (lower better)
             }
-            result = TestResult(user_id=current_user.id, test_type='aptitude', score=score, time_spent=time_spent)
-            db.session.add(result)
-            db.session.commit()
-            return render_template('results.html', score_data=score_data)
-        total_questions = sum(len(lvl) for cat in questions.values() for lvl in cat.values())
-        return render_template('aptitude_test.html', questions=questions, initial_time=60, 
-                              total_questions=total_questions, current_category="Mathematics", 
-                              completed_questions=0, csrf_token=generate_csrf())
-    flash('Invalid test type.', 'danger')
-    return redirect(url_for('test'))
-
-@app.route('/profile')
-@login_required
-def profile():
-    test_history = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).all()
-    return render_template('profile.html', user=current_user, test_history=test_history)
-
-@app.route('/profile/edit', methods=['GET', 'POST'])
-@login_required
-def profile_edit():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        mobile_number = request.form.get('mobile_number')
-        pin_code = request.form.get('pin_code')
-        dob = request.form.get('dob')
-        if email and email != current_user.email and User.query.filter_by(email=email).first():
-            flash('Email already in use by another account.', 'danger')
-        else:
-            if password:
-                current_user.password = generate_password_hash(password)
-            current_user.email = email or current_user.email
-            current_user.mobile_number = mobile_number or current_user.mobile_number
-            current_user.pin_code = pin_code or current_user.pin_code
-            if dob:
-                try:
-                    current_user.dob = datetime.strptime(dob, '%Y-%m-%d')
-                except ValueError:
-                    flash('Invalid date format for Date of Birth. Use YYYY-MM-DD.', 'danger')
-                    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
-            db.session.commit()
-            flash('Profile updated successfully!', 'success')
-            return redirect(url_for('profile'))
-    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
-
-@app.route('/forgot_password')
-def forgot_password():
-    flash('Password reset is not yet implemented. Please contact support.', 'warning')
-    return redirect(url_for('login'))
-
-@app.route('/results')
-@login_required
-def results():
-    flash('Please complete an aptitude test to view results.', 'warning')
-    return redirect(url_for('test'))
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('Logged out successfully!', 'success')
-    return redirect(url_for('index'))
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-@app.route('/contact', methods=['GET', 'POST'])
-def contact():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        message = request.form.get('message')
-        if not name or not email or not message:
-            flash('All fields are required.', 'danger')
-        else:
-            msg = Message(subject=f"Contact Form Submission from {name}",
-                          recipients=['abc@gmail.com'],  # REPLACE with your Gmail address
-                          body=f"Name: {name}\nEmail: {email}\nMessage: {message}")
-            try:
-                mail.send(msg)
-                flash('Your message has been sent successfully!', 'success')
-                return redirect(url_for('contact'))
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                flash('Failed to send message. Please try again later.', 'danger')
-    return render_template('contact.html', csrf_token=generate_csrf())
-
-@app.route('/faq')
-def faq():
-    return render_template('faq.html')
-
-@app.route('/roadmap')
-@login_required
-def roadmap():
-    test_history = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.asc()).all()
-    total_tests = len(test_history)
-    milestones_completed = min(total_tests // 2, 4)
-    avg_score = sum(test.score for test in test_history) / max(total_tests, 1) if total_tests > 0 else 0
-    if avg_score > 7:
-        destination = "Senior Tech Lead"
-    elif avg_score > 5:
-        destination = "Tech Lead"
-    else:
-        destination = "Junior Developer"
-    return render_template('roadmap.html', 
-                         milestones_completed=milestones_completed, 
-                         destination=destination, 
-                         animations_enabled=current_user.animations_enabled)
-
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
-def settings():
-    if request.method == 'POST':
-        # Theme Toggle
-        if 'theme' in request.form:
-            theme = request.form['theme']
-            current_user.theme = theme
-            db.session.commit()
-            flash('Theme updated successfully!', 'success')
-        # Animation Toggle
-        elif 'animations' in request.form:
-            animations = request.form.get('animations') == 'on'
-            current_user.animations_enabled = animations
-            db.session.commit()
-            flash('Animation settings updated!', 'success')
-        # Change Password
-        elif 'current_password' in request.form:
-            current_password = request.form['current_password']
-            new_password = request.form['new_password']
-            confirm_password = request.form['confirm_password']
-            if not check_password_hash(current_user.password, current_password):
-                flash('Current password is incorrect.', 'danger')
-            elif new_password != confirm_password:
-                flash('New passwords do not match.', 'danger')
-            elif len(new_password) < 8:
-                flash('New password must be at least 8 characters long.', 'danger')
-            else:
-                current_user.password = generate_password_hash(new_password)
-                db.session.commit()
-                flash('Password updated successfully!', 'success')
-        # Reset Roadmap Progress
-        elif 'reset_roadmap' in request.form:
-            current_user.tests = []  # Clear test results
-            db.session.commit()
-            flash('Roadmap progress reset successfully!', 'success')
-        # Delete Account
-        elif 'delete_account' in request.form:
-            db.session.delete(current_user)
-            db.session.commit()
-            logout_user()
-            flash('Your account has been deleted.', 'info')
-            return redirect(url_for('index'))
-    return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-@app.errorhandler(404)
-def not_found(error):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return render_template('500.html'), 500
-
-if __name__ == '_main_':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+        },
+        "description": "Requires strong numerical analysis and pattern recognition skills",
+        "development_path": [...]
+    }
+} 
