@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{{% extends "base.html" %}
 {% block title %}About{% endblock %}
 {% block content %}
     <style>
@@ -6,7 +6,7 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 30px;
-            background: linear-gradient(to bottom, #0f215eee, #d0dee2ee);
+            background: linear-gradient(to bottom, #4a90e2, #7bb9e1); /* Medium blue gradient */
             border-radius: 15px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(5px);
@@ -14,16 +14,19 @@
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            color: #1e3c72;
+            color: #1e3c72; /* Dark blue color for header */
             font-size: 32px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         p {
             line-height: 1.8;
-            color: #2a5298;
+            color: #1a3669; /* Darker blue for text to contrast with background */
             font-size: 16px;
             margin-bottom: 20px;
             text-align: justify;
+            background: linear-gradient(to top, #ffffff70, #e9eff5); /* Light white gradient background */
+            padding: 10px;
+            border-radius: 8px;
         }
     </style>
     <div class="about-container">
