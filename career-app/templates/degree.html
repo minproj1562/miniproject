@@ -1,47 +1,267 @@
 {% extends "base.html" %}
-{% block title %}Degrees{% endblock %}
+{% block title %}Degree Portal - Career Analytics{% endblock %}
+
 {% block content %}
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298); /* Darker, professional gradient */
-            min-height: 100vh;
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            color: #fff;
+        .degree-main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
         }
-        .degree-container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        h1 {
+        .degree-main h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
             text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
-        .degree-card {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 15px;
-            margin-bottom: 20px;
+        .content-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+        .content-section:hover {
+            transform: translateY(-5px);
+        }
+        .content-section h2 {
+            color: #34495e;
+            margin-top: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .content-section p {
+            font-size: 1.1rem;
+            color: #555;
+            line-height: 1.7;
+        }
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .search-form select, .search-form input {
+            padding: 0.75rem;
             border-radius: 8px;
-            transition: transform 0.3s;
+            border: 1px solid #ced4da;
+            font-size: 1rem;
+            flex: 1;
+            min-width: 200px;
+            background: #fff;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        .degree-card:hover {
-            transform: scale(1.02);
+        .search-form select:focus, .search-form input:focus {
+            border-color: #34495e;
+            box-shadow: 0 0 8px rgba(52, 73, 94, 0.2);
+            outline: none;
+        }
+        .search-form button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+        .search-form button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%);
+        }
+        .search-form button i {
+            margin-right: 0.5rem;
+        }
+        .degree-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .degree-item {
+            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .degree-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        .degree-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #34495e;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .degree-details {
+            font-size: 0.95rem;
+            color: #666;
+        }
+        .degree-details p {
+            margin: 0.3rem 0;
+        }
+        .career-outlook {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .career-outlook h3 {
+            font-size: 1.1rem;
+            color: #34495e;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .career-outlook p {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 0.2rem 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%);
+        }
+        .no-results {
+            font-size: 1.2rem;
+            color: #666;
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8d7da;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+        }
+        .acknowledgment {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f0f4f8;
+            border-radius: 8px;
         }
     </style>
-    <div class="degree-container">
+
+    <div class="degree-main">
         <h1>Explore Degrees</h1>
-        {% for degree in degrees %}
-            <div class="degree-card">
-                <h3>{{ degree.title }}</h3>
-                <p><strong>University:</strong> {{ degree.university }}</p>
-                <p><strong>Duration:</strong> {{ degree.duration }}</p>
-                <p>{{ degree.description }}</p>
-            </div>
-        {% endfor %}
+        
+        <!-- Advanced Search Section -->
+        <section class="content-section">
+            <h2><i class="fas fa-search"></i> Find Your Perfect Degree</h2>
+            <p>Discover degree programs that align with your career goals and interests. Use the filters below to search by field of study, degree level, duration, and more.</p>
+            <form class="search-form" method="GET" action="{{ url_for('degree') }}">
+                <select name="degree_level">
+                    <option value="">Select Degree Level</option>
+                    <option value="Bachelor" {% if request.args.get('degree_level') == 'Bachelor' %}selected{% endif %}>Bachelor's</option>
+                    <option value="Master" {% if request.args.get('degree_level') == 'Master' %}selected{% endif %}>Master's</option>
+                    <option value="PhD" {% if request.args.get('degree_level') == 'PhD' %}selected{% endif %}>PhD</option>
+                </select>
+                <select name="field_of_study">
+                    <option value="">Select Field of Study</option>
+                    <option value="Computer Science" {% if request.args.get('field_of_study') == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                    <option value="Business" {% if request.args.get('field_of_study') == 'Business' %}selected{% endif %}>Business</option>
+                    <option value="Psychology" {% if request.args.get('field_of_study') == 'Psychology' %}selected{% endif %}>Psychology</option>
+                    <option value="Data Science" {% if request.args.get('field_of_study') == 'Data Science' %}selected{% endif %}>Data Science</option>
+                </select>
+                <select name="duration">
+                    <option value="">Select Duration</option>
+                    <option value="1.5 years" {% if request.args.get('duration') == '1.5 years' %}selected{% endif %}>1.5 years</option>
+                    <option value="2 years" {% if request.args.get('duration') == '2 years' %}selected{% endif %}>2 years</option>
+                    <option value="3 years" {% if request.args.get('duration') == '3 years' %}selected{% endif %}>3 years</option>
+                    <option value="4 years" {% if request.args.get('duration') == '4 years' %}selected{% endif %}>4 years</option>
+                </select>
+                <select name="sort_by">
+                    <option value="">Sort By</option>
+                    <option value="title" {% if request.args.get('sort_by') == 'title' %}selected{% endif %}>Title</option>
+                    <option value="duration" {% if request.args.get('sort_by') == 'duration' %}selected{% endif %}>Duration</option>
+                    <option value="university" {% if request.args.get('sort_by') == 'university' %}selected{% endif %}>University</option>
+                </select>
+                <input type="text" name="keyword" placeholder="Search by keyword (e.g., University name)" value="{{ request.args.get('keyword', '') }}">
+                <button type="submit"><i class="fas fa-search"></i> Search</button>
+            </form>
+        </section>
+
+        <!-- Featured Degrees Section -->
+        <section class="content-section">
+            <h2><i class="fas fa-graduation-cap"></i> Featured Degrees</h2>
+            {% if degrees %}
+                <div class="degree-list">
+                    {% for degree in degrees %}
+                        <div class="degree-item">
+                            <div class="degree-title">
+                                <i class="fas fa-book"></i> {{ degree.title }}
+                            </div>
+                            <div class="degree-details">
+                                <p><i class="fas fa-university"></i> {{ degree.university }}</p>
+                                <p><i class="fas fa-clock"></i> Duration: {{ degree.duration }}</p>
+                                <p><i class="fas fa-info-circle"></i> {{ degree.description }}</p>
+                                {% if degree.career_data %}
+                                    <div class="career-outlook">
+                                        <h3><i class="fas fa-briefcase"></i> Career Outlook</h3>
+                                        <p><strong>Job Title:</strong> {{ degree.career_data.job_title }}</p>
+                                        <p><strong>Average Salary:</strong> ${{ degree.career_data.salary | default('N/A') }}</p>
+                                        <p><strong>Job Growth:</strong> {{ degree.career_data.job_growth | default('N/A') }}%</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="acknowledgment">
+                    <p>This site incorporates information from <a href="https://services.onetcenter.org/">O*NET Web Services</a> by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA).</p>
+                </div>
+            {% else %}
+                <p class="no-results"><i class="fas fa-exclamation-circle"></i> No degrees found matching your criteria. Try adjusting your search filters.</p>
+                <div class="acknowledgment">
+                    <p>This site incorporates information from <a href="https://services.onetcenter.org/">O*NET Web Services</a> by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA).</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Degree Comparison Tool -->
+        <section class="content-section">
+            <h2><i class="fas fa-balance-scale"></i> Degree Comparison Tool</h2>
+            <p>Compare different degree programs side by side to make an informed decision about your education.</p>
+            <a href="#" class="cta-button">Compare Degrees</a>
+        </section>
+
+        <!-- Career Outlook Section -->
+        <section class="content-section">
+            <h2><i class="fas fa-chart-line"></i> Career Outlook</h2>
+            <p>Explore potential career paths and job prospects associated with different degree programs.</p>
+            <a href="#" class="cta-button">View Career Outlook</a>
+        </section>
     </div>
 {% endblock %}

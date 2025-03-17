@@ -17,12 +17,22 @@ class APIService:
         return response.json().get('elements', [])
 
 class ONetAPI:
-    BASE_URL = "https://services.onetcenter.org/ws/"
-    
+    def __init__(self):
+        self.BASE_URL = "https://services.onetcenter.org/ws/"
+
     def get_career_details(self, soc_code):
-        url = f"{self.BASE_URL}/mnm/careers/{soc_code}/summary"
+        url = f"{self.BASE_URL}mnm/careers/{soc_code}/summary"
         response = requests.get(url, auth=(os.getenv('ONET_USER'), os.getenv('ONET_PWD')))
-        return response.json()
+        print(f"ONet API Status: {response.status_code}")
+        print(f"ONet API Response: {response.text}")
+        if response.status_code != 200:
+            raise Exception(f"ONet API failed with status {response.status_code}")
+        data = response.json()
+        return {
+            'title': data.get('title', 'N/A'),
+            'wages': {'median': data.get('wages', {}).get('national', {}).get('median', 'N/A')},
+            'outlook': {'growth_rate': data.get('bright_outlook', {}).get('growth_rate', 'N/A')}
+        }
 
 class PlagiarismChecker:
     @staticmethod

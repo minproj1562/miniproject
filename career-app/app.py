@@ -7,6 +7,10 @@ from flask_mail import Mail, Message
 from flask_migrate import Migrate
 import os
 from datetime import datetime
+from apis import ONetAPI  # Import ONetAPI
+# Add to top of app.py
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Replace with a secure key
@@ -20,7 +24,7 @@ app.config['MAIL_PASSWORD'] = 'your-app-password-here'  # REPLACE with your Gmai
 app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'  # REPLACE with your Gmail address
 
 db = SQLAlchemy(app)
-# Initialize database tables here instead of using before_first_request
+# Initialize database tables
 with app.app_context():
     db.create_all()
 
@@ -29,7 +33,7 @@ mail = Mail(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-migrate = Migrate(app, db)  # Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Add custom Jinja2 filter for datetime formatting
 def datetimeformat(value, format='%Y'):
@@ -161,16 +165,63 @@ def dashboard():
 def student():
     return render_template('student.html', user=current_user)
 
-@app.route('/degree')
+@app.route('/degree', methods=['GET'])
 @login_required
 def degree():
+    # Initialize ONetAPI
+    onet_api = ONetAPI()
+
+    # Debug: Print environment variables
+    print(f"ONET_USER: {os.getenv('ONET_USER')}")
+    print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
+
+    # Base list of degrees
     degrees = [
-        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems."},
-        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles."},
-        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior."},
-        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data."}
+        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "soc_code": "15-1132.00"},
+        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles.", "degree_level": "Master", "field_of_study": "Business", "soc_code": "11-1021.00"},
+        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior.", "degree_level": "Bachelor", "field_of_study": "Psychology", "soc_code": "19-3031.00"},
+        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data.", "degree_level": "Master", "field_of_study": "Data Science", "soc_code": "15-2051.00"}
     ]
-    return render_template('degree.html', user=current_user, degrees=degrees)
+
+    # Filtering logic
+    degree_level = request.args.get('degree_level', '').strip()
+    field_of_study = request.args.get('field_of_study', '').strip()
+    duration = request.args.get('duration', '').strip()
+    keyword = request.args.get('keyword', '').strip().lower()
+    sort_by = request.args.get('sort_by', '').strip()
+
+    filtered_degrees = degrees
+    if degree_level:
+        filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
+    if field_of_study:
+        filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
+    if duration:
+        filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
+    if keyword:
+        filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
+    if sort_by == 'title':
+        filtered_degrees.sort(key=lambda x: x['title'])
+    elif sort_by == 'duration':
+        filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
+    elif sort_by == 'university':
+        filtered_degrees.sort(key=lambda x: x['university'])
+
+    # Fetch career data from O*NET API
+    for degree in filtered_degrees:
+        try:
+            career_data = onet_api.get_career_details(degree['soc_code'])
+            degree['career_data'] = {
+                'job_title': career_data.get('title', 'N/A'),
+                'salary': career_data.get('wages', {}).get('median', 'N/A'),
+                'job_growth': career_data.get('outlook', {}).get('growth_rate', 'N/A')
+            }
+        except Exception as e:
+            print(f"Error fetching career data for {degree['title']}: {e}")
+            degree['career_data'] = {'job_title': 'N/A', 'salary': 'N/A', 'job_growth': 'N/A'}
+            flash(f"Failed to fetch career data for {degree['title']} due to an error: {e}", 'warning')
+
+    return render_template('degree.html', user=current_user, degrees=filtered_degrees)
+
 
 @app.route('/test', methods=['GET'])
 def test():
@@ -376,7 +427,7 @@ def settings():
 
         # Reset Roadmap Progress
         elif 'reset_roadmap' in request.form:
-            TestResult.query.filter_by(user_id=current_user.id).delete()  # Clear test results using TestResult model
+            TestResult.query.filter_by(user_id=current_user.id).delete()  # Clear test results
             db.session.commit()
             flash('Roadmap progress reset successfully!', 'success')
             return redirect(url_for('settings'))
@@ -404,4 +455,4 @@ def internal_error(error):
     return render_template('500.html'), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)  # Changed port to 5001 to avoid conflict
+    app.run(debug=True, host='0.0.0.0', port=5001)
