@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
 import os
 from datetime import datetime
-from apis import ONetAPI
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -26,6 +26,12 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'abc@gmail.com'
 app.config['MAIL_PASSWORD'] = 'your-app-password-here'
 app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+
+# Ensure the upload folder exists
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -46,7 +52,7 @@ def datetimeformat(value, format='%Y'):
     return value
 app.jinja_env.filters['datetimeformat'] = datetimeformat
 
-# User model (no profile_image field)
+# User model
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -59,6 +65,7 @@ class User(UserMixin, db.Model):
     tests = db.relationship('TestResult', backref='user', lazy=True)
     theme = db.Column(db.String(20), default='dark')
     animations_enabled = db.Column(db.Boolean, default=True)
+    profile_image = db.Column(db.String(150), nullable=True, default='images/default_profile.jpg')
 
 # TestResult model
 class TestResult(db.Model):
@@ -72,6 +79,14 @@ class TestResult(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+# Lazy import of ONetAPI to avoid circular imports
+def get_onet_api():
+    from apis import ONetAPI
+    return ONetAPI()
 
 # Generate test questions
 def generate_questions(test_type):
@@ -115,11 +130,11 @@ def generate_questions(test_type):
         }
     elif test_type == 'personality':
         return [
-            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
-            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
-            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
-            {"id": "p4", "trait": " Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": True},
-            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"], "direction": False}
+            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p4", "trait": "Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": False}
         ]
     return []
 
@@ -191,7 +206,7 @@ def student():
 @app.route('/degree', methods=['GET'])
 @login_required
 def degree():
-    onet_api = ONetAPI()
+    onet_api = get_onet_api()
     print(f"ONET_USER: {os.getenv('ONET_USER')}")
     print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
 
@@ -339,7 +354,7 @@ def submit_assessment():
         return jsonify({'error': 'Invalid test type'}), 400
 
     questions = generate_questions('personality')
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
     question_traits = {q['id']: (q['trait'], q['direction']) for q in questions}
 
     for response in responses:
@@ -420,6 +435,14 @@ def profile_edit():
         mobile_number = request.form.get('mobile_number')
         pin_code = request.form.get('pin_code')
         dob = request.form.get('dob')
+
+        # Handle file upload
+        file = request.files.get('profile_image')
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            unique_filename = f"{current_user.id}_{filename}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
+            current_user.profile_image = f"uploads/{unique_filename}"
 
         if email and email != current_user.email and User.query.filter_by(email=email).first():
             flash('Email already in use by another account.', 'danger')
