@@ -65,9 +65,9 @@
             justify-content: center;
             color: #2c3e50;
             font-weight: bold;
-            margin-left: 1rem;
             transition: all 0.3s ease;
             cursor: pointer;
+            margin-left: auto; /* Pushes to the right extreme */
         }
         .profile-icon:hover {
             background: #f1c40f;
@@ -93,35 +93,49 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- Always Visible Tabs -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i> About</a>
+                        <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i> About Us</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('faq') }}"><i class="fas fa-question-circle"></i> FAQ</a>
+                        <a class="nav-link" href="{{ url_for('faq') }}"><i class="fas fa-question-circle"></i> FAQs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact</a>
+                        <a class="nav-link" href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact Us</a>
                     </li>
                     {% if current_user.is_authenticated %}
+                        <!-- Student Dropdown (Visible when logged in) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="studentDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
                                <i class="fas fa-user-graduate"></i> Student
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="studentDropdown">
-                                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('student') }}"><i class="fas fa-door-open"></i> Student Portal</a></li>
+                                <li class="dropdown-item dropdown">
+                                    <a class="dropdown-item dropdown-toggle" href="#" id="testsDropdown" role="button" 
+                                       data-bs-toggle="dropdown" aria-expanded="false">
+                                       <i class="fas fa-vial"></i> Tests
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="testsDropdown">
+                                        <li><a class="dropdown-item" href="{{ url_for('test', type='sample') }}"><i class="fas fa-flask"></i> Sample Test</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('test', type='aptitude') }}"><i class="fas fa-brain"></i> Aptitude Test</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('test', type='personality') }}"><i class="fas fa-user"></i> Personality Test</a></li>
+                                    </ul>
+                                </li>
                                 <li><a class="dropdown-item" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('test') }}"><i class="fas fa-vial"></i> Career Test</a></li>
                             </ul>
                         </li>
+                        <!-- Dashboard Tab (Visible when logged in) -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                        </li>
+                        <!-- Profile Dropdown (Top-right extreme) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 {{ current_user.username[0] | upper }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('progress_tracking') }}"><i class="fas fa-chart-line"></i> Progress Tracking</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('roadmap') }}"><i class="fas fa-map"></i> Roadmap</a></li>
                                 <li><hr class="dropdown-divider" style="border-color: #fff;"></li>
@@ -129,15 +143,16 @@
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}" style="color: #f1c40f !important;">
-                                <i class="fas fa-sign-in-alt"></i> Login
+                        <!-- Profile Dropdown (Top-right extreme when not logged in) -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user"></i>
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}" style="color: #f1c40f !important;">
-                                <i class="fas fa-user-plus"></i> Register
-                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> Register</a></li>
+                            </ul>
                         </li>
                     {% endif %}
                 </ul>
