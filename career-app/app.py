@@ -283,7 +283,7 @@ def login():
             return redirect(next_page)
         else:
             flash('Invalid username or password.', 'danger')
-    return render_template('login.html', csrf_token=generate_csrf())
+    return render_template('auth/login.html', csrf_token=generate_csrf())
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -308,7 +308,7 @@ def register():
             db.session.commit()
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
-    return render_template('register.html', csrf_token=generate_csrf())
+    return render_template('auth/register.html', csrf_token=generate_csrf())
 
 @app.route('/dashboard')
 @login_required
