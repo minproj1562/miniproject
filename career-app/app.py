@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,24 +7,26 @@ from flask_mail import Mail, Message
 from flask_migrate import Migrate
 import os
 from datetime import datetime
-from apis import ONetAPI  # Import ONetAPI
-# Add to top of app.py
+from apis import ONetAPI
+
+# Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
+print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
+print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'  # Replace with a secure key
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'abc@gmail.com'  # REPLACE with your Gmail address
-app.config['MAIL_PASSWORD'] = 'your-app-password-here'  # REPLACE with your Gmail App Password
-app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'  # REPLACE with your Gmail address
+app.config['MAIL_USERNAME'] = 'abc@gmail.com'
+app.config['MAIL_PASSWORD'] = 'your-app-password-here'
+app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
 
 db = SQLAlchemy(app)
-# Initialize database tables
 with app.app_context():
     db.create_all()
 
@@ -35,7 +37,6 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 migrate = Migrate(app, db)
 
-# Add custom Jinja2 filter for datetime formatting
 def datetimeformat(value, format='%Y'):
     if value == 'now':
         return datetime.now().strftime(format)
@@ -99,6 +100,14 @@ def generate_questions(test_type):
                 ]
             }
         }
+    elif test_type == 'personality':
+        return [
+            {"id": "p1", "trait": "Openness", "text": "I enjoy trying new things.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p2", "trait": "Conscientiousness", "text": "I am very organized.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p3", "trait": "Extraversion", "text": "I feel energized in social settings.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p4", "trait": "Agreeableness", "text": "I am compassionate towards others.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": True},
+            {"id": "p5", "trait": "Neuroticism", "text": "I often feel anxious or stressed.", "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"], "direction": False}
+        ]
     return []
 
 @app.route('/')
@@ -168,14 +177,10 @@ def student():
 @app.route('/degree', methods=['GET'])
 @login_required
 def degree():
-    # Initialize ONetAPI
     onet_api = ONetAPI()
-
-    # Debug: Print environment variables
     print(f"ONET_USER: {os.getenv('ONET_USER')}")
     print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
 
-    # Base list of degrees
     degrees = [
         {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "soc_code": "15-1132.00"},
         {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles.", "degree_level": "Master", "field_of_study": "Business", "soc_code": "11-1021.00"},
@@ -183,7 +188,13 @@ def degree():
         {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data.", "degree_level": "Master", "field_of_study": "Data Science", "soc_code": "15-2051.00"}
     ]
 
-    # Filtering logic
+    mock_career_data = {
+        "Bachelor of Science in Computer Science": {'job_title': 'Software Developer', 'salary': 105000, 'job_growth': 22},
+        "Master of Business Administration": {'job_title': 'Business Manager', 'salary': 120000, 'job_growth': 8},
+        "Bachelor of Arts in Psychology": {'job_title': 'Clinical Psychologist', 'salary': 82000, 'job_growth': 14},
+        "Master of Science in Data Science": {'job_title': 'Data Scientist', 'salary': 115000, 'job_growth': 31}
+    }
+
     degree_level = request.args.get('degree_level', '').strip()
     field_of_study = request.args.get('field_of_study', '').strip()
     duration = request.args.get('duration', '').strip()
@@ -191,22 +202,14 @@ def degree():
     sort_by = request.args.get('sort_by', '').strip()
 
     filtered_degrees = degrees
-    if degree_level:
-        filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
-    if field_of_study:
-        filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
-    if duration:
-        filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
-    if keyword:
-        filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
-    if sort_by == 'title':
-        filtered_degrees.sort(key=lambda x: x['title'])
-    elif sort_by == 'duration':
-        filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
-    elif sort_by == 'university':
-        filtered_degrees.sort(key=lambda x: x['university'])
+    if degree_level: filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
+    if field_of_study: filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
+    if duration: filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
+    if keyword: filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
+    if sort_by == 'title': filtered_degrees.sort(key=lambda x: x['title'])
+    elif sort_by == 'duration': filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
+    elif sort_by == 'university': filtered_degrees.sort(key=lambda x: x['university'])
 
-    # Fetch career data from O*NET API
     for degree in filtered_degrees:
         try:
             career_data = onet_api.get_career_details(degree['soc_code'])
@@ -217,11 +220,14 @@ def degree():
             }
         except Exception as e:
             print(f"Error fetching career data for {degree['title']}: {e}")
-            degree['career_data'] = {'job_title': 'N/A', 'salary': 'N/A', 'job_growth': 'N/A'}
-            flash(f"Failed to fetch career data for {degree['title']} due to an error: {e}", 'warning')
+            degree['career_data'] = mock_career_data.get(degree['title'], {
+                'job_title': 'N/A',
+                'salary': 'N/A',
+                'job_growth': 'N/A'
+            })
+            flash(f"Failed to fetch career data for {degree['title']}. Using mock data.", 'warning')
 
     return render_template('degree.html', user=current_user, degrees=filtered_degrees)
-
 
 @app.route('/test', methods=['GET'])
 def test():
@@ -238,6 +244,20 @@ def test():
         return render_template('aptitude_test.html', questions=questions, initial_time=60, 
                               total_questions=total_questions, current_category="Mathematics", 
                               completed_questions=0, csrf_token=generate_csrf())
+    elif test_type == 'personality':
+        if not current_user.is_authenticated:
+            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
+            return redirect(url_for('login', next=request.url))
+        questions = generate_questions('personality')
+        current_question_index = int(request.args.get('q', 0))
+        if current_question_index < 0 or current_question_index >= len(questions):
+            current_question_index = 0
+        question = questions[current_question_index]
+        return render_template('assessments/personality.html.jinja2', 
+                              questions=questions, 
+                              question=question, 
+                              current_question_index=current_question_index, 
+                              csrf_token=generate_csrf())
     return render_template('test.html')
 
 @app.route('/test', methods=['POST'])
@@ -284,6 +304,84 @@ def test_post():
                               completed_questions=0, csrf_token=generate_csrf())
     flash('Invalid test type.', 'danger')
     return redirect(url_for('test'))
+
+@app.route('/submit_assessment', methods=['POST'])
+@login_required
+def submit_assessment():
+    data = request.get_json()
+    test_type = data.get('type')
+    responses = data.get('responses', [])
+    duration = data.get('duration', 0)
+
+    if test_type != 'personality':
+        return jsonify({'error': 'Invalid test type'}), 400
+
+    questions = generate_questions('personality')
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
+    question_traits = {q['id']: (q['trait'], q['direction']) for q in questions}
+
+    for response in responses:
+        question_id = response['questionId']
+        value = int(response['answer'])
+        trait, direction = question_traits.get(question_id, (None, True))
+        if trait:
+            if not direction:
+                value = 4 - value
+            scores[trait] += value
+
+    for trait in scores:
+        scores[trait] = (scores[trait] / 4) * 100
+
+    dominant_trait = max(scores, key=scores.get)
+
+    result = TestResult(
+        user_id=current_user.id,
+        test_type='personality',
+        score=int(scores[dominant_trait]),
+        time_spent=duration
+    )
+    db.session.add(result)
+    db.session.commit()
+
+    return jsonify({'redirect': url_for('personality_results', scores=scores, dominant_trait=dominant_trait)})
+
+@app.route('/personality_results')
+@login_required
+def personality_results():
+    scores = request.args.get('scores', {})
+    dominant_trait = request.args.get('dominant_trait', 'N/A')
+    if isinstance(scores, str):
+        import json
+        scores = json.loads(scores)
+    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait)
+
+@app.route('/progress_tracking')
+@login_required
+def progress_tracking():
+    test_history = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.asc()).all()
+    total_tests = len(test_history)
+    if total_tests == 0:
+        flash('No tests taken yet. Take a test to track your progress!', 'info')
+        return redirect(url_for('test'))
+    
+    test_types = ['sample', 'aptitude', 'personality']
+    avg_scores = {}
+    for test_type in test_types:
+        tests = [test for test in test_history if test.test_type == test_type]
+        if tests:
+            max_score = 9 if test_type == 'sample' else (5 if test_type == 'personality' else 8)
+            avg_scores[test_type] = sum(test.score for test in tests) / len(tests) / max_score * 100
+        else:
+            avg_scores[test_type] = 0
+
+    progress_data = {
+        'labels': [test.completed_at.strftime('%Y-%m-%d') for test in test_history],
+        'scores': [(test.score / (9 if test.test_type == 'sample' else (5 if test.test_type == 'personality' else 8)) * 100) for test in test_history],
+        'types': [test.test_type for test in test_history]
+    }
+
+    return render_template('progress_tracking.html', user=current_user, test_history=test_history, 
+                          avg_scores=avg_scores, progress_data=progress_data)
 
 @app.route('/profile')
 @login_required
@@ -351,7 +449,7 @@ def contact():
             flash('All fields are required.', 'danger')
         else:
             msg = Message(subject=f"Contact Form Submission from {name}",
-                          recipients=['abc@gmail.com'],  # REPLACE with your Gmail address
+                          recipients=['abc@gmail.com'],
                           body=f"Name: {name}\nEmail: {email}\nMessage: {message}")
             try:
                 mail.send(msg)
@@ -388,27 +486,21 @@ def roadmap():
 @login_required
 def settings():
     if request.method == 'POST':
-        print("Form data received:", request.form)  # Debug output
-
-        # Theme Toggle
+        print("Form data received:", request.form)
         if 'theme' in request.form:
             theme = request.form['theme']
-            print(f"Updating theme to: {theme}")  # Debug output
+            print(f"Updating theme to: {theme}")
             current_user.theme = theme
             db.session.commit()
             flash('Theme updated successfully!', 'success')
             return redirect(url_for('settings'))
-
-        # Animation Toggle
         elif 'animations' in request.form:
-            animations = request.form.get('animations') == 'on'  # Checkbox returns 'on' when checked
-            print(f"Updating animations to: {animations}")  # Debug output
+            animations = request.form.get('animations') == 'on'
+            print(f"Updating animations to: {animations}")
             current_user.animations_enabled = animations
             db.session.commit()
             flash('Animation settings updated!', 'success')
             return redirect(url_for('settings'))
-
-        # Change Password
         elif 'current_password' in request.form:
             current_password = request.form['current_password']
             new_password = request.form['new_password']
@@ -424,22 +516,17 @@ def settings():
                 db.session.commit()
                 flash('Password updated successfully!', 'success')
             return redirect(url_for('settings'))
-
-        # Reset Roadmap Progress
         elif 'reset_roadmap' in request.form:
-            TestResult.query.filter_by(user_id=current_user.id).delete()  # Clear test results
+            TestResult.query.filter_by(user_id=current_user.id).delete()
             db.session.commit()
             flash('Roadmap progress reset successfully!', 'success')
             return redirect(url_for('settings'))
-
-        # Delete Account
         elif 'delete_account' in request.form:
             db.session.delete(current_user)
             db.session.commit()
             logout_user()
             flash('Your account has been deleted.', 'info')
             return redirect(url_for('index'))
-
     return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
 
 @app.route('/favicon.ico')

@@ -4,299 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - Career Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/personality.css') }}">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            {% if is_homepage %}
-                background: linear-gradient(135deg, #A1CFF0 0%, #E0F7FA 100%); /* Cool Blue to Light Cyan gradient for homepage */
-                color: #333333; /* Dark gray contrast color for readability */
-            {% else %}
-                {% if current_user.is_authenticated %}
-                    {% if current_user.theme == 'light' %}
-                        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* Light theme gradient */
-                        color: #333;
-                    {% else %}
-                        background: #1a2333; /* Dark navy blue for dark theme */
-                        background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); /* Starry texture */
-                        color: #fff;
-                    {% endif %}
-                {% else %}
-                    background: #B0E0E6; /* Default to powder blue for non-authenticated users on other pages */
-                    color: #333;
-                {% endif %}
-            {% endif %}
-            min-height: 100vh;
-            transition: background 0.3s ease, color 0.3s ease; /* Smooth theme transition */
-        }
         .navbar {
-            background: linear-gradient(to right, #1e3c72, #2a5298);
-            padding: 20px;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: linear-gradient(90deg, #2c3e50 0%, #3498db 100%);
+            padding: 0.5rem 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         .navbar-brand {
-            color: #fff;
-            text-decoration: none;
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transition: color 0.3s, transform 0.2s; /* Animation enabled */
-            {% else %}
-                transition: color 0.3s; /* Animation disabled */
-            {% endif %}
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff !important;
+            transition: transform 0.3s ease;
         }
         .navbar-brand:hover {
-            color: #d4e4ff;
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transform: scale(1.05); /* Animation enabled */
-            {% endif %}
-        }
-        .navbar-menu {
-            list-style: none;
-            display: flex;
-            gap: 25px;
-            align-items: center;
-        }
-        .nav-item {
-            position: relative;
+            transform: scale(1.05);
         }
         .nav-link {
-            color: #fff;
-            text-decoration: none;
-            font-size: 18px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            background: linear-gradient(to right, #ffffff20, #ffffff10);
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transition: background 0.3s, transform 0.2s; /* Animation enabled */
-            {% else %}
-                transition: background 0.3s; /* Animation disabled */
-            {% endif %}
+            color: #fff !important;
+            font-size: 1rem;
+            padding: 0.5rem 1rem !important;
+            transition: color 0.3s ease, background 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        .nav-link i {
+            margin-right: 0.5rem;
         }
         .nav-link:hover {
-            background: linear-gradient(to right, #ffffff40, #ffffff20);
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transform: scale(1.05); /* Animation enabled */
-            {% endif %}
+            color: #f1c40f !important;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
         }
-        .dropdown {
-            position: relative;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: linear-gradient(to right, #2a5298, #1e3c72);
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            min-width: 160px;
-            z-index: 1000;
-        }
-        .dropdown:hover .dropdown-content {
-            display: block;
+        .dropdown-menu {
+            background: #2c3e50;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
         }
         .dropdown-item {
-            display: block;
-            color: #fff;
-            text-decoration: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            transition: background 0.3s;
+            color: #fff !important;
+            padding: 0.5rem 1rem;
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .dropdown-item:hover {
-            background: linear-gradient(to right, #ffffff40, #ffffff20);
+            background: #3498db;
+            color: #fff !important;
+        }
+        .profile-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-left: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .profile-icon:hover {
+            background: #f1c40f;
+            color: #fff;
+            transform: scale(1.1);
         }
         .navbar-toggler {
-            display: none;
-            background: none;
             border: none;
-            color: #fff;
-            font-size: 28px;
-            cursor: pointer;
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transition: transform 0.2s; /* Animation enabled */
-            {% endif %}
+            background: rgba(255, 255, 255, 0.2);
         }
-        .navbar-toggler:hover {
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transform: scale(1.1); /* Animation enabled */
-            {% endif %}
-        }
-        .content {
-            margin-top: 100px;
-            padding: 30px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            background: rgba(255, 255, 255, 0.9); /* Added for readability against gradient on homepage */
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .alert {
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            font-size: 16px;
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transition: opacity 0.3s ease; /* Animation enabled */
-            {% endif %}
-        }
-        .alert-info {
-            background: linear-gradient(to right, #04282b, #3e7fdb);
-            color: #1e3c72;
-        }
-        .alert-success {
-            background: linear-gradient(to right, #0e681d, #628a6e);
-            color: #1a6642;
-        }
-        .alert-danger {
-            background: linear-gradient(to right, #721e21, #c95d3f);
-            color: #721c24;
-        }
-        .alert-warning {
-            background: linear-gradient(to right, #ffe29f, #ffa99e);
-            color: #856404;
-        }
-        .alert-dismissible .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: inherit;
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transition: transform 0.2s; /* Animation enabled */
-            {% endif %}
-        }
-        .alert-dismissible .close-btn:hover {
-            {% if current_user.is_authenticated and current_user.animations_enabled %}
-                transform: scale(1.2); /* Animation enabled */
-            {% endif %}
-        }
-        @media (max-width: 768px) {
-            .navbar-toggler {
-                display: block;
-            }
-            .navbar-menu {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                background: linear-gradient(to right, #1e3c72, #2a5298);
-                padding: 20px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            }
-            .navbar-menu.active {
-                display: flex;
-            }
-            .nav-item {
-                width: 100%;
-                text-align: center;
-                margin-bottom: 10px;
-            }
-            .nav-link {
-                display: block;
-                padding: 12px;
-            }
-            .dropdown-content {
-                position: static;
-                box-shadow: none;
-                background: none;
-                padding-left: 20px;
-            }
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
     </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="navbar-container">
+<body class="{% if current_user.is_authenticated and current_user.theme == 'light' %}light-theme{% else %}dark-theme{% endif %}">
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">Career Analytics</a>
-            <button class="navbar-toggler" onclick="document.getElementById('navbarMenu').classList.toggle('active')">☰</button>
-            <ul class="navbar-menu" id="navbarMenu">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('about') }}">About</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('faq') }}">FAQ</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link" href="{{ url_for('test') }}">Career Test</a>
-                    <div class="dropdown-content">
-                        <a class="dropdown-item" href="{{ url_for('test', type='sample') }}">Sample Test</a>
-                        <a class="dropdown-item" href="{{ url_for('test', type='aptitude') }}">Aptitude Test</a>
-                    </div>
-                </li>
-                {% if current_user.is_authenticated %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                        <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i> About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                        <a class="nav-link" href="{{ url_for('faq') }}"><i class="fas fa-question-circle"></i> FAQ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('roadmap') }}">Roadmap</a>
+                        <a class="nav-link" href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link" href="#">More</a>
-                        <div class="dropdown-content">
-                            <a class="dropdown-item" href="{{ url_for('student') }}">Student</a>
-                            <a class="dropdown-item" href="{{ url_for('degree') }}">Degrees</a>
-                        </div>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                    </li>
-                {% endif %}
-            </ul>
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="studentDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                               <i class="fas fa-user-graduate"></i> Student
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="studentDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('student') }}"><i class="fas fa-door-open"></i> Student Portal</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('test') }}"><i class="fas fa-vial"></i> Career Test</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ current_user.username[0] | upper }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('progress_tracking') }}"><i class="fas fa-chart-line"></i> Progress Tracking</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('roadmap') }}"><i class="fas fa-map"></i> Roadmap</a></li>
+                                <li><hr class="dropdown-divider" style="border-color: #fff;"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}" style="color: #f1c40f !important;">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}" style="color: #f1c40f !important;">
+                                <i class="fas fa-user-plus"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </nav>
-    <div class="content">
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="close-btn" onclick="this.parentElement.style.display='none'">×</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        {% block content %}{% endblock %}
     </div>
+
+    {% block content %}{% endblock %}
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <p>© <span>{{ 'now' | datetimeformat }}</span> Career Analytics. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
