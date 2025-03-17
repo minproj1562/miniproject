@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Progress Tracking{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Progress Tracking</h1>
+    <div class="row">
+        <!-- Average Scores -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Average Scores</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Sample Test: {{ avg_scores['sample'] | round(2) }}%</li>
+                        <li class="list-group-item">Aptitude Test: {{ avg_scores['aptitude'] | round(2) }}%</li>
+                        <li class="list-group-item">Personality Test: {{ avg_scores['personality'] | round(2) }}%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Test History -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title">Test History</h3>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Test Type</th>
+                                <th>Score</th>
+                                <th>Time Spent (s)</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test in test_history %}
+                                <tr>
+                                    <td>{{ test.test_type | capitalize }}</td>
+                                    <td>{{ test.score }} / {{ 9 if test.test_type == 'sample' else (5 if test.test_type == 'personality' else 8) }}</td>
+                                    <td>{{ test.time_spent if test.time_spent else 'N/A' }}</td>
+                                    <td>{{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Progress Chart -->
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title text-center">Progress Over Time</h3>
+            <canvas id="progressChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ progress_data.labels | tojson }},
+            datasets: [{
+                label: 'Test Scores (%)',
+                data: {{ progress_data.scores | tojson }},
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                fill: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Score (%)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

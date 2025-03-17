@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Personality Test Results{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Personality Test Results</h1>
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Your Personality Profile</h3>
+            <p>Your dominant trait is <strong>{{ dominant_trait }}</strong> with a score of {{ scores[dominant_trait] | round(2) }}%.</p>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Openness:</strong> {{ scores['Openness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>Conscientiousness:</strong> {{ scores['Conscientiousness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>Extraversion:</strong> {{ scores['Extraversion'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>Agreeableness:</strong> {{ scores['Agreeableness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>Neuroticism:</strong> {{ scores['Neuroticism'] | round(2) }}%</li>
+            </ul>
+            <div class="text-center mt-4">
+                <a href="{{ url_for('test') }}" class="btn btn-primary">Take Another Test</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

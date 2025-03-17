@@ -7,15 +7,15 @@
         body {
             {% if current_user.is_authenticated %}
                 {% if current_user.theme == 'light' %}
-                    background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Light blue gradient for light theme */
-                    color: #fff;
+                    background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Pleasant light blue gradient for light theme */
+                    color: #333;  /* Darker text color for readability */
                 {% else %}
                     background: linear-gradient(135deg, #3a4f79, #3c5c7b); /* Darker blue gradient for dark theme */
-                    color: #fff;
+                    color: #fff;  /* White text for dark theme */
                 {% endif %}
             {% else %}
-                background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Light blue gradient for non-logged-in users */
-                color: #fff;
+                background: linear-gradient(135deg, #5b8fce, #4a78b8); /* Pleasant light blue gradient for non-logged-in users */
+                color: #333;  /* Darker text color for readability */
             {% endif %}
             min-height: 100vh;
             margin: 0;
@@ -31,26 +31,31 @@
             position: relative;
             z-index: 1;
             animation: fadeIn 1s ease-in;
+            background: rgba(255, 255, 255, 0.8); /* Light background for the hero section for better contrast */
+            border-radius: 10px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1); /* Slight shadow for depth */
         }
         
         h1 {
             font-size: 4rem;
             font-weight: 700;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2); /* Subtle shadow for the title */
             margin-bottom: 20px;
+            color: #2e3c56; /* Slightly darker text color for h1 */
         }
         
         p {
             font-size: 1.5rem;
             max-width: 600px;
             margin: 0 auto 40px;
+            color: #4a4a4a; /* Darker grey text for better readability */
         }
         
         .btn-test {
             font-size: 1.2rem;
             padding: 12px 30px;
             background: #ffffff;
-            color: #4a78b8; /* Medium blue */
+            color: #4a78b8; /* Medium blue for button text */
             border: none;
             border-radius: 25px;
             transition: transform 0.3s, box-shadow 0.3s;
