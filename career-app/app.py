@@ -144,17 +144,17 @@ APTITUDE_QUESTIONS = {
 # Personality Questions (Big Five Inventory)
 PERSONALITY_QUESTIONS = [
     # Openness (O) - 8 items
-    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 2, "trait": "Openness", "text": "I avoid philosophical discussions", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 3, "trait": "Openness", "text": "I have a vivid imagination", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 4, "trait": "Openness", "text": "I prefer routine over variety", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 6, "trait": "Openness", "text": "I dislike complex theoretical concepts", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 7, "trait": "Openness", "text": "I enjoy trying new cultural experiences", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 8, "trait": "Openness", "text": "I prefer practical over creative tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 2, "trait": "Openness", "text": "I avoid philosophical discussions", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 3, "trait": "Openness", "text": "I have a vivid imagination", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 4, "trait": "Openness", "text": "I prefer routine over variety", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 6, "trait": "Openness", "text": "I dislike complex theoretical concepts", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 7, "trait": "Openness", "text": "I enjoy trying new cultural experiences", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 8, "trait": "Openness", "text": "I prefer practical over creative tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     
     # Conscientiousness (C) - 8 items
-    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 12, "trait": "Conscientiousness", "text": "I often forget to put things back in their proper place", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     {"id": 13, "trait": "Conscientiousness", "text": "I complete tasks thoroughly", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     {"id": 14, "trait": "Conscientiousness", "text": "I often procrastinate important tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
@@ -174,7 +174,7 @@ PERSONALITY_QUESTIONS = [
     {"id": 28, "trait": "Extraversion", "text": "I prefer working alone rather than in teams", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     
     # Agreeableness (A) - 8 items
-    {"id": 31, "trait": " Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 31, "trait": "Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     {"id": 32, "trait": " Agreeableness", "text": "I often argue with authority figures", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     {"id": 33, "trait": " Agreeableness", "text": "I trust others' intentions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
     {"id": 34, "trait": " Agreeableness", "text": "I enjoy competitive situations more than cooperative ones", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
@@ -384,108 +384,81 @@ def degree():
 
     return render_template('degree.html', user=current_user, degrees=filtered_degrees)
 
-@app.route('/test', methods=['GET'])
+@app.route('/test', methods=['GET', 'POST'])
+@login_required
 def test():
     test_type = request.args.get('type')
+    instructions = {
+        "time_limit": "You have 10 minutes to complete this test.",
+        "honesty": "Please answer all questions honestly and without external assistance.",
+        "scientific_accuracy": "This test is designed to assess your skills with validated questions."
+    }
+
     if test_type == 'sample':
         questions = generate_questions('sample')
-        instructions = {
-            "time_limit": "You have 10 minutes to complete this test.",
-            "honesty": "Please answer all questions honestly and without external assistance.",
-            "scientific_accuracy": "This test is designed to assess work ethics with standard questions."
-        }
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+        if request.method == 'POST':
+            if request.form:
+                answers = {}
+                for q in questions:
+                    answer = request.form.get(q['id'])
+                    if answer is not None:
+                        answers[q['id']] = int(answer)
+                    else:
+                        flash('Please answer all questions before submitting.', 'danger')
+                        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+                score = sum(3 - answers[q['id']] for q in questions)  # Reverse scoring: 3=Always, 0=Rarely
+                result = TestResult(
+                    user_id=current_user.id,
+                    test_type='sample',
+                    score=score
+                )
+                db.session.add(result)
+                db.session.commit()
+                flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
+                return redirect(url_for('index'))
+            return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+
     elif test_type == 'aptitude':
-        if not current_user.is_authenticated:
-            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
-            return redirect(url_for('login', next=request.url))
         questions = generate_questions('aptitude')
         session['aptitude_questions'] = questions
-        instructions = {
-            "time_limit": "You have 10 minutes to complete this test.",
-            "honesty": "Please answer all questions honestly and without external assistance.",
-            "scientific_accuracy": "This test combines validated questions from our database and the Open Trivia Database for scientific accuracy."
-        }
-        return render_template('aptitude_test.html', questions=questions, initial_time=600,  # 10 minutes in seconds
-                              total_questions=10, current_category="Mathematics", 
-                              completed_questions=0, csrf_token=generate_csrf(), instructions=instructions)
+        if request.method == 'POST':
+            if request.form:
+                time_spent = int(request.form.get('time_spent', 0))
+                correct = 0
+                total = len(questions)
+                for question in questions:
+                    answer = request.form.get(str(question['id']))
+                    if answer is not None and int(answer) == question['correct']:
+                        correct += 1
+                score = correct
+                result = TestResult(user_id=current_user.id, test_type='aptitude', score=score, time_spent=time_spent)
+                db.session.add(result)
+                db.session.commit()
+                flash(f'Your aptitude score: {score} out of {total}', 'success')
+                return redirect(url_for('dashboard'))
+            total_questions = len(questions)
+            return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
+                                  current_category='Mathematics', total_questions=total_questions,
+                                  initial_time=600, completed_questions=0, csrf_token=generate_csrf())
+
     elif test_type == 'personality':
-        if not current_user.is_authenticated:
-            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
-            return redirect(url_for('login', next=request.url))
         questions = generate_questions('personality')
         session['personality_questions'] = questions
-        instructions = {
-            "time_limit": "There is no strict time limit, but aim to complete in one sitting.",
-            "honesty": "Answer honestly for the most accurate results.",
-            "scientific_accuracy": "This test uses validated Big Five Inventory items for scientific accuracy."
-        }
+        if request.method == 'POST':
+            flash('Personality test submission should use the /submit_assessment endpoint.', 'warning')
+            return redirect(url_for('test', type='personality'))
         current_question_index = int(request.args.get('q', 0))
         if current_question_index < 0 or current_question_index >= len(questions):
             current_question_index = 0
         question = questions[current_question_index]
-        return render_template('assessments/personality.html.jinja2', 
-                              questions=questions, 
-                              question=question, 
-                              current_question_index=current_question_index, 
-                              csrf_token=generate_csrf(), instructions=instructions)
-    return render_template('test.html')
+        return render_template('assessments/personality.html.jinja2',
+                              questions=questions,
+                              instructions=instructions,
+                              current_question_index=current_question_index,
+                              question=question,
+                              csrf_token=generate_csrf())
 
-@app.route('/test', methods=['POST'])
-def test_post():
-    test_type = request.args.get('type')
-    if test_type == 'sample':
-        questions = generate_questions('sample')
-        if request.form:
-            answers = {}
-            for q in questions:
-                answer = request.form.get(q['id'])
-                if answer is not None:
-                    answers[q['id']] = int(answer)
-                else:
-                    flash('Please answer all questions before submitting.', 'danger')
-                    return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
-            score = sum(3 - answers[q['id']] for q in questions)  # Reverse scoring: 3=Always, 0=Rarely
-            result = TestResult(
-                user_id=current_user.id if current_user.is_authenticated else None,
-                test_type='sample', 
-                score=score
-            )
-            db.session.add(result)
-            db.session.commit()
-            flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
-            return redirect(url_for('index'))
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf())
-    elif test_type == 'aptitude':
-        if not current_user.is_authenticated:
-            flash('Kindly log in to unlock comprehensive access to all features.', 'warning')
-            return redirect(url_for('login', next=request.url))
-        questions = session.get('aptitude_questions', generate_questions('aptitude'))
-        if request.form:
-            time_spent = int(request.form.get('time_spent', 0))
-            correct = 0
-            total = len(questions)
-            for i, q in enumerate(questions):
-                answer_key = f'answer_{i}'
-                if answer_key in request.form and int(request.form[answer_key]) == q['correct']:
-                    correct += 1
-            score = correct
-            score_data = {
-                'score': (correct / total) * 100,
-                'correct': correct,
-                'total': total,
-                'time_spent': time_spent
-            }
-            result = TestResult(user_id=current_user.id, test_type='aptitude', score=score, time_spent=time_spent)
-            db.session.add(result)
-            db.session.commit()
-            return render_template('results.html', score_data=score_data)
-        total_questions = 10
-        return render_template('aptitude_test.html', questions=questions, initial_time=600, 
-                              total_questions=total_questions, current_category="Mathematics", 
-                              completed_questions=0, csrf_token=generate_csrf())
-    flash('Invalid test type.', 'danger')
-    return redirect(url_for('test'))
+    return render_template('test.html')
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -499,7 +472,7 @@ def submit_assessment():
         return jsonify({'error': 'Invalid test type'}), 400
 
     questions = session.get('personality_questions', generate_questions('personality'))
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
     question_traits = {str(q['id']): (q['trait'], q['direction']) for q in questions}
 
     for response in responses:
@@ -508,13 +481,22 @@ def submit_assessment():
         trait, direction = question_traits.get(question_id, (None, True))
         if trait:
             if not direction:
-                value = 4 - value  # Reverse scoring
-            scores[trait] += value
+                value = 4 - value  # Reverse scoring for reverse-scored items
+            scores[trait] += value + 1  # Scale to 1-5
 
+    # Normalize scores to percentage (assuming 2 questions per trait for simplicity)
     for trait in scores:
-        scores[trait] = (scores[trait] / 2) * 100  # Normalize to 100% based on 2 questions per trait
+        count = sum(1 for q in questions if q['trait'] == trait)
+        scores[trait] = (scores[trait] / (count * 5)) * 100 if count > 0 else 0
 
     dominant_trait = max(scores, key=scores.get)
+    trait_names = {
+        'Openness': 'Openness',
+        'Conscientiousness': 'Conscientiousness',
+        'Extraversion': 'Extraversion',
+        'Agreeableness': 'Agreeableness',
+        'Neuroticism': 'Neuroticism'
+    }
 
     result = TestResult(
         user_id=current_user.id,
@@ -525,17 +507,34 @@ def submit_assessment():
     db.session.add(result)
     db.session.commit()
 
-    return jsonify({'redirect': url_for('personality_results', scores=scores, dominant_trait=dominant_trait)})
+    return jsonify({
+        'redirect': url_for('personality_results', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
+    })
 
 @app.route('/personality_results')
 @login_required
 def personality_results():
-    scores = request.args.get('scores', {})
+    scores = request.args.get('scores', '{}')
     dominant_trait = request.args.get('dominant_trait', 'N/A')
-    if isinstance(scores, str):
-        import json
-        scores = json.loads(scores)
-    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait)
+    trait_names = request.args.get('trait_names', '{}')
+
+    # Convert stringified JSON to dictionary
+    import json
+    try:
+        scores = json.loads(scores.replace("'", "\"")) if isinstance(scores, str) else scores
+        trait_names = json.loads(trait_names.replace("'", "\"")) if isinstance(trait_names, str) else trait_names
+    except json.JSONDecodeError:
+        scores = {'Openness': 50, 'Conscientiousness': 50, 'Extraversion': 50, 'Agreeableness': 50, 'Neuroticism': 50}
+        trait_names = {
+            'Openness': 'Openness',
+            'Conscientiousness': 'Conscientiousness',
+            'Extraversion': 'Extraversion',
+            ' Agreeableness': ' Agreeableness',
+            'Neuroticism': 'Neuroticism'
+        }
+        dominant_trait = 'Openness'
+
+    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
 
 @app.route('/progress_tracking')
 @login_required
@@ -719,10 +718,6 @@ def settings():
             flash('Your account has been deleted.', 'info')
             return redirect(url_for('index'))
     return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.errorhandler(404)
 def not_found(error):

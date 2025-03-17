@@ -1,6 +1,100 @@
 {% extends "base.html" %}
+{% block title %}Personality Test{% endblock %}
 
 {% block content %}
+<style>
+    .assessment-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        padding: 2rem;
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    .instructions {
+        background: #e9ecef;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    .progress-container {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        height: 20px;
+        margin-bottom: 1.5rem;
+    }
+    .progress-bar {
+        background: #2a5298;
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+    .timer-alert {
+        text-align: center;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    .question-card {
+        background: #f9f9f9;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+    .question-card:hover {
+        transform: translateY(-5px);
+    }
+    .question-text {
+        font-size: 1.2rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    .options-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    .option-card {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        text-align: center;
+        transition: background 0.3s, border-color 0.3s;
+    }
+    .option-card:hover {
+        background: #f0f0f0;
+    }
+    .option-card.selected {
+        background: #d4edda;
+        border-color: #28a745;
+    }
+    .direction-indicator {
+        margin-top: 5px;
+    }
+    .assessment-controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+    }
+    .nav-btn, .submit-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 20px;
+        border: none;
+        background: #2a5298;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .nav-btn:hover, .submit-btn:hover {
+        background: #1e3c72;
+        transform: translateY(-3px);
+    }
+</style>
+
 <div class="assessment-container">
     <!-- Instructions -->
     <div class="instructions">
@@ -12,44 +106,7 @@
 
     <!-- Progress Bar -->
     <div class="progress-container">
-        <div class="progress-bar" style="width: {{ (current_question_index / (questions|length)) * 100 }}%"></div>
-    </div>
-
-    <!-- Single Question Card -->
-    <div class="question-card">
-        <h2 class="question-text">{{ question.text }}</h2>
-        <div class="options-grid">
-            {% if question.likert_scale %}
-                {% for option in question.likert_scale %}
-                <div class="option-card"
-                     data-question-id="{{ question.id }}"
-                     data-option-value="{{ loop.index0 }}">
-                    <span class="option-text">{{ option }}</span>
-                    {% if question.direction == false %}
-                    <div class="direction-indicator">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
-                        </svg>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% else %}
-                <p>No likert scale found for this question.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Navigation Controls -->
-    <div class="assessment-controls">
-        {% if current_question_index > 0 %}
-        <button class="nav-btn prev-btn" onclick="navigate(-1)">Previous</button>
-        {% endif %}
-        {% if current_question_index < (questions|length - 1) %}
-        <button class="nav-btn next-btn" onclick="navigate(1)">Next</button>
-        {% else %}
-        <button class="submit-btn" onclick="submitAssessment()">Complete Assessment</button>
-        {% endif %}
+        <div class="progress-bar" id="progress-bar" style="width: {{ (current_question_index / (questions|length)) * 100 }}%"></div>
     </div>
 
     <!-- Timer -->
@@ -57,58 +114,125 @@
         <i class="bi bi-clock"></i>
         Time Spent: <span id="time-display">00:00</span>
     </div>
+
+    <!-- Questions Wrapper -->
+    <div class="questions-wrapper">
+        {% for question in questions %}
+            <div class="question-card {% if loop.index0 != current_question_index %}d-none{% endif %}" data-index="{{ loop.index0 }}">
+                <h2 class="question-text">{{ question.text }}</h2>
+                <div class="options-grid">
+                    {% if question.likert_scale %}
+                        {% for option in question.likert_scale %}
+                            <div class="option-card"
+                                 data-question-id="{{ question.id }}"
+                                 data-option-value="{{ loop.index0 }}">
+                                <span class="option-text">{{ option }}</span>
+                                {% if question.direction == false %}
+                                    <div class="direction-indicator">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                            <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
+                                        </svg>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No likert scale found for this question.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Navigation Controls -->
+    <div class="assessment-controls">
+        <button class="nav-btn prev-btn" id="prev-btn" style="display: {% if current_question_index > 0 %}inline-block{% else %}none{% endif %}" onclick="navigate(-1)">Previous</button>
+        <button class="nav-btn next-btn" id="next-btn" style="display: {% if current_question_index < (questions|length - 1) %}inline-block{% else %}none{% endif %}" onclick="navigate(1)">Next</button>
+        <button class="submit-btn" id="submit-btn" style="display: {% if current_question_index == (questions|length - 1) %}inline-block{% else %}none{% endif %}" onclick="submitAssessment()">Complete Assessment</button>
+    </div>
 </div>
 
 <script>
-let responses = {};
-let startTime = Date.now();
+    let responses = {};
+    let startTime = Date.now();
+    let currentIndex = {{ current_question_index }};
+    const questions = document.querySelectorAll('.question-card');
+    const progressBar = document.getElementById('progress-bar');
+    const totalQuestions = {{ questions|length }};
 
-// Capture user's selection
-document.querySelectorAll('.option-card').forEach(card => {
-    card.addEventListener('click', function() {
-        const questionId = this.dataset.questionId;
-        const value = parseInt(this.dataset.optionValue);
-        document.querySelectorAll(`[data-question-id="${questionId}"]`)
-            .forEach(opt => opt.classList.remove('selected'));
-        this.classList.add('selected');
-        responses[questionId] = value;
+    // Update timer
+    setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        document.getElementById('time-display').textContent = `${minutes}:${seconds}`;
+    }, 1000);
+
+    // Capture user's selection
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const questionId = this.dataset.questionId;
+            const value = parseInt(this.dataset.optionValue);
+            document.querySelectorAll(`[data-question-id="${questionId}"]`)
+                .forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            responses[questionId] = value;
+        });
     });
-});
 
-// Navigation logic
-function navigate(direction) {
-    const newIndex = {{ current_question_index }} + direction;
-    window.location.href = `{{ url_for('personality_test') }}?q=${newIndex}`;
-}
+    // Client-side navigation
+    function navigate(direction) {
+        questions[currentIndex].classList.add('d-none');
+        currentIndex += direction;
+        questions[currentIndex].classList.remove('d-none');
+        progressBar.style.width = `${((currentIndex + 1) / totalQuestions) * 100}%`;
+        updateButtons();
+    }
 
-function submitAssessment() {
-    fetch("{{ url_for('submit_assessment') }}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            type: 'personality',
-            responses: Object.keys(responses).map(id => ({
-                questionId: id,
-                answer: responses[id]
-            })),
-            duration: Math.floor((Date.now() - startTime) / 1000)
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.redirect) {
-            window.location.href = data.redirect;
+    function updateButtons() {
+        document.getElementById('prev-btn').style.display = currentIndex > 0 ? 'inline-block' : 'none';
+        document.getElementById('next-btn').style.display = currentIndex < questions.length - 1 ? 'inline-block' : 'none';
+        document.getElementById('submit-btn').style.display = currentIndex === questions.length - 1 ? 'inline-block' : 'none';
+    }
+
+    // Submit assessment
+    function submitAssessment() {
+        // Validate that all questions are answered
+        let allAnswered = true;
+        questions.forEach((question, index) => {
+            const questionId = question.querySelector('.option-card').dataset.questionId;
+            if (!responses[questionId]) {
+                allAnswered = false;
+            }
+        });
+        if (!allAnswered) {
+            alert('Please answer all questions before submitting.');
+            return;
         }
-    })
-    .catch(err => console.error(err));
-}
 
-// Update timer
-setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-    const seconds = (elapsed % 60).toString().padStart(2, '0');
-    document.getElementById('time-display').textContent = `${minutes}:${seconds}`;
-}, 1000);
+        const csrfToken = "{{ csrf_token }}";
+        fetch("{{ url_for('submit_assessment') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({
+                type: 'personality',
+                responses: Object.keys(responses).map(id => ({
+                    questionId: id,
+                    answer: responses[id]
+                })),
+                duration: Math.floor((Date.now() - startTime) / 1000)
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            }
+        })
+        .catch(err => console.error('Error submitting assessment:', err));
+    }
 </script>
 {% endblock %}

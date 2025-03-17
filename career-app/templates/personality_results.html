@@ -8,13 +8,20 @@
         <div class="card-body">
             <h3 class="card-title">Your Personality Profile</h3>
             <p>Your dominant trait is <strong>{{ trait_names[dominant_trait] }}</strong> with a score of {{ scores[dominant_trait] | round(2) }}%.</p>
-            <ul class="list-group list-group-flush">
+            
+            <!-- Chart Visualization -->
+            <canvas id="traitChart" width="400" height="200"></canvas>
+            
+            <!-- Scores List -->
+            <ul class="list-group list-group-flush mt-4">
                 <li class="list-group-item"><strong>{{ trait_names['O'] }}:</strong> {{ scores['O'] | round(2) }}%</li>
                 <li class="list-group-item"><strong>{{ trait_names['C'] }}:</strong> {{ scores['C'] | round(2) }}%</li>
                 <li class="list-group-item"><strong>{{ trait_names['E'] }}:</strong> {{ scores['E'] | round(2) }}%</li>
                 <li class="list-group-item"><strong>{{ trait_names['A'] }}:</strong> {{ scores['A'] | round(2) }}%</li>
                 <li class="list-group-item"><strong>{{ trait_names['N'] }}:</strong> {{ scores['N'] | round(2) }}%</li>
             </ul>
+            
+            <!-- Navigation Buttons -->
             <div class="text-center mt-4">
                 <a href="{{ url_for('test', type='personality') }}" class="btn btn-primary">Take Another Test</a>
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
@@ -22,4 +29,48 @@
         </div>
     </div>
 </div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctx = document.getElementById('traitChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
+                datasets: [{
+                    label: 'Scores (%)',
+                    data: [{{ scores['O'] }}, {{ scores['C'] }}, {{ scores['E'] }}, {{ scores['A'] }}, {{ scores['N'] }}],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Score (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Personality Traits'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
