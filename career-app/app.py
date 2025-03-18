@@ -141,7 +141,7 @@ APTITUDE_QUESTIONS = {
     }
 }
 
-# Personality Questions (Big Five Inventory)
+# Personality Questions (Big Five Inventory) - Fixed Agreeableness trait names
 PERSONALITY_QUESTIONS = [
     # Openness (O) - 8 items
     {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
@@ -155,43 +155,43 @@ PERSONALITY_QUESTIONS = [
     
     # Conscientiousness (C) - 8 items
     {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 12, "trait": "Conscientiousness", "text": "I often forget to put things back in their proper place", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 13, "trait": "Conscientiousness", "text": "I complete tasks thoroughly", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 14, "trait": "Conscientiousness", "text": "I often procrastinate important tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 15, "trait": "Conscientiousness", "text": "I follow through on my commitments", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 16, "trait": "Conscientiousness", "text": "I struggle with time management", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 17, "trait": "Conscientiousness", "text": "I keep my living space organized", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 18, "trait": "Conscientiousness", "text": "I often make careless mistakes", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 12, "trait": "Conscientiousness", "text": "I often forget to put things back in their proper place", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 13, "trait": "Conscientiousness", "text": "I complete tasks thoroughly", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 14, "trait": "Conscientiousness", "text": "I often procrastinate important tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 15, "trait": "Conscientiousness", "text": "I follow through on my commitments", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 16, "trait": "Conscientiousness", "text": "I struggle with time management", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 17, "trait": "Conscientiousness", "text": "I keep my living space organized", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 18, "trait": "Conscientiousness", "text": "I often make careless mistakes", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     
     # Extraversion (E) - 8 items
-    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 22, "trait": "Extraversion", "text": "I prefer quiet evenings at home to parties", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 23, "trait": "Extraversion", "text": "I am the life of the party", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 24, "trait": "Extraversion", "text": "Large social gatherings drain my energy", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 25, "trait": "Extraversion", "text": "I enjoy being the center of attention", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 26, "trait": "Extraversion", "text": "I find it hard to start conversations", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 27, "trait": "Extraversion", "text": "I make friends easily", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 28, "trait": "Extraversion", "text": "I prefer working alone rather than in teams", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 22, "trait": "Extraversion", "text": "I prefer quiet evenings at home to parties", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 23, "trait": "Extraversion", "text": "I am the life of the party", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 24, "trait": "Extraversion", "text": "Large social gatherings drain my energy", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 25, "trait": "Extraversion", "text": "I enjoy being the center of attention", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 26, "trait": "Extraversion", "text": "I find it hard to start conversations", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 27, "trait": "Extraversion", "text": "I make friends easily", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 28, "trait": "Extraversion", "text": "I prefer working alone rather than in teams", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     
-    # Agreeableness (A) - 8 items
-    {"id": 31, "trait": "Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 32, "trait": " Agreeableness", "text": "I often argue with authority figures", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 33, "trait": " Agreeableness", "text": "I trust others' intentions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 34, "trait": " Agreeableness", "text": "I enjoy competitive situations more than cooperative ones", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 35, "trait": " Agreeableness", "text": "I go out of my way to help others", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 36, "trait": " Agreeableness", "text": "I sometimes take advantage of others", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 37, "trait": " Agreeableness", "text": "I value harmony in relationships", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 38, "trait": " Agreeableness", "text": "I enjoy debating controversial topics", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    # Agreeableness (A) - 8 items (Removed leading spaces)
+    {"id": 31, "trait": "Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 32, "trait": "Agreeableness", "text": "I often argue with authority figures", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 33, "trait": "Agreeableness", "text": "I trust others' intentions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 34, "trait": "Agreeableness", "text": "I enjoy competitive situations more than cooperative ones", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 35, "trait": "Agreeableness", "text": "I go out of my way to help others", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 36, "trait": "Agreeableness", "text": "I sometimes take advantage of others", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 37, "trait": "Agreeableness", "text": "I value harmony in relationships", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 38, "trait": "Agreeableness", "text": "I enjoy debating controversial topics", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     
     # Neuroticism (N) - 8 items
-    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 42, "trait": "Neuroticism", "text": "I remain calm under pressure", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 43, "trait": "Neuroticism", "text": "I worry about things that might go wrong", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 44, "trait": "Neuroticism", "text": "I rarely feel sad or depressed", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 45, "trait": "Neuroticism", "text": "I often feel emotionally vulnerable", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 46, "trait": "Neuroticism", "text": "I handle stress well", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 47, "trait": "Neuroticism", "text": "I often feel overwhelmed by my emotions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 48, "trait": "Neuroticism", "text": "I rarely experience mood swings", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]}
+    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 42, "trait": "Neuroticism", "text": "I remain calm under pressure", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 43, "trait": "Neuroticism", "text": "I worry about things that might go wrong", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 44, "trait": "Neuroticism", "text": "I rarely feel sad or depressed", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 45, "trait": "Neuroticism", "text": "I often feel emotionally vulnerable", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 46, "trait": "Neuroticism", "text": "I handle stress well", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 47, "trait": "Neuroticism", "text": "I often feel overwhelmed by my emotions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 48, "trait": "Neuroticism", "text": "I rarely experience mood swings", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]}
 ]
 
 # Fetch additional aptitude questions from OpenTDB
@@ -251,7 +251,8 @@ def generate_questions(test_type):
         random.shuffle(flat_questions)
         return flat_questions[:10]  # Limit to 10 questions
     elif test_type == 'personality':
-        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], ' Agreeableness': [], 'Neuroticism': []}
+        # Initialize traits dictionary with consistent keys
+        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], 'Agreeableness': [], 'Neuroticism': []}
         for q in PERSONALITY_QUESTIONS:
             traits[q['trait']].append(q)
         
@@ -458,7 +459,7 @@ def test():
                               question=question,
                               csrf_token=generate_csrf())
 
-    return render_template('test.html')
+    return render_template('assessments/test.html')
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -529,7 +530,7 @@ def personality_results():
             'Openness': 'Openness',
             'Conscientiousness': 'Conscientiousness',
             'Extraversion': 'Extraversion',
-            ' Agreeableness': ' Agreeableness',
+            'Agreeableness': 'Agreeableness',
             'Neuroticism': 'Neuroticism'
         }
         dominant_trait = 'Openness'

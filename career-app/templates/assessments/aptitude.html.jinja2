@@ -42,45 +42,6 @@
             margin-bottom: 2rem;
             color: #fff;
         }
-        .category-nav {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-        .category-btn {
-            padding: 0.8rem 1.5rem;
-            border-radius: 20px;
-            border: 2px solid #2a5298;
-            background: transparent;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .category-btn.active {
-            background: #2a5298;
-            color: #fff;
-        }
-        .category-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .category-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e3c72;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        .difficulty-title {
-            font-size: 1.5rem;
-            color: #2a5298;
-            border-bottom: 2px solid #2a5298;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
         .question-card {
             background: #fff;
             border-radius: 10px;
@@ -161,56 +122,32 @@
             Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
         </div>
 
-        <form id="aptitude-form" action="{{ url_for('test', type='aptitude') }}" method="post">
+        <form id="aptitude-form" method="POST" action=""> <!-- Changed action to empty string -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="time_spent" id="time-spent" value="0">
 
-            <div class="category-nav mb-4">
-                {% for category in ['Mathematics', 'Logical Reasoning', 'Verbal Ability'] %}
-                <button type="button" class="category-btn {% if current_category == category %}active{% endif %}" 
-                        data-category="{{ category }}">
-                    {{ category }}
-                </button>
-                {% endfor %}
-            </div>
-
             <div class="questions-wrapper">
-                {% for category, levels in questions.items() %}
-                <div class="category-section {% if current_category != category %}d-none{% endif %}" 
-                     id="category-{{ category }}">
-                    <h2 class="category-title">{{ category }}</h2>
+                {% for question in questions %}
+                <div class="question-card">
+                    <div class="question-header">
+                        <span class="category-badge">{{ question.type }}</span>
+                        <span class="time-limit">⏱ {{ question.time_limit }}s</span>
+                    </div>
                     
-                    <div class="questions-grid">
-                        {% for level, question_list in levels.items() %}
-                        <div class="difficulty-level">
-                            <h3 class="difficulty-title">{{ level|title }}</h3>
-                            
-                            {% for question in question_list %}
-                            <div class="question-card">
-                                <div class="question-header">
-                                    <span class="category-badge">{{ category }}</span>
-                                    <span class="time-limit">⏱ {{ question.time_limit }}s</span>
-                                </div>
-                                
-                                <h3 class="question-text">{{ question.text }}</h3>
-                                
-                                <div class="options-grid">
-                                    {% for option in question.options %}
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" 
-                                               name="{{ question.id }}" 
-                                               value="{{ loop.index0 }}" 
-                                               id="{{ question.id }}-{{ loop.index0 }}"
-                                               data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
-                                               required>
-                                        <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
-                                            {{ option }}
-                                        </label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% endfor %}
+                    <h3 class="question-text">{{ question.text }}</h3>
+                    
+                    <div class="options-grid">
+                        {% for option in question.options %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" 
+                                   name="{{ question.id }}" 
+                                   value="{{ loop.index0 }}" 
+                                   id="{{ question.id }}-{{ loop.index0 }}"
+                                   data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
+                                   required>
+                            <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
+                                {{ option }}
+                            </label>
                         </div>
                         {% endfor %}
                     </div>
@@ -219,114 +156,54 @@
             </div>
 
             <div class="assessment-controls">
-                <button type="button" class="nav-btn prev-category">← Previous Section</button>
                 <button type="submit" class="submit-btn">Submit Assessment</button>
-                <button type="button" class="nav-btn next-category">Next Section →</button>
             </div>
         </form>
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    const timerElement = document.getElementById('time-left');
-    const answeredCountElement = document.getElementById('answered-count');
-    const progressBar = document.getElementById('progress-bar');
-    const form = document.getElementById('aptitude-form');
-    const timeSpentInput = document.getElementById('time-spent');
-    let timeLeft = {{ initial_time|default(60) }};
-    let answeredCount = {{ completed_questions|default(0) }};
-    const totalQuestions = {{ total_questions|default(0) }};
+        document.addEventListener('DOMContentLoaded', () => {
+            const timerElement = document.getElementById('time-left');
+            const answeredCountElement = document.getElementById('answered-count');
+            const progressBar = document.getElementById('progress-bar');
+            const form = document.getElementById('aptitude-form');
+            const timeSpentInput = document.getElementById('time-spent');
+            let timeLeft = {{ initial_time|default(600) }};
+            let answeredCount = {{ completed_questions|default(0) }};
+            const totalQuestions = {{ total_questions|default(0) }};
 
-    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
-        const timerInterval = setInterval(() => {
-            timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                form.submit();
-            }
-        }, 1000);
-
-        document.querySelectorAll('.form-check-input').forEach(input => {
-            input.addEventListener('change', function() {
-                const questionCard = this.closest('.question-card');
-                const category = questionCard.getAttribute('data-category');
-                const difficulty = questionCard.getAttribute('data-difficulty');
-                const isCorrect = this.getAttribute('data-correct') === 'true';
-                const questionId = this.name;
-
-                // Update answered count only if it's the first answer for this question
-                const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
-                if (!alreadyAnswered) {
-                    answeredCount++;
-                    answeredCountElement.textContent = answeredCount;
-                    progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-                }
-
-                // Adaptive logic: reveal next difficulty if answer is correct
-                if (isCorrect) {
-                    let nextDifficulty;
-                    if (difficulty === 'easy') {
-                        nextDifficulty = 'moderate';
-                    } else if (difficulty === 'moderate') {
-                        nextDifficulty = 'hard';
+            if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
+                const timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        form.submit();
                     }
-                    if (nextDifficulty) {
-                        const nextQuestion = document.querySelector(`.question-card[data-category="${category}"][data-difficulty="${nextDifficulty}"]`);
-                        if (nextQuestion) {
-                            nextQuestion.classList.remove('d-none');
+                }, 1000);
+
+                document.querySelectorAll('.form-check-input').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const questionCard = this.closest('.question-card');
+                        const isCorrect = this.getAttribute('data-correct') === 'true';
+                        const questionId = this.name;
+
+                        // Update answered count only if it's the first answer for this question
+                        const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
+                        if (!alreadyAnswered) {
+                            answeredCount++;
+                            answeredCountElement.textContent = answeredCount;
+                            progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
                         }
-                    }
-                }
-            });
-        });
+                    });
+                });
 
-        let currentCategoryIndex = 0;
-        const categories = Array.from(document.querySelectorAll('.category-section'));
-
-        document.querySelector('.next-category').addEventListener('click', () => {
-            if (currentCategoryIndex < categories.length - 1) {
-                categories[currentCategoryIndex].classList.add('d-none');
-                currentCategoryIndex++;
-                categories[currentCategoryIndex].classList.remove('d-none');
-                updateCategoryButtons();
+                form.addEventListener('submit', (e) => {
+                    timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
+                });
             }
         });
-
-        document.querySelector('.prev-category').addEventListener('click', () => {
-            if (currentCategoryIndex > 0) {
-                categories[currentCategoryIndex].classList.add('d-none');
-                currentCategoryIndex--;
-                categories[currentCategoryIndex].classList.remove('d-none');
-                updateCategoryButtons();
-            }
-        });
-
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const newCategory = btn.getAttribute('data-category');
-                const newIndex = categories.findIndex(cat => cat.id === `category-${newCategory.replace(' ', '-')}`);
-                if (newIndex !== -1 && newIndex !== currentCategoryIndex) {
-                    categories[currentCategoryIndex].classList.add('d-none');
-                    currentCategoryIndex = newIndex;
-                    categories[currentCategoryIndex].classList.remove('d-none');
-                    updateCategoryButtons();
-                }
-            });
-        });
-
-        function updateCategoryButtons() {
-            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            const activeCategory = categories[currentCategoryIndex].id.replace('category-', '').replace('-', ' ');
-            document.querySelector(`.category-btn[data-category="${activeCategory}"]`).classList.add('active');
-        }
-
-        form.addEventListener('submit', (e) => {
-            timeSpentInput.value = {{ initial_time|default(60) }} - timeLeft;
-        });
-    }
-});
-</script>
+    </script>
 {% endblock %}

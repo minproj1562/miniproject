@@ -14,11 +14,11 @@
             
             <!-- Scores List -->
             <ul class="list-group list-group-flush mt-4">
-                <li class="list-group-item"><strong>{{ trait_names['O'] }}:</strong> {{ scores['O'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>{{ trait_names['C'] }}:</strong> {{ scores['C'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>{{ trait_names['E'] }}:</strong> {{ scores['E'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>{{ trait_names['A'] }}:</strong> {{ scores['A'] | round(2) }}%</li>
-                <li class="list-group-item"><strong>{{ trait_names['N'] }}:</strong> {{ scores['N'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['Openness'] }}:</strong> {{ scores['Openness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['Conscientiousness'] }}:</strong> {{ scores['Conscientiousness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['Extraversion'] }}:</strong> {{ scores['Extraversion'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['Agreeableness'] }}:</strong> {{ scores['Agreeableness'] | round(2) }}%</li>
+                <li class="list-group-item"><strong>{{ trait_names['Neuroticism'] }}:</strong> {{ scores['Neuroticism'] | round(2) }}%</li>
             </ul>
             
             <!-- Navigation Buttons -->
@@ -38,10 +38,22 @@
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
+                labels: [
+                    '{{ trait_names['Openness'] }}',
+                    '{{ trait_names['Conscientiousness'] }}',
+                    '{{ trait_names['Extraversion'] }}',
+                    '{{ trait_names['Agreeableness'] }}',
+                    '{{ trait_names['Neuroticism'] }}'
+                ],
                 datasets: [{
                     label: 'Scores (%)',
-                    data: [{{ scores['O'] }}, {{ scores['C'] }}, {{ scores['E'] }}, {{ scores['A'] }}, {{ scores['N'] }}],
+                    data: [
+                        {{ scores['Openness'] | round(2) }},
+                        {{ scores['Conscientiousness'] | round(2) }},
+                        {{ scores['Extraversion'] | round(2) }},
+                        {{ scores['Agreeableness'] | round(2) }},
+                        {{ scores['Neuroticism'] | round(2) }}
+                    ],
                     backgroundColor: 'rgba(54, 162, 235, 0.5)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1

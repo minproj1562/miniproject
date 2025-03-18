@@ -22,9 +22,142 @@
             font-size: 1.2rem;
             margin-top: 20px;
         }
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            width: 250px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .card-text {
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #fff;
+            background: #2a5298;
+            transition: background 0.3s ease;
+        }
+        .btn:hover {
+            background: #1e3c72;
+        }
     </style>
     <div class="student-portal">
         <h1>Student Portal</h1>
         <p>Welcome to your personal hub, {{ user.username }}! Explore resources and track your progress here.</p>
+        <div class="card-container">
+            <div class="card">
+                <h5 class="card-title">Sample Test</h5>
+                <p class="card-text">Assess your work ethics.</p>
+                <a href="{{ url_for('assessments/test', type='sample') }}" class="btn">Take Test</a>
+            </div>
+            <div class="card">
+                <h5 class="card-title">Aptitude Test</h5>
+                <p class="card-text">Test your skills in math, logic, and verbal ability.</p>
+                <a href="{{ url_for('assessments/test', type='aptitude') }}" class="btn">Take Test</a>
+            </div>
+            <div class="card">
+                <h5 class="card-title">Personality Test</h5>
+                <p class="card-text">Discover your personality traits.</p>
+                <a href="{{ url_for('assessments/test', type='personality') }}" class="btn">Take Test</a>
+            </div>
+        </div>{% extends "base.html" %}
+        {% block title %}Student Portal{% endblock %}
+        {% block content %}
+            <style>
+                body {
+                    background: linear-gradient(135deg, #00b09b, #96c93d);
+                    min-height: 100vh;
+                    margin: 0;
+                    font-family: 'Poppins', sans-serif;
+                    color: #fff;
+                }
+                .student-portal {
+                    padding: 40px;
+                    text-align: center;
+                }
+                h1 {
+                    font-size: 2.5rem;
+                    font-weight: 600;
+                    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+                }
+                p {
+                    font-size: 1.2rem;
+                    margin-top: 20px;
+                }
+                .card-container {
+                    display: flex;
+                    justify-content: center;
+                    gap: 20px;
+                    margin-top: 40px;
+                }
+                .card {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 10px;
+                    padding: 20px;
+                    width: 250px;
+                    transition: transform 0.3s ease;
+                }
+                .card:hover {
+                    transform: translateY(-5px);
+                }
+                .card-title {
+                    font-size: 1.5rem;
+                    margin-bottom: 10px;
+                }
+                .card-text {
+                    font-size: 1rem;
+                    margin-bottom: 15px;
+                }
+                .btn {
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    color: #fff;
+                    background: #2a5298;
+                    transition: background 0.3s ease;
+                }
+                .btn:hover {
+                    background: #1e3c72;
+                }
+            </style>
+            <div class="student-portal">
+                <h1>Student Portal</h1>
+                <p>Welcome to your personal hub, {{ user.username }}! Explore resources and track your progress here.</p>
+                <div class="card-container">
+                    <div class="card">
+                        <h5 class="card-title">Sample Test</h5>
+                        <p class="card-text">Assess your work ethics.</p>
+                        <a href="{{ url_for('test', type='sample') }}" class="btn">Take Test</a>
+                    </div>
+                    <div class="card">
+                        <h5 class="card-title">Aptitude Test</h5>
+                        <p class="card-text">Test your skills in math, logic, and verbal ability.</p>
+                        <a href="{{ url_for('test', type='aptitude') }}" class="btn">Take Test</a>
+                    </div>
+                    <div class="card">
+                        <h5 class="card-title">Personality Test</h5>
+                        <p class="card-text">Discover your personality traits.</p>
+                        <a href="{{ url_for('test', type='personality') }}" class="btn">Take Test</a>
+                    </div>
+                </div>
+            </div>
+        {% endblock %}
     </div>
 {% endblock %}
