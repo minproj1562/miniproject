@@ -8,13 +8,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 import requests
 import random
 import copy
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, EmailField
+from wtforms.validators import DataRequired, Length, EqualTo, Email, ValidationError
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -74,6 +78,13 @@ class User(UserMixin, db.Model):
     animations_enabled = db.Column(db.Boolean, default=True)
     profile_image = db.Column(db.String(150), nullable=True, default='images/default_profile.jpg')
 
+class PasswordReset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), nullable=False, unique=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    user = db.relationship('User', backref='password_resets')
+
 # TestResult model
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -82,6 +93,37 @@ class TestResult(db.Model):
     score = db.Column(db.Integer, nullable=False)
     time_spent = db.Column(db.Integer, nullable=True)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=150)])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember Me')
+    submit = SubmitField('Login')
+
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=150)])
+    email = EmailField('Email', validators=[Email(), Length(max=150)], render_kw={"placeholder": "Optional"})
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
+    captcha = StringField('Verification: What is 2 + 3?', validators=[DataRequired()])
+    submit = SubmitField('Register')
+class SampleTestForm(FlaskForm):
+    submit = SubmitField('Submit Test')
+
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('That username is already taken. Please choose a different one.')
+
+    def validate_email(self, email):
+        if email.data:
+            user = User.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError('That email is already registered. Please use a different one.')
+
+    def validate_captcha(self, captcha):
+        if captcha.data != '5':
+            raise ValidationError('Verification failed. Please enter the correct answer (2 + 3 = 5).')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -148,7 +190,7 @@ PERSONALITY_QUESTIONS = [
     {"id": 2, "trait": "Openness", "text": "I avoid philosophical discussions", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 3, "trait": "Openness", "text": "I have a vivid imagination", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 4, "trait": "Openness", "text": "I prefer routine over variety", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Nuclear", "Agree", "Strongly Agree"]},
     {"id": 6, "trait": "Openness", "text": "I dislike complex theoretical concepts", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 7, "trait": "Openness", "text": "I enjoy trying new cultural experiences", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 8, "trait": "Openness", "text": "I prefer practical over creative tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
@@ -274,55 +316,49 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user, remember=request.form.get('remember_me') == 'on')
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and check_password_hash(user.password, form.password.data):
+            login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next', url_for('dashboard'))
             return redirect(next_page)
         else:
             flash('Invalid username or password.', 'danger')
-    return render_template('auth/login.html', csrf_token=generate_csrf())
+    return render_template('auth/login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        email = request.form.get('email', None)
-        captcha = request.form.get('captcha')
-        if password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-        elif captcha != '5':
-            flash('Verification failed. Please enter the correct answer (2 + 3 = 5).', 'danger')
-        elif User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'danger')
-        elif email and User.query.filter_by(email=email).first():
-            flash('Email already registered.', 'danger')
-        else:
-            hashed_password = generate_password_hash(password)
-            new_user = User(username=username, password=hashed_password, email=email)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Registration successful! Please log in.', 'success')
-            return redirect(url_for('login'))
-    return render_template('auth/register.html', csrf_token=generate_csrf())
+    form = RegisterForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        new_user = User(username=form.username.data, password=hashed_password, email=form.email.data or None)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Registration successful! Please log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('auth/register.html', form=form)
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
     recent_tests = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).limit(5).all()
-    test_data = {
-        'labels': [test.completed_at.strftime('%Y-%m-%d %H:%M') for test in recent_tests[::-1]],
-        'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
-        'types': [test.test_type for test in recent_tests[::-1]]
-    }
-    recommendation = "Take more tests for personalized advice!"
-    if len(recent_tests) >= 3:
-        recommendation = "You're doing great! Consider exploring advanced career options."
+    if recent_tests:
+        test_data = {
+            'labels': [test.completed_at.strftime('%Y-%m-%d %H:%M') for test in recent_tests[::-1]],
+            'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
+            'types': [test.test_type for test in recent_tests[::-1]]
+        }
+        recommendation = "Take more tests for personalized advice!"
+        if len(recent_tests) >= 3:
+            recommendation = "You're doing great! Consider exploring advanced career options."
+    else:
+        test_data = {
+            'labels': [],
+            'scores': [],
+            'types': []
+        }
+        recommendation = "Start by taking a test to see your progress!"
     return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, test_data=test_data, recommendation=recommendation)
 
 @app.route('/student')
@@ -406,7 +442,7 @@ def test():
                         answers[q['id']] = int(answer)
                     else:
                         flash('Please answer all questions before submitting.', 'danger')
-                        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+                        return render_template('sample_test.html', questions=questions, instructions=instructions)
                 score = sum(3 - answers[q['id']] for q in questions)  # Reverse scoring: 3=Always, 0=Rarely
                 result = TestResult(
                     user_id=current_user.id,
@@ -417,8 +453,8 @@ def test():
                 db.session.commit()
                 flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
                 return redirect(url_for('index'))
-            return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
-
+            return render_template('sample_test.html', questions=questions, instructions=instructions)
+        
     elif test_type == 'aptitude':
         questions = generate_questions('aptitude')
         session['aptitude_questions'] = questions
@@ -440,7 +476,7 @@ def test():
             total_questions = len(questions)
             return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
                                   current_category='Mathematics', total_questions=total_questions,
-                                  initial_time=600, completed_questions=0, csrf_token=generate_csrf())
+                                  initial_time=600, completed_questions=0)
 
     elif test_type == 'personality':
         questions = generate_questions('personality')
@@ -456,8 +492,7 @@ def test():
                               questions=questions,
                               instructions=instructions,
                               current_question_index=current_question_index,
-                              question=question,
-                              csrf_token=generate_csrf())
+                              question=question)
 
     return render_template('assessments/test.html')
 
@@ -602,16 +637,65 @@ def profile_edit():
                     current_user.dob = datetime.strptime(dob, '%Y-%m-%d')
                 except ValueError:
                     flash('Invalid date format for Date of Birth. Use YYYY-MM-DD.', 'danger')
-                    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
+                    return render_template('profile_edit.html', user=current_user)
             db.session.commit()
             flash('Profile updated successfully!', 'success')
             return redirect(url_for('profile'))
-    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
+    return render_template('profile_edit.html', user=current_user)
 
-@app.route('/forgot_password')
+@app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
-    flash('Password reset is not yet implemented. Please contact support.', 'warning')
-    return redirect(url_for('login'))
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('No account found with that email address.', 'danger')
+            return redirect(url_for('forgot_password'))
+        
+        # Generate a reset token
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+        reset = PasswordReset(user_id=user.id, token=token, expires_at=expires_at)
+        db.session.add(reset)
+        db.session.commit()
+
+        # Send reset email
+        reset_link = url_for('reset_password', token=token, _external=True)
+        msg = Message(subject='Password Reset Request',
+                      recipients=[email],
+                      body=f'Click the following link to reset your password: {reset_link}\nThis link will expire in 1 hour.')
+        try:
+            mail.send(msg)
+            flash('A password reset link has been sent to your email.', 'success')
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            flash('Failed to send reset email. Please try again later.', 'danger')
+        return redirect(url_for('login'))
+    return render_template('auth/forgot_password.html')
+
+# Add a reset_password route
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    reset = PasswordReset.query.filter_by(token=token).first()
+    if not reset or reset.expires_at < datetime.utcnow():
+        flash('The password reset link is invalid or has expired.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+        elif len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+        else:
+            user = reset.user
+            user.password = generate_password_hash(password)
+            db.session.delete(reset)  # Remove the reset token after use
+            db.session.commit()
+            flash('Your password has been reset successfully. Please log in.', 'success')
+            return redirect(url_for('login'))
+    return render_template('auth/reset_password.html', token=token)
 
 @app.route('/results')
 @login_required
@@ -649,7 +733,7 @@ def contact():
             except Exception as e:
                 print(f"Error sending email: {e}")
                 flash('Failed to send message. Please try again later.', 'danger')
-    return render_template('contact.html', csrf_token=generate_csrf())
+    return render_template('contact.html')
 
 @app.route('/faq')
 def faq():
@@ -718,7 +802,7 @@ def settings():
             logout_user()
             flash('Your account has been deleted.', 'info')
             return redirect(url_for('index'))
-    return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
+    return render_template('settings.html', user=current_user)
 
 @app.errorhandler(404)
 def not_found(error):

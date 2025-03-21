@@ -3,3 +3,10 @@ flask-sqlalchemy
 flask-wtf
 flask-bcrypt
 python-dotenv
+flask_login
+werkzeug.security
+werkzeug.utils
+flask_wtf.csrf
+flask_mail
+flask_migrate
+datetime
