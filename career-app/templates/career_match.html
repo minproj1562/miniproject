@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Career Match Results{% endblock %}
+{% block extra_head %}
+<style>
+  .results-container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin: 2rem auto;
+      max-width: 800px;
+  }
+  .career-match {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+  }
+  .match-score {
+      background-color: #007bff;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 15px;
+      display: inline-block;
+      margin-left: 10px;
+  }
+  .resources {
+      margin-top: 10px;
+  }
+  .resources a {
+      color: #3498db;
+      text-decoration: none;
+  }
+  .resources a:hover {
+      text-decoration: underline;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="results-container">
+    <h1 class="text-center mb-4">Your Career Match Results</h1>
+    <p class="text-center mb-6">Based on your aptitude, personality, skills, and interests, here are your top career matches:</p>
+    
+    {% for match in career_matches %}
+    <div class="career-match">
+        <h2>{{ match.career }} <span class="match-score">{{ match.match_score }}%</span></h2>
+        <p>{{ match.description }}</p>
+        <div class="resources">
+            <h3>Resources to Get Started:</h3>
+            <ul>
+                {% for resource in match.resources %}
+                <li><a href="{{ resource.link }}" target="_blank">{{ resource.name }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="text-center mt-6">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

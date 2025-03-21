@@ -4,7 +4,7 @@
     <style>
         .register-container {
             max-width: 450px;
-            margin: 0 auto;
+            margin: 50px auto;
             padding: 30px;
             background: linear-gradient(to bottom, #ff9a9eee, #fad0c4ee);
             border-radius: 15px;
@@ -74,62 +74,32 @@
             color: #1e3c72;
             text-decoration: underline;
         }
-        .error {
-            color: #dc3545;
-            font-size: 14px;
-            margin-top: 5px;
-        }
     </style>
     <div class="register-container">
         <h1>Register</h1>
         <form method="POST">
-            {{ form.hidden_tag() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
-                {{ form.username.label }}
-                {{ form.username() }}
-                {% if form.username.errors %}
-                    {% for error in form.username.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                {{ form.email.label }}
-                {{ form.email() }}
-                {% if form.email.errors %}
-                    {% for error in form.email.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
             </div>
             <div class="form-group">
-                {{ form.password.label }}
-                {{ form.password() }}
-                {% if form.password.errors %}
-                    {% for error in form.password.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
             <div class="form-group">
-                {{ form.confirm_password.label }}
-                {{ form.confirm_password() }}
-                {% if form.confirm_password.errors %}
-                    {% for error in form.confirm_password.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="email">Email (Optional)</label>
+                <input type="email" id="email" name="email">
             </div>
             <div class="form-group">
-                {{ form.captcha.label }}
-                {{ form.captcha() }}
-                {% if form.captcha.errors %}
-                    {% for error in form.captcha.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="captcha">Verification: What is 2 + 3?</label>
+                <input type="text" id="captcha" name="captcha" required>
             </div>
-            {{ form.submit(class="btn-submit") }}
+            <button type="submit" class="btn-submit">Register</button>
         </form>
         <div class="links">
             <a href="{{ url_for('login') }}" class="link">Already have an account? Login</a>

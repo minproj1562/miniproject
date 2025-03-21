@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="assessment-container">
+    <h1 class="text-3xl font-bold mb-8 text-center">Sample Test</h1>
     <!-- Instructions -->
     <div class="instructions">
         <h3>Instructions</h3>
@@ -12,7 +13,7 @@
     </div>
 
     <form method="POST" action="{{ url_for('test', type='sample') }}" id="sample-form">
-        {{ form.hidden_tag() }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% for question in questions %}
             <div class="question-card" data-question-id="{{ question.id }}">
                 <p>{{ loop.index }}. {{ question.question | safe }}</p>
@@ -24,7 +25,9 @@
                 {% endfor %}
             </div>
         {% endfor %}
-        {{ form.submit(class="submit-btn") }}
+        <div class="assessment-controls">
+            <button type="submit" class="submit-btn">Submit Test</button>
+        </div>
     </form>
 </div>
 {% endblock %}

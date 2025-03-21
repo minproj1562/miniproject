@@ -15,6 +15,9 @@ from datetime import datetime
 import requests
 import random
 import copy
+from collections import defaultdict
+import json
+from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -81,6 +84,7 @@ class TestResult(db.Model):
     test_type = db.Column(db.String(50), nullable=False)
     score = db.Column(db.Integer, nullable=False)
     time_spent = db.Column(db.Integer, nullable=True)
+    details = db.Column(db.Text, nullable=True)  # Store JSON string of detailed results
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 @login_manager.user_loader
@@ -193,6 +197,123 @@ PERSONALITY_QUESTIONS = [
     {"id": 47, "trait": "Neuroticism", "text": "I often feel overwhelmed by my emotions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
     {"id": 48, "trait": "Neuroticism", "text": "I rarely experience mood swings", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]}
 ]
+CAREER_MAPPING = {
+    "Software Developer": {
+        "aptitude": {
+            "Mathematics": 70,
+            "Logical Reasoning": 80,
+            "Verbal Ability": 60
+        },
+        "personality": {
+            "Openness": 60,
+            "Conscientiousness": 70,
+            "Extraversion": 50,
+            "Agreeableness": 50,
+            "Neuroticism": 40
+        },
+        "skills": {
+            "Software Development": 70
+        },
+        "interests": ["Software Development"],
+        "description": "Designs and builds software applications.",
+        "resources": [
+            {"name": "Learn Python", "link": "https://www.codecademy.com/learn/learn-python-3"},
+            {"name": "Git Tutorial", "link": "https://www.atlassian.com/git/tutorials"}
+        ]
+    },
+    "Data Scientist": {
+        "aptitude": {
+            "Mathematics": 80,
+            "Logical Reasoning": 75,
+            "Verbal Ability": 60
+        },
+        "personality": {
+            "Openness": 70,
+            "Conscientiousness": 65,
+            "Extraversion": 40,
+            "Agreeableness": 50,
+            "Neuroticism": 40
+        },
+        "skills": {
+            "Data Science": 75
+        },
+        "interests": ["Data Science"],
+        "description": "Analyzes data to derive actionable insights.",
+        "resources": [
+            {"name": "Machine Learning by Andrew Ng", "link": "https://www.coursera.org/learn/machine-learning"},
+            {"name": "SQL for Data Science", "link": "https://www.coursera.org/learn/sql-for-data-science"}
+        ]
+    },
+    "Graphic Designer": {
+        "aptitude": {
+            "Mathematics": 50,
+            "Logical Reasoning": 60,
+            "Verbal Ability": 70
+        },
+        "personality": {
+            "Openness": 80,
+            "Conscientiousness": 60,
+            "Extraversion": 50,
+            "Agreeableness": 60,
+            "Neuroticism": 40
+        },
+        "skills": {
+            "Graphic Design": 70
+        },
+        "interests": ["Graphic Design"],
+        "description": "Creates visual designs for branding and media.",
+        "resources": [
+            {"name": "Photoshop Tutorials", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
+            {"name": "UI/UX Design", "link": "https://www.coursera.org/specializations/ui-ux-design"}
+        ]
+    },
+    "Business Manager": {
+        "aptitude": {
+            "Mathematics": 60,
+            "Logical Reasoning": 70,
+            "Verbal Ability": 80
+        },
+        "personality": {
+            "Openness": 50,
+            "Conscientiousness": 80,
+            "Extraversion": 70,
+            "Agreeableness": 70,
+            "Neuroticism": 30
+        },
+        "skills": {
+            "Business Management": 70
+        },
+        "interests": ["Business Management"],
+        "description": "Leads teams and manages business operations.",
+        "resources": [
+            {"name": "Leadership Skills", "link": "https://www.udemy.com/topic/leadership/"},
+            {"name": "Strategic Management", "link": "https://www.coursera.org/learn/strategic-management"}
+        ]
+    },
+    "Research Scientist": {
+        "aptitude": {
+            "Mathematics": 85,
+            "Logical Reasoning": 80,
+            "Verbal Ability": 65
+        },
+        "personality": {
+            "Openness": 75,
+            "Conscientiousness": 70,
+            "Extraversion": 40,
+            "Agreeableness": 50,
+            "Neuroticism": 35
+        },
+        "skills": {
+            "Data Science": 60
+        },
+        "interests": ["Scientific"],
+        "description": "Conducts research in scientific fields.",
+        "resources": [
+            {"name": "Research Methods", "link": "https://www.coursera.org/learn/research-methods"},
+            {"name": "Statistics with Python", "link": "https://www.coursera.org/learn/statistics-with-python"}
+        ]
+    }
+}
 
 # Fetch additional aptitude questions from OpenTDB
 def fetch_opentdb_questions(category_id, amount=5):
@@ -232,39 +353,39 @@ def generate_questions(test_type):
         ]
     elif test_type == 'aptitude':
         questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        # Ensure at least one question per category and difficulty
         for category in questions:
             for difficulty in questions[category]:
                 q_list = questions[category][difficulty]
                 if q_list:
                     questions[category][difficulty] = [random.choice(q_list)]
         
-        # Fetch additional questions from OpenTDB
         category_mapping = {"Mathematics": 19, "Logical Reasoning": 25, "Verbal Ability": 10}
         for category, cat_id in category_mapping.items():
             opentdb_qs = fetch_opentdb_questions(cat_id, 2)
             if opentdb_qs:
-                questions[category]["easy"].extend(opentdb_qs[:2])  # Add 2 OpenTDB questions
+                questions[category]["easy"].extend(opentdb_qs[:2])
         
-        # Flatten and shuffle all questions
         flat_questions = [q for cat in questions.values() for lvl in cat.values() for q in lvl]
         random.shuffle(flat_questions)
-        return flat_questions[:10]  # Limit to 10 questions
+        return flat_questions[:10]
     elif test_type == 'personality':
-        # Initialize traits dictionary with consistent keys
         traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], 'Agreeableness': [], 'Neuroticism': []}
         for q in PERSONALITY_QUESTIONS:
-            traits[q['trait']].append(q)
+            if q['trait'] in traits:
+                traits[q['trait']].append(q)
         
         selected_questions = []
         for trait in traits:
             trait_qs = traits[trait]
-            selected_questions.extend(random.sample(trait_qs, min(2, len(trait_qs))))  # 2 questions per trait for brevity
+            selected_questions.extend(random.sample(trait_qs, min(2, len(trait_qs))))
         
         random.shuffle(selected_questions)
         return selected_questions
+    elif test_type == 'skill_gap':
+        field = session.get('selected_field', 'Software Development')
+        questions = SKILL_GAP_QUESTIONS.get(field, [])
+        return questions[:10]
     return []
-
 # Routes
 @app.route('/')
 def index():
@@ -284,7 +405,7 @@ def login():
             return redirect(next_page)
         else:
             flash('Invalid username or password.', 'danger')
-    return render_template('auth/login.html', csrf_token=generate_csrf())
+    return render_template('auth/login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -309,7 +430,7 @@ def register():
             db.session.commit()
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
-    return render_template('auth/register.html', csrf_token=generate_csrf())
+    return render_template('auth/register.html')
 
 @app.route('/dashboard')
 @login_required
@@ -386,7 +507,6 @@ def degree():
     return render_template('degree.html', user=current_user, degrees=filtered_degrees)
 
 @app.route('/test', methods=['GET', 'POST'])
-@login_required
 def test():
     test_type = request.args.get('type')
     instructions = {
@@ -407,19 +527,23 @@ def test():
                     else:
                         flash('Please answer all questions before submitting.', 'danger')
                         return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
-                score = sum(3 - answers[q['id']] for q in questions)  # Reverse scoring: 3=Always, 0=Rarely
-                result = TestResult(
-                    user_id=current_user.id,
-                    test_type='sample',
-                    score=score
-                )
-                db.session.add(result)
-                db.session.commit()
+                score = sum(3 - answers[q['id']] for q in questions)
+                if current_user.is_authenticated:
+                    result = TestResult(
+                        user_id=current_user.id,
+                        test_type='sample',
+                        score=score
+                    )
+                    db.session.add(result)
+                    db.session.commit()
                 flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
                 return redirect(url_for('index'))
-            return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
 
     elif test_type == 'aptitude':
+        if not current_user.is_authenticated:
+            flash('Please log in to access the Aptitude Test.', 'warning')
+            return redirect(url_for('login', next=request.url))
         questions = generate_questions('aptitude')
         session['aptitude_questions'] = questions
         if request.method == 'POST':
@@ -427,22 +551,43 @@ def test():
                 time_spent = int(request.form.get('time_spent', 0))
                 correct = 0
                 total = len(questions)
+                category_scores = defaultdict(int)
+                category_counts = defaultdict(int)
                 for question in questions:
                     answer = request.form.get(str(question['id']))
+                    category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
+                    category_counts[category] += 1
                     if answer is not None and int(answer) == question['correct']:
                         correct += 1
-                score = correct
-                result = TestResult(user_id=current_user.id, test_type='aptitude', score=score, time_spent=time_spent)
+                        category_scores[category] += 1
+                # Calculate scores per category as percentages
+                detailed_scores = {cat: (category_scores[cat] / category_counts[cat]) * 100 for cat in category_scores}
+                score = (correct / total) * 100
+                result = TestResult(
+                    user_id=current_user.id,
+                    test_type='aptitude',
+                    score=score,
+                    time_spent=time_spent,
+                    details=json.dumps(detailed_scores)
+                )
                 db.session.add(result)
                 db.session.commit()
-                flash(f'Your aptitude score: {score} out of {total}', 'success')
-                return redirect(url_for('dashboard'))
-            total_questions = len(questions)
-            return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
-                                  current_category='Mathematics', total_questions=total_questions,
-                                  initial_time=600, completed_questions=0, csrf_token=generate_csrf())
+                return render_template('results.html.jinja2', score_data={
+                    'score': score,
+                    'correct': correct,
+                    'total': total,
+                    'time_spent': time_spent,
+                    'details': detailed_scores
+                })
+        total_questions = len(questions)
+        return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
+                              current_category='Mathematics', total_questions=total_questions,
+                              initial_time=600, completed_questions=0, csrf_token=generate_csrf())
 
     elif test_type == 'personality':
+        if not current_user.is_authenticated:
+            flash('Please log in to access the Personality Test.', 'warning')
+            return redirect(url_for('login', next=request.url))
         questions = generate_questions('personality')
         session['personality_questions'] = questions
         if request.method == 'POST':
@@ -459,7 +604,24 @@ def test():
                               question=question,
                               csrf_token=generate_csrf())
 
-    return render_template('assessments/test.html')
+    flash('Invalid test type selected.', 'danger')
+    return redirect(url_for('index'))
+
+@app.route('/career_assessment')
+def career_assessment():
+    return render_template('career_assessment.html')
+
+@app.route('/interest_test', methods=['GET', 'POST'])
+@login_required
+def interest_test():
+    selected_field = request.args.get('field', session.get('selected_field', None))
+    if selected_field:
+        session['selected_field'] = selected_field
+    questions = generate_questions('skill_gap') if selected_field else []
+    return render_template('assessments/interest_test.html.jinja2', 
+                          selected_field=selected_field, 
+                          questions=questions, 
+                          csrf_token=generate_csrf())
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -482,10 +644,9 @@ def submit_assessment():
         trait, direction = question_traits.get(question_id, (None, True))
         if trait:
             if not direction:
-                value = 4 - value  # Reverse scoring for reverse-scored items
-            scores[trait] += value + 1  # Scale to 1-5
+                value = 4 - value
+            scores[trait] += value + 1
 
-    # Normalize scores to percentage (assuming 2 questions per trait for simplicity)
     for trait in scores:
         count = sum(1 for q in questions if q['trait'] == trait)
         scores[trait] = (scores[trait] / (count * 5)) * 100 if count > 0 else 0
@@ -503,7 +664,8 @@ def submit_assessment():
         user_id=current_user.id,
         test_type='personality',
         score=int(scores[dominant_trait]),
-        time_spent=duration
+        time_spent=duration,
+        details=json.dumps(scores)
     )
     db.session.add(result)
     db.session.commit()
@@ -511,6 +673,36 @@ def submit_assessment():
     return jsonify({
         'redirect': url_for('personality_results', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
     })
+
+@app.route('/submit_interests', methods=['POST'])
+@login_required
+def submit_interests():
+    field = request.form.get('field')
+    if not field or field not in SKILL_GAP_QUESTIONS:
+        flash('Invalid field selected.', 'danger')
+        return redirect(url_for('interest_test'))
+
+    questions = SKILL_GAP_QUESTIONS[field]
+    correct = 0
+    total = len(questions)
+    for question in questions:
+        answer = request.form.get(str(question['id']))
+        if answer is not None and int(answer) == question['correct']:
+            correct += 1
+    
+    skill_score = (correct / total) * 100
+    detailed_scores = {field: skill_score}
+
+    result = TestResult(
+        user_id=current_user.id,
+        test_type='skill_gap',
+        score=skill_score,
+        details=json.dumps(detailed_scores)
+    )
+    db.session.add(result)
+    db.session.commit()
+
+    return redirect(url_for('career_match'))
 
 @app.route('/personality_results')
 @login_required
@@ -536,6 +728,136 @@ def personality_results():
         dominant_trait = 'Openness'
 
     return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
+
+@app.route('/submit_career_assessment', methods=['POST'])
+@login_required
+def submit_career_assessment():
+    if not request.form:
+        flash('Please complete the assessment.', 'danger')
+        return redirect(url_for('career_assessment'))
+
+    answers = {
+        'q1': request.form.get('q1'),
+        'q2': request.form.get('q2'),
+        'q3': request.form.get('q3'),
+        'q4': request.form.get('q4'),
+        'q5': request.form.get('q5'),
+        'q6': request.form.get('q6'),
+        'q7': request.form.get('q7'),
+        'q8': request.form.get('q8'),
+        'q9': request.form.get('q9'),
+        'q10': request.form.get('q10')
+    }
+
+    # Calculate interest scores
+    interest_scores = defaultdict(int)
+    fields = ['Software Development', 'Data Science', 'Graphic Design', 'Business Management', 'Scientific']
+    for field in fields:
+        for q in ['q1', 'q2', 'q3', 'q4', 'q5']:
+            if answers[q] == field:
+                interest_scores[field] += 20  # 20 points per match (total 100)
+
+    result = TestResult(
+        user_id=current_user.id,
+        test_type='interest',
+        score=max(interest_scores.values(), default=0),
+        details=json.dumps(dict(interest_scores))
+    )
+    db.session.add(result)
+    db.session.commit()
+
+    return redirect(url_for('career_match'))
+
+@app.route('/career_match')
+@login_required
+def career_match():
+    # Fetch all relevant test results
+    tests = TestResult.query.filter_by(user_id=current_user.id).all()
+    aptitude_scores = {}
+    personality_scores = {}
+    skill_scores = {}
+    interest_scores = {}
+
+    for test in tests:
+        if test.details:
+            details = json.loads(test.details)
+            if test.test_type == 'aptitude':
+                aptitude_scores = details
+            elif test.test_type == 'personality':
+                personality_scores = details
+            elif test.test_type == 'skill_gap':
+                skill_scores = details
+            elif test.test_type == 'interest':
+                interest_scores = details
+
+    # Calculate career match scores
+    career_matches = []
+    for career, requirements in CAREER_MAPPING.items():
+        match_score = 0
+        total_weight = 0
+
+        # Aptitude match
+        if aptitude_scores:
+            aptitude_match = 0
+            for category, required_score in requirements['aptitude'].items():
+                user_score = aptitude_scores.get(category, 0)
+                aptitude_match += min(user_score / required_score, 1) * 100
+            aptitude_match /= len(requirements['aptitude'])
+            match_score += aptitude_match * 0.3  # Weight: 30%
+            total_weight += 0.3
+
+        # Personality match
+        if personality_scores:
+            personality_match = 0
+            for trait, required_score in requirements['personality'].items():
+                user_score = personality_scores.get(trait, 0)
+                # For Neuroticism, lower is better
+                if trait == 'Neuroticism':
+                    user_score = 100 - user_score
+                    required_score = 100 - required_score
+                personality_match += min(user_score / required_score, 1) * 100
+            personality_match /= len(requirements['personality'])
+            match_score += personality_match * 0.3  # Weight: 30%
+            total_weight += 0.3
+
+        # Skills match
+        if skill_scores:
+            skills_match = 0
+            for field, required_score in requirements['skills'].items():
+                user_score = skill_scores.get(field, 0)
+                skills_match += min(user_score / required_score, 1) * 100
+            skills_match /= len(requirements['skills'])
+            match_score += skills_match * 0.2  # Weight: 20%
+            total_weight += 0.2
+
+        # Interests match
+        if interest_scores:
+            interests_match = 0
+            for interest in requirements['interests']:
+                user_score = interest_scores.get(interest, 0)
+                interests_match += user_score
+            interests_match = min(interests_match / 100, 1) * 100  # Normalize to 100
+            match_score += interests_match * 0.2  # Weight: 20%
+            total_weight += 0.2
+
+        if total_weight > 0:
+            match_score /= total_weight
+            career_matches.append({
+                'career': career,
+                'match_score': round(match_score, 2),
+                'description': requirements['description'],
+                'resources': requirements['resources']
+            })
+
+    # Sort by match score
+    career_matches.sort(key=lambda x: x['match_score'], reverse=True)
+
+    # If no matches, prompt user to take more tests
+    if not career_matches:
+        flash('Please complete more assessments to get career recommendations.', 'info')
+        return redirect(url_for('dashboard'))
+
+    return render_template('career_match.html', career_matches=career_matches[:3])  # Top 3 matches
 
 @app.route('/progress_tracking')
 @login_required
@@ -616,8 +938,25 @@ def forgot_password():
 @app.route('/results')
 @login_required
 def results():
-    flash('Please complete an aptitude test to view results.', 'warning')
-    return redirect(url_for('test'))
+    latest_test = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).first()
+    if not latest_test:
+        flash('Please complete a test to view results.', 'warning')
+        return redirect(url_for('test'))
+    if latest_test.test_type == 'aptitude':
+        score_data = {
+            'score': latest_test.score,
+            'correct': int(latest_test.score / 10),  # Assuming score is a percentage, adjust as needed
+            'total': 10,
+            'time_spent': latest_test.time_spent or 0
+        }
+        return render_template('results.html.jinja2', score_data=score_data)
+    elif latest_test.test_type == 'personality':
+        return redirect(url_for('personality_results'))
+    elif latest_test.test_type == 'skill_gap':
+        return redirect(url_for('submit_interests'))
+    else:
+        flash('No detailed results available for this test type.', 'info')
+        return redirect(url_for('dashboard'))
 
 @app.route('/logout')
 @login_required

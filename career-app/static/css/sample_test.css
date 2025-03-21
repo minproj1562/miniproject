@@ -1,0 +1,156 @@
+:root {
+    --primary: #3b82f6;      /* Blue */
+    --secondary: #1d4ed8;    /* Dark blue */
+    --accent: #facc15;       /* Yellow */
+    --success: #16a34a;      /* Green */
+    --danger: #dc2626;       /* Red */
+    --background: #f3f4f6;   /* Light gray */
+    --text: #111827;         /* Dark gray */
+    --gradient-start: #3b82f6;
+    --gradient-end: #1d4ed8;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --glass: rgba(255, 255, 255, 0.95);
+  }
+  
+  /* Base styles */
+  body {
+    background: linear-gradient(135deg, var(--background) 0%, #e5e7eb 100%);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+  
+  /* Container */
+  .container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--glass);
+    backdrop-filter: blur(8px);
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  
+  /* Heading */
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  /* Question card */
+  .bg-white {
+    background: white;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .bg-white:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .bg-white::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, 
+      rgba(255,255,255,0.1) 25%,
+      transparent 50%,
+      rgba(255,255,255,0.1) 75%);
+    transform: rotate(30deg);
+    animation: shimmer 8s infinite linear;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%) rotate(30deg); }
+    100% { transform: translateX(100%) rotate(30deg); }
+  }
+  
+  /* Question heading */
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--secondary);
+    margin-bottom: 1rem;
+  }
+  
+  /* Options */
+  .mb-2 {
+    margin-bottom: 0.5rem;
+  }
+  
+  .flex.items-center.space-x-3 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background 0.3s ease;
+  }
+  
+  .flex.items-center.space-x-3:hover {
+    background: #f0f0f0;
+  }
+  
+  .form-radio {
+    accent-color: var(--primary);
+  }
+  
+  /* Submit button */
+  .w-full.bg-blue-500 {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  
+  .w-full.bg-blue-500:hover {
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3);
+  }
+  
+  .w-full.bg-blue-500::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    transition: left 0.6s;
+  }
+  
+  .w-full.bg-blue-500:hover::after {
+    left: 100%;
+  }

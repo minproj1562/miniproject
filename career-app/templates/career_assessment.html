@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Career Assessment{% endblock %}
+{% block title %}Career Interest Assessment{% endblock %}
 {% block extra_head %}
 <style>
-  /* Styles specific to the Career Assessment page */
   h1 {
     color: #1e3c72;
     margin-bottom: 1.5rem;
@@ -30,194 +29,67 @@
   button:hover {
     background-color: #2980b9;
   }
-  .results {
-    margin-top: 20px;
-    padding: 20px;
-    background: #f9f9f9;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  .results h2 {
-    color: #1e3c72;
-  }
-  .results p {
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-  .results a {
-    color: #3498db;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  .results a:hover {
-    text-decoration: underline;
-  }
-  .results .preferences {
-    margin-top: 20px;
-  }
-  .results .preferences h3 {
-    color: #1e3c72;
-  }
-  .results .preferences ul {
-    list-style: none;
-    padding: 0;
-  }
-  .results .preferences ul li {
-    margin-bottom: 5px;
-  }
 </style>
 {% endblock %}
 {% block content %}
-<h1>Career Assessment</h1>
-<form id="assessment-form">
-  <!-- Questions 1 to 10 -->
-  <div class="question">
-    <p>1. Do you enjoy working with technology?</p>
-    <label><input type="radio" name="q1" value="Technical"> Yes</label>
-    <label><input type="radio" name="q1" value="Non-Technical"> No</label>
-  </div>
-  <div class="question">
-    <p>2. Are you interested in healthcare and medicine?</p>
-    <label><input type="radio" name="q2" value="Medical"> Yes</label>
-    <label><input type="radio" name="q2" value="Non-Medical"> No</label>
-  </div>
-  <div class="question">
-    <p>3. Do you have a passion for the arts?</p>
-    <label><input type="radio" name="q3" value="Arts"> Yes</label>
-    <label><input type="radio" name="q3" value="Non-Arts"> No</label>
-  </div>
-  <div class="question">
-    <p>4. Are you interested in business and management?</p>
-    <label><input type="radio" name="q4" value="Business"> Yes</label>
-    <label><input type="radio" name="q4" value="Non-Business"> No</label>
-  </div>
-  <div class="question">
-    <p>5. Do you enjoy scientific research?</p>
-    <label><input type="radio" name="q5" value="Scientific"> Yes</label>
-    <label><input type="radio" name="q5" value="Non-Scientific"> No</label>
-  </div>
-  <div class="question">
-    <p>6. How do you prefer to work?</p>
-    <label><input type="radio" name="q6" value="Team"> In a team</label>
-    <label><input type="radio" name="q6" value="Independent"> Independently</label>
-    <label><input type="radio" name="q6" value="Both"> Both, depending on the task</label>
-  </div>
-  <div class="question">
-    <p>7. What is your preferred work environment?</p>
-    <label><input type="radio" name="q7" value="Office"> Office</label>
-    <label><input type="radio" name="q7" value="Remote"> Remote</label>
-    <label><input type="radio" name="q7" value="Field"> Field/Outdoor</label>
-    <label><input type="radio" name="q7" value="Lab"> Laboratory</label>
-  </div>
-  <div class="question">
-    <p>8. How do you handle challenges?</p>
-    <label><input type="radio" name="q8" value="ProblemSolver"> I solve problems logically</label>
-    <label><input type="radio" name="q8" value="CreativeSolver"> I think creatively</label>
-    <label><input type="radio" name="q8" value="CollaborativeSolver"> I collaborate with others</label>
-    <label><input type="radio" name="q8" value="Avoid"> I avoid challenges</label>
-  </div>
-  <div class="question">
-    <p>9. What motivates you the most?</p>
-    <label><input type="radio" name="q9" value="Money"> Financial rewards</label>
-    <label><input type="radio" name="q9" value="Impact"> Making a positive impact</label>
-    <label><input type="radio" name="q9" value="Growth"> Personal growth</label>
-    <label><input type="radio" name="q9" value="Creativity"> Creative freedom</label>
-  </div>
-  <div class="question">
-    <p>10. How do you prefer to learn new skills?</p>
-    <label><input type="radio" name="q10" value="HandsOn"> Hands-on experience</label>
-    <label><input type="radio" name="q10" value="Courses"> Online courses</label>
-    <label><input type="radio" name="q10" value="Books"> Reading books</label>
-    <label><input type="radio" name="q10" value="Mentorship"> Mentorship</label>
-  </div>
-  <button type="button" onclick="submitAssessment()">Submit</button>
+<h1>Career Interest Assessment</h1>
+<form id="interest-form" method="POST" action="{{ url_for('submit_career_assessment') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <!-- Questions 1 to 10 -->
+    <div class="question">
+        <p>1. Are you interested in solving technical problems (e.g., coding, system design)?</p>
+        <label><input type="radio" name="q1" value="Software Development" required> Yes</label>
+        <label><input type="radio" name="q1" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>2. Do you enjoy working with data and statistics to uncover insights?</p>
+        <label><input type="radio" name="q2" value="Data Science" required> Yes</label>
+        <label><input type="radio" name="q2" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>3. Are you passionate about creating visual designs (e.g., logos, UI/UX)?</p>
+        <label><input type="radio" name="q3" value="Graphic Design" required> Yes</label>
+        <label><input type="radio" name="q3" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>4. Do you enjoy leadership roles and managing teams or projects?</p>
+        <label><input type="radio" name="q4" value="Business Management" required> Yes</label>
+        <label><input type="radio" name="q4" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>5. Are you interested in working with healthcare or scientific research?</p>
+        <label><input type="radio" name="q5" value="Scientific" required> Yes</label>
+        <label><input type="radio" name="q5" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>6. Do you prefer working in a collaborative team environment?</p>
+        <label><input type="radio" name="q6" value="Team" required> Yes</label>
+        <label><input type="radio" name="q6" value="Independent"> No</label>
+    </div>
+    <div class="question">
+        <p>7. What type of work environment do you prefer?</p>
+        <label><input type="radio" name="q7" value="Office" required> Office</label>
+        <label><input type="radio" name="q7" value="Remote"> Remote</label>
+        <label><input type="radio" name="q7" value="Field"> Field/Outdoor</label>
+    </div>
+    <div class="question">
+        <p>8. How do you prefer to solve problems?</p>
+        <label><input type="radio" name="q8" value="Analytical" required> Analytically (data-driven)</label>
+        <label><input type="radio" name="q8" value="Creative"> Creatively</label>
+        <label><input type="radio" name="q8" value="Collaborative"> Collaboratively</label>
+    </div>
+    <div class="question">
+        <p>9. What motivates you the most in a career?</p>
+        <label><input type="radio" name="q9" value="Money" required> Financial rewards</label>
+        <label><input type="radio" name="q9" value="Impact"> Making a positive impact</label>
+        <label><input type="radio" name="q9" value="Growth"> Personal growth</label>
+    </div>
+    <div class="question">
+        <p>10. How do you prefer to learn new skills?</p>
+        <label><input type="radio" name="q10" value="HandsOn" required> Hands-on experience</label>
+        <label><input type="radio" name="q10" value="Courses"> Online courses</label>
+        <label><input type="radio" name="q10" value="Mentorship"> Mentorship</label>
+    </div>
+    <button type="submit">Submit</button>
 </form>
-<div id="results" class="results"></div>
-{% endblock %}
-{% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/assessments.js') }}"></script>
-<script>
-  function submitAssessment() {
-      const form = document.getElementById('assessment-form');
-      const formData = new FormData(form);
-      const results = document.getElementById('results');
-      results.innerHTML = '';
-
-      const answers = {
-          q1: formData.get('q1'),
-          q2: formData.get('q2'),
-          q3: formData.get('q3'),
-          q4: formData.get('q4'),
-          q5: formData.get('q5'),
-          q6: formData.get('q6'),
-          q7: formData.get('q7'),
-          q8: formData.get('q8'),
-          q9: formData.get('q9'),
-          q10: formData.get('q10')
-      };
-
-      // Career recommendation logic
-      let careerRecommendation = '';
-      let externalLinks = '';
-      let preferences = [];
-
-      if (answers.q1 === 'Technical') {
-          careerRecommendation = 'Software Engineer or Data Scientist';
-          externalLinks = `
-              <p>Learn more about these careers:</p>
-              <a href="https://www.codecademy.com/learn/paths/computer-science" target="_blank">Codecademy Computer Science Path</a><br>
-              <a href="https://www.coursera.org/specializations/data-science" target="_blank">Coursera Data Science Specialization</a>
-          `;
-          preferences.push('Enjoys working with technology');
-      }
-      if (answers.q2 === 'Medical') {
-          careerRecommendation = 'Doctor or Healthcare Professional';
-          externalLinks = `
-              <p>Learn more about these careers:</p>
-              <a href="https://www.khanacademy.org/science/health-and-medicine" target="_blank">Khan Academy Health and Medicine</a><br>
-              <a href="https://www.coursera.org/specializations/clinical-science" target="_blank">Coursera Clinical Science Specialization</a>
-          `;
-          preferences.push('Interested in healthcare and medicine');
-      }
-      if (answers.q3 === 'Arts') {
-          careerRecommendation = 'Artist or Graphic Designer';
-          externalLinks = `
-              <p>Learn more about these careers:</p>
-              <a href="https://www.skillshare.com/browse/art" target="_blank">Skillshare Art Classes</a><br>
-              <a href="https://www.coursera.org/specializations/graphic-design" target="_blank">Coursera Graphic Design Specialization</a>
-          `;
-          preferences.push('Passionate about the arts');
-      }
-      if (answers.q4 === 'Business') {
-          careerRecommendation = 'Business Manager or Entrepreneur';
-          externalLinks = `
-              <p>Learn more about these careers:</p>
-              <a href="https://www.coursera.org/specializations/business-foundations" target="_blank">Coursera Business Foundations Specialization</a><br>
-              <a href="https://www.udemy.com/topic/business/" target="_blank">Udemy Business Courses</a>
-          `;
-          preferences.push('Interested in business and management');
-      }
-      if (answers.q5 === 'Scientific') {
-          careerRecommendation = 'Research Scientist or Biologist';
-          externalLinks = `
-              <p>Learn more about these careers:</p>
-              <a href="https://www.coursera.org/specializations/research-methods" target="_blank">Coursera Research Methods Specialization</a><br>
-              <a href="https://www.edx.org/course/research-methods" target="_blank">edX Research Methods Course</a>
-          `;
-          preferences.push('Enjoys scientific research');
-      }
-
-      // Display results
-      results.innerHTML = `
-          <h2>Career Recommendation: ${careerRecommendation}</h2>
-          <div class="preferences">
-              <h3>Your Preferences:</h3>
-              <ul>
-                  ${preferences.map(pref => `<li>${pref}</li>`).join('')}
-              </ul>
-          </div>
-          ${externalLinks}
-      `;
-  }
-</script>
 {% endblock %}

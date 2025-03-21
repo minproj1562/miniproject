@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Career Analytics - Home{% endblock %}
-
 {% block content %}
     <style>
         body {
@@ -24,54 +22,63 @@
             overflow-x: hidden;
             transition: background 0.3s ease, color 0.3s ease;
         }
-        
         .hero {
-            padding: 80px 20px;
+            padding: 100px 20px;
             text-align: center;
             position: relative;
             z-index: 1;
+            background: linear-gradient(to bottom, #89f7feee, #66a6ffee);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
+            margin: 40px auto;
+            max-width: 900px;
             animation: fadeIn 1s ease-in;
-            background: #f4f1e1;
-            border-radius: 10px;
-            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
-            margin: 20px auto;
-            max-width: 800px;
         }
-        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+            opacity: 0.2;
+            border-radius: 15px;
+            z-index: -1;
+        }
         h1 {
             font-size: 3.5rem;
             font-weight: 700;
             text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
             margin-bottom: 20px;
-            color: #2e3c56;
+            color: #1e3c72;
+            animation: slideIn 1s ease-out;
         }
-        
         p {
             font-size: 1.5rem;
             max-width: 600px;
             margin: 0 auto 40px;
-            color: #5a5a5a;
+            color: #2a5298;
+            animation: fadeIn 1.5s ease-in;
         }
-        
         .btn-test, .btn {
             font-size: 1.2rem;
-            padding: 12px 30px;
-            background: #f4f1e1;
-            color: #4a78b8;
+            padding: 14px 30px;
+            background: linear-gradient(to right, #2e89ff, #1e3c72);
+            color: #fff;
             border: none;
             border-radius: 25px;
             transition: transform 0.3s, box-shadow 0.3s;
             text-decoration: none;
             display: inline-block;
             margin: 10px;
+            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
         }
-        
         .btn-test:hover, .btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            color: #5b8fce;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
         }
-        
         .bg-overlay {
             position: absolute;
             top: 0;
@@ -82,61 +89,68 @@
             animation: pulse 10s infinite;
             z-index: 0;
         }
-
         .content-box {
-            background: #f4f1e1;
-            padding: 20px;
-            margin: 20px auto;
-            border-radius: 8px;
+            background: linear-gradient(to bottom, #ffffffee, #f8f9faee);
+            padding: 30px;
+            margin: 30px auto;
+            border-radius: 10px;
             width: 90%;
-            max-width: 800px;
+            max-width: 900px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 1s ease-in;
         }
-        
         h2 {
-            color: #2e3c56;
-            font-size: 2rem;
+            color: #1e3c72;
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        
         ul {
             list-style-type: none;
             padding: 0;
+            text-align: center;
         }
-        
         li {
             font-size: 1.2rem;
-            margin: 10px 0;
-            color: #5a5a5a;
+            margin: 15px 0;
+            color: #2a5298;
+            position: relative;
+            padding-left: 30px;
         }
-        
+        li::before {
+            content: '✔';
+            position: absolute;
+            left: 0;
+            color: #2e89ff;
+            font-size: 1.5rem;
+        }
+        .testimonial {
+            font-style: italic;
+            color: #4a6278;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 1.2rem;
+            background: linear-gradient(to right, #b8ffc4ee, #72d991ee);
+            padding: 15px;
+            border-radius: 8px;
+        }
         @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         @keyframes pulse {
             0% { transform: scale(1); opacity: 0.5; }
             50% { transform: scale(1.2); opacity: 0.2; }
             100% { transform: scale(1); opacity: 0.5; }
         }
-        
-        nav {
-            background: #f4f1e1;
-            padding: 10px;
-            text-align: center;
-        }
-        
-        nav a {
-            margin: 0 15px;
-            color: #4a78b8;
-            text-decoration: none;
-            font-size: 1.1rem;
-        }
-        
-        nav a:hover {
-            color: #5b8fce;
-        }
-        
         .alert {
             padding: 10px;
             margin: 10px auto;
@@ -144,8 +158,9 @@
             max-width: 800px;
             border-radius: 5px;
             text-align: center;
+            font-size: 1.1rem;
         }
-        
+        .alert-info { background: #d1ecf1; color: #0c5460; }
         .alert-success { background: #d4edda; color: #155724; }
         .alert-danger { background: #f8d7da; color: #721c24; }
         .alert-warning { background: #fff3cd; color: #856404; }
@@ -170,8 +185,8 @@
 
     <div class="content-box">
         <h2>What Our Users Say</h2>
-        <p>"The aptitude test helped me identify my analytical skills!" - Alex, Data Analyst</p>
-        <p>"I loved the personality insights. Registering was worth it!" - Jamie, Marketing Specialist</p>
+        <div class="testimonial">"The aptitude test helped me identify my analytical skills!" - Alex, Data Analyst</div>
+        <div class="testimonial">"I loved the personality insights. Registering was worth it!" - Jamie, Marketing Specialist</div>
     </div>
 
     {% if not current_user.is_authenticated %}

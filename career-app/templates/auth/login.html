@@ -4,7 +4,7 @@
     <style>
         .login-container {
             max-width: 450px;
-            margin: 0 auto;
+            margin: 50px auto;
             padding: 30px;
             background: linear-gradient(to bottom, #89f7feee, #66a6ffee);
             border-radius: 15px;
@@ -94,39 +94,24 @@
             color: #1e3c72;
             text-decoration: underline;
         }
-        .error {
-            color: #dc3545;
-            font-size: 14px;
-            margin-top: 5px;
-        }
     </style>
     <div class="login-container">
         <h1>Login</h1>
         <form method="POST">
-            {{ form.hidden_tag() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
-                {{ form.username.label }}
-                {{ form.username() }}
-                {% if form.username.errors %}
-                    {% for error in form.username.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                {{ form.password.label }}
-                {{ form.password() }}
-                {% if form.password.errors %}
-                    {% for error in form.password.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                {% endif %}
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
             </div>
             <div class="checkbox">
-                {{ form.remember_me() }}
-                {{ form.remember_me.label }}
+                <input type="checkbox" id="remember_me" name="remember_me">
+                <label for="remember_me">Remember me</label>
             </div>
-            {{ form.submit(class="btn-submit") }}
+            <button type="submit" class="btn-submit">Login</button>
         </form>
         <div class="links">
             <a href="{{ url_for('forgot_password') }}" class="link">Forgot Password?</a>

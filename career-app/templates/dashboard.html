@@ -110,12 +110,6 @@
             <canvas id="testChart"></canvas>
         </div>
 
-        <!-- Pie Chart for Test Type Distribution -->
-        <div class="chart-container">
-            <h3>Test Type Distribution</h3>
-            <canvas id="testTypeChart"></canvas>
-        </div>
-
         <!-- Career Recommendation -->
         <div class="recommendation">
             <h3>Career Recommendation</h3>
@@ -153,7 +147,6 @@
     <!-- Chart.js and Custom Script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Test Scores Chart (Line/Bar)
         const ctx = document.getElementById('testChart').getContext('2d');
         let chartType = 'line';
         const testChart = new Chart(ctx, {
@@ -174,7 +167,6 @@
                 }
             }
         });
-
         document.getElementById('toggleChart').addEventListener('click', () => {
             chartType = chartType === 'line' ? 'bar' : 'line';
             testChart.config.type = chartType;

@@ -211,548 +211,87 @@ ADAPTIVE_TEST_SETTINGS = {
         "Verbal Ability": {"thresholds": [35, 65]}
     }
 }
-# Big Five Personality Inventory
-# Updated Big Five Inventory with validated items
-PERSONALITY_QUESTIONS = [
-    # Openness (10 items)
-    {
-        "id": 1,
-        "trait": "O",
-        "text": "I enjoy trying new and foreign foods",
-        "direction": True,
-        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
-        "source": "NEO-PI-R"
-    },
-    {
-        "id": 2,
-        "trait": "O",
-        "text": "I prefer to stick with things I know rather than try new experiences",
-        "direction": False,
-        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
-        "source": "IPIP"
-    },
-    # Additional validated items
-    {
-        "id": 3,
-        "trait": "O",
-        "text": "I have a vivid imagination",
-        "direction": True,
-        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
-        "source": "NEO-PI-R"
-    },
-
-    # Conscientiousness (10 items)
-    {
-        "id": 11,
-        "trait": "C",
-        "text": "I pay attention to details",
-        "direction": True,
-        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
-        "source": "NEO-PI-R"
-    },
-    {
-        "id": 12,
-        "trait": "C",
-        "text": "I often forget to put things back in their proper place",
-        "direction": False,
-        "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
-        "source": "IPIP"
-    },
-    
-    # Continue with 8 items per trait following same pattern...
-]
 
 PERSONALITY_QUESTIONS = [
     # Openness to Experience (O)
-    {
-        "id": 1,
-        "trait": "O",
-        "text": "I enjoy hearing new ideas",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.87,
-        "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]
-    },
-    {
-        "id": 2,
-        "trait": "O",
-        "text": "I avoid philosophical discussions",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.85
-    },
-    {
-        "id": 2,
-        "trait": "O",
-        "text": "I avoid philosophical discussions",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.85
-    },
-
+    {"id": 1, "trait": "O", "text": "I enjoy hearing new ideas", "direction": True, "source": "NEO-PI-R", "reliability": 0.87, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 2, "trait": "O", "text": "I avoid philosophical discussions", "direction": False, "source": "IPIP-NEO", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 3, "trait": "O", "text": "I have a vivid imagination", "direction": True, "source": "BFI-2", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 4, "trait": "O", "text": "I prefer routine over variety", "direction": False, "source": "NEO-PI-R", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 5, "trait": "O", "text": "I appreciate abstract art", "direction": True, "source": "IPIP-NEO", "reliability": 0.81, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 6, "trait": "O", "text": "I dislike complex theoretical concepts", "direction": False, "source": "BFI-2", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 7, "trait": "O", "text": "I enjoy trying new cultural experiences", "direction": True, "source": "NEO-PI-R", "reliability": 0.86, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 8, "trait": "O", "text": "I prefer practical over creative tasks", "direction": False, "source": "IPIP-NEO", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    
     # Conscientiousness (C)
-    {
-        "id": 11,
-        "trait": "C",
-        "text": "I pay attention to details",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.89
-    },
-    {
-        "id": 12,
-        "trait": "C",
-        "text": "I often forget to put things back in their proper place",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.83
-    },
-
+    {"id": 9, "trait": "C", "text": "I am always prepared", "direction": True, "source": "NEO-PI-R", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 10, "trait": "C", "text": "I often forget to put things back in their proper place", "direction": False, "source": "IPIP-NEO", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 11, "trait": "C", "text": "I pay attention to details", "direction": True, "source": "BFI-2", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 12, "trait": "C", "text": "I leave my tasks unfinished", "direction": False, "source": "NEO-PI-R", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 13, "trait": "C", "text": "I follow a schedule", "direction": True, "source": "IPIP-NEO", "reliability": 0.81, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 14, "trait": "C", "text": "I am careless with my work", "direction": False, "source": "BFI-2", "reliability": 0.80, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 15, "trait": "C", "text": "I strive for excellence", "direction": True, "source": "NEO-PI-R", "reliability": 0.86, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 16, "trait": "C", "text": "I procrastinate on important tasks", "direction": False, "source": "IPIP-NEO", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    
     # Extraversion (E)
-    {
-        "id": 21,
-        "trait": "E",
-        "text": "I feel comfortable around people",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.88
-    },
-    {
-        "id": 22,
-        "trait": "E",
-        "text": "I prefer quiet evenings at home to parties",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.84
-    },
-
+    {"id": 17, "trait": "E", "text": "I am the life of the party", "direction": True, "source": "NEO-PI-R", "reliability": 0.88, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 18, "trait": "E", "text": "I prefer to stay in the background", "direction": False, "source": "IPIP-NEO", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 19, "trait": "E", "text": "I enjoy meeting new people", "direction": True, "source": "BFI-2", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 20, "trait": "E", "text": "I feel drained after social events", "direction": False, "source": "NEO-PI-R", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 21, "trait": "E", "text": "I am talkative", "direction": True, "source": "IPIP-NEO", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 22, "trait": "E", "text": "I avoid large gatherings", "direction": False, "source": "BFI-2", "reliability": 0.81, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 23, "trait": "E", "text": "I am assertive in conversations", "direction": True, "source": "NEO-PI-R", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 24, "trait": "E", "text": "I prefer solitude over socializing", "direction": False, "source": "IPIP-NEO", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    
     # Agreeableness (A)
-    {
-        "id": 31,
-        "trait": "A",
-        "text": "I sympathize with others' feelings",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.86
-    },
-    {
-        "id": 32,
-        "trait": "A",
-        "text": "I often argue with authority figures",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.82
-    },
-
+    {"id": 25, "trait": "A", "text": "I am interested in others' well-being", "direction": True, "source": "NEO-PI-R", "reliability": 0.86, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 26, "trait": "A", "text": "I am indifferent to others' feelings", "direction": False, "source": "IPIP-NEO", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 27, "trait": "A", "text": "I am willing to help others", "direction": True, "source": "BFI-2", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 28, "trait": "A", "text": "I can be harsh in my criticism", "direction": False, "source": "NEO-PI-R", "reliability": 0.81, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 29, "trait": "A", "text": "I trust others easily", "direction": True, "source": "IPIP-NEO", "reliability": 0.80, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 30, "trait": "A", "text": "I often argue with others", "direction": False, "source": "BFI-2", "reliability": 0.79, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 31, "trait": "A", "text": "I am cooperative in team settings", "direction": True, "source": "NEO-PI-R", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 32, "trait": "A", "text": "I hold grudges against others", "direction": False, "source": "IPIP-NEO", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    
     # Neuroticism (N)
-    {
-        "id": 41,
-        "trait": "N",
-        "text": "I often feel tense or anxious",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.90
-    },
-    {
-        "id": 42,
-        "trait": "N",
-        "text": "I remain calm under pressure",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.84
-    },
-{
-        "id": 43,
-        "trait": "O",
-        "text": "I enjoy hearing new ideas",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.87
-    },
-    {
-        "id": 44,
-        "trait": "O",
-        "text": "I avoid philosophical discussions",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.85
-    },
-    {
-        "id": 45,
-        "trait": "O",
-        "text": "I have a vivid imagination",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.83
-    },
-    {
-        "id": 46,
-        "trait": "O",
-        "text": "I prefer routine over variety",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.84
-    },
-    {
-        "id": 47,
-        "trait": "O",
-        "text": "I appreciate abstract art",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.81
-    },
-    {
-        "id": 48,
-        "trait": "O",
-        "text": "I dislike complex theoretical concepts",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.82
-    },
-    {
-        "id": 49,
-        "trait": "O",
-        "text": "I enjoy trying new cultural experiences",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.86
-    },
-    {
-        "id": 50,
-        "trait": "O",
-        "text": "I prefer practical over creative tasks",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.84
-    },
-
-    # Conscientiousness (C) - 8 items
-    {
-        "id": 51,
-        "trait": "C",
-        "text": "I pay attention to details",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.89
-    },
-    {
-        "id": 52,
-        "trait": "C",
-        "text": "I often forget to put things back in their proper place",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.83
-    },
-    {
-        "id": 53,
-        "trait": "C",
-        "text": "I complete tasks thoroughly",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.85
-    },
-    {
-        "id": 54,
-        "trait": "C",
-        "text": "I often procrastinate important tasks",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.82
-    },
-    {
-        "id": 55,
-        "trait": "C",
-        "text": "I follow through on my commitments",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.86
-    },
-    {
-        "id": 56,
-        "trait": "C",
-        "text": "I struggle with time management",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.84
-    },
-    {
-        "id": 57,
-        "trait": "C",
-        "text": "I keep my living space organized",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.83
-    },
-    {
-        "id": 58,
-        "trait": "C",
-        "text": "I often make careless mistakes",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.81
-    },
-
-    # Extraversion (E) - 8 items
-    {
-        "id": 59,
-        "trait": "E",
-        "text": "I feel comfortable around people",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.88
-    },
-    {
-        "id": 60,
-        "trait": "E",
-        "text": "I prefer quiet evenings at home to parties",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.84
-    },
-    {
-        "id": 62,
-        "trait": "E",
-        "text": "I am the life of the party",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.83
-    },
-    {
-        "id": 63,
-        "trait": "E",
-        "text": "Large social gatherings drain my energy",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.85
-    },
-    {
-        "id": 64,
-        "trait": "E",
-        "text": "I enjoy being the center of attention",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.82
-    },
-    {
-        "id": 65,
-        "trait": "E",
-        "text": "I find it hard to start conversations",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.84
-    },
-    {
-        "id": 66,
-        "trait": "E",
-        "text": "I make friends easily",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.86
-    },
-    {
-        "id": 67,
-        "trait": "E",
-        "text": "I prefer working alone rather than in teams",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.83
-    },
-
-    # Agreeableness (A) - 8 items
-    {
-        "id": 68,
-        "trait": "A",
-        "text": "I sympathize with others' feelings",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.86
-    },
-    {
-        "id": 69,
-        "trait": "A",
-        "text": "I often argue with authority figures",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.82
-    },
-    {
-        "id": 70,
-        "trait": "A",
-        "text": "I trust others' intentions",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.84
-    },
-    {
-        "id": 71,
-        "trait": "A",
-        "text": "I enjoy competitive situations more than cooperative ones",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.83
-    },
-    {
-        "id": 72,
-        "trait": "A",
-        "text": "I go out of my way to help others",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.85
-    },
-    {
-        "id": 73,
-        "trait": "A",
-        "text": "I sometimes take advantage of others",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.81
-    },
-    {
-        "id": 74,
-        "trait": "A",
-        "text": "I value harmony in relationships",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.84
-    },
-    {
-        "id": 75,
-        "trait": "A",
-        "text": "I enjoy debating controversial topics",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.83
-    },
-
-    # Neuroticism (N) - 8 items
-    {
-        "id": 76,
-        "trait": "N",
-        "text": "I often feel tense or anxious",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.90
-    },
-    {
-        "id": 77,
-        "trait": "N",
-        "text": "I remain calm under pressure",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.84
-    },
-    {
-        "id": 78,
-        "trait": "N",
-        "text": "I worry about things that might go wrong",
-        "direction": True,
-        "source": "BFI-2",
-        "reliability": 0.86
-    },
-    {
-        "id": 79,
-        "trait": "N",
-        "text": "I rarely feel sad or depressed",
-        "direction": False,
-        "source": "IPIP-NEO",
-        "reliability": 0.83
-    },
-    {
-        "id": 80,
-        "trait": "N",
-        "text": "I often feel emotionally vulnerable",
-        "direction": True,
-        "source": "NEO-PI-R",
-        "reliability": 0.85
-    },
-    {
-        "id": 81,
-        "trait": "N",
-        "text": "I handle stress well",
-        "direction": False,
-        "source": "BFI-2",
-        "reliability": 0.84
-    },
-    {
-        "id": 82,
-        "trait": "N",
-        "text": "I often feel overwhelmed by my emotions",
-        "direction": True,
-        "source": "IPIP-NEO",
-        "reliability": 0.87
-    },
-    {
-        "id": 83,
-        "trait": "N",
-        "text": "I rarely experience mood swings",
-        "direction": False,
-        "source": "NEO-PI-R",
-        "reliability": 0.82
-    },
-
-    # Attention Check Items (3)
-    {
-        "id": 84,
-        "trait": "V",
-        "text": "Please select 'Strongly Agree' to verify you're paying attention",
-        "direction": True,
-        "source": "Validity Check",
-        "correct_response": 4
-    },
-    {
-        "id": 85,
-        "trait": "V",
-        "text": "I always answer questionnaires honestly",
-        "direction": True,
-        "source": "Validity Check",
-        "correct_response": 4
-    },
-    {
-        "id": 86,
-        "trait": "V",
-        "text": "I have never used a computer before",
-        "direction": True,
-        "source": "Validity Check",
-        "correct_response": 0
-    },
-    {
-        "id": 87,
-        "trait": "V",
-        "text": "I always double-check my answers on questionnaires",
-        "direction": True,
-        "source": "Attention Check",
-        "reliability": "N/A"
-    }
+    {"id": 33, "trait": "N", "text": "I get stressed out easily", "direction": True, "source": "NEO-PI-R", "reliability": 0.87, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 34, "trait": "N", "text": "I remain calm under pressure", "direction": False, "source": "IPIP-NEO", "reliability": 0.85, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 35, "trait": "N", "text": "I often feel anxious", "direction": True, "source": "BFI-2", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 36, "trait": "N", "text": "I rarely feel depressed", "direction": False, "source": "NEO-PI-R", "reliability": 0.83, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 37, "trait": "N", "text": "I experience mood swings", "direction": True, "source": "IPIP-NEO", "reliability": 0.82, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 38, "trait": "N", "text": "I am emotionally stable", "direction": False, "source": "BFI-2", "reliability": 0.81, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 39, "trait": "N", "text": "I worry about things a lot", "direction": True, "source": "NEO-PI-R", "reliability": 0.86, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
+    {"id": 40, "trait": "N", "text": "I handle setbacks well", "direction": False, "source": "IPIP-NEO", "reliability": 0.84, "likert": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]}
 ]
 
 SCORING_KEY = {
-    "O": {
+    "O": {  # Openness
         "max": 32,  # 8 items * 4 points max
-        "norms": [(0,16,"Very Low"), (17,23,"Low"), (24,29,"Average"), (30,35,"High"), (36,40,"Very High")],
+        "norms": [(0, 16, "Very Low"), (17, 23, "Low"), (24, 29, "Average"), (30, 35, "High"), (36, 40, "Very High")],
         "mean": 24.5,
         "sd": 6.2
     },
-    "C": {
+    "C": {  # Conscientiousness
         "max": 32,
-        "norms": [(0,15,"Very Low"), (16,22,"Low"), (23,28,"Average"), (29,34,"High"), (35,40,"Very High")],
+        "norms": [(0, 15, "Very Low"), (16, 22, "Low"), (23, 28, "Average"), (29, 34, "High"), (35, 40, "Very High")],
         "mean": 25.1,
         "sd": 5.8
     },
-    "E": {
+    "E": {  # Extraversion
         "max": 32,
-        "norms": [(0,14,"Very Low"), (15,21,"Low"), (22,27,"Average"), (28,33,"High"), (34,40,"Very High")],
+        "norms": [(0, 14, "Very Low"), (15, 21, "Low"), (22, 27, "Average"), (28, 33, "High"), (34, 40, "Very High")],
         "mean": 23.8,
         "sd": 6.5
     },
-    "A": {
+    "A": {  # Agreeableness
         "max": 32,
-        "norms": [(0,16,"Very Low"), (17,23,"Low"), (24,29,"Average"), (30,35,"High"), (36,40,"Very High")],
+        "norms": [(0, 16, "Very Low"), (17, 23, "Low"), (24, 29, "Average"), (30, 35, "High"), (36, 40, "Very High")],
         "mean": 25.3,
         "sd": 5.9
     },
-    "N": {
+    "N": {  # Neuroticism
         "max": 32,
-        "norms": [(0,13,"Very Low"), (14,20,"Low"), (21,26,"Average"), (27,32,"High"), (33,40,"Very High")],
+        "norms": [(0, 13, "Very Low"), (14, 20, "Low"), (21, 26, "Average"), (27, 32, "High"), (33, 40, "Very High")],
         "mean": 22.7,
         "sd": 7.1
     }
@@ -785,10 +324,476 @@ CAREER_MAPPING = {
             "personality": {
                 "C": 70,  # Conscientiousness
                 "O": 65,  # Openness
-                "N": 40   # Neuroticism (lower better)
+                "N": 40   # Neuroticism (lower is better)
             }
         },
         "description": "Requires strong numerical analysis and pattern recognition skills",
-        "development_path": [...]
+        "development_path": [
+            {"step": "Learn Python for Data Analysis", "resource": "Data Analysis with Python on Coursera", "link": "https://www.coursera.org/learn/data-analysis-python"},
+            {"step": "Master Statistics", "resource": "Statistics with Python on Coursera", "link": "https://www.coursera.org/learn/statistics-with-python"},
+            {"step": "Gain Experience with SQL", "resource": "SQL for Data Science on Coursera", "link": "https://www.coursera.org/learn/sql-for-data-science"}
+        ]
     }
-} 
+}
+
+SKILL_GAP_QUESTIONS = {
+    "Software Development": [
+        {
+            "id": 1,
+            "text": "What will be the output of the following Python code? \n\n```python\nx = [1, 2, 3]\ny = x\ny[0] = 5\nprint(x)\n```",
+            "options": ["[1, 2, 3]", "[5, 2, 3]", "[5, 5, 5]", "Error"],
+            "correct": 1,  # [5, 2, 3] because lists are mutable and y references the same list as x
+            "time_limit": 60
+        },
+        {
+            "id": 2,
+            "text": "In Object-Oriented Programming, what does inheritance allow?",
+            "options": [
+                "A class to inherit attributes and methods from another class",
+                "A class to override all methods",
+                "A class to become abstract",
+                "A class to hide its data"
+            ],
+            "correct": 0,
+            "time_limit": 45
+        },
+        {
+            "id": 3,
+            "text": "Which Git command is used to save changes to the local repository?",
+            "options": ["git add", "git commit", "git push", "git pull"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 4,
+            "text": "What does the HTTP status code 404 indicate in a RESTful API?",
+            "options": ["Success", "Unauthorized", "Not Found", "Server Error"],
+            "correct": 2,
+            "time_limit": 30
+        },
+        {
+            "id": 5,
+            "text": "What is the time complexity of a binary search algorithm?",
+            "options": ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+            "correct": 1,
+            "time_limit": 45
+        },
+        {
+            "id": 6,
+            "text": "In Agile methodology, what is a 'sprint'?",
+            "options": [
+                "A long-term project phase",
+                "A short, time-boxed period to complete work",
+                "A meeting to assign tasks",
+                "A retrospective analysis"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 7,
+            "text": "What does Test-Driven Development (TDD) emphasize?",
+            "options": [
+                "Writing tests after coding",
+                "Writing tests before coding",
+                "Skipping tests for faster delivery",
+                "Testing only at the end"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 8,
+            "text": "What SQL command is used to retrieve data from a database?",
+            "options": ["INSERT", "UPDATE", "SELECT", "DELETE"],
+            "correct": 2,
+            "time_limit": 30
+        },
+        {
+            "id": 9,
+            "text": "Which CSS property is used to make text bold?",
+            "options": ["font-style", "font-weight", "text-decoration", "font-size"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 10,
+            "text": "What is the primary purpose of AWS S3?",
+            "options": [
+                "Compute services",
+                "Object storage",
+                "Relational database",
+                "Networking"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        }
+    ],
+    "Data Science": [
+        {
+            "id": 1,
+            "text": "What Python library is commonly used for data manipulation and analysis?",
+            "options": ["NumPy", "Pandas", "Matplotlib", "Seaborn"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 2,
+            "text": "What does a p-value less than 0.05 typically indicate in hypothesis testing?",
+            "options": [
+                "The null hypothesis is true",
+                "The result is statistically significant",
+                "The sample size is too small",
+                "The test is inconclusive"
+            ],
+            "correct": 1,
+            "time_limit": 45
+        },
+        {
+            "id": 3,
+            "text": "Which algorithm is a supervised learning method for classification?",
+            "options": ["K-Means", "Linear Regression", "Logistic Regression", "PCA"],
+            "correct": 2,
+            "time_limit": 45
+        },
+        {
+            "id": 4,
+            "text": "Which tool is best suited for creating a bar chart in Python?",
+            "options": ["Pandas", "NumPy", "Matplotlib", "Scikit-learn"],
+            "correct": 2,
+            "time_limit": 30
+        },
+        {
+            "id": 5,
+            "text": "What is the first step in data wrangling?",
+            "options": [
+                "Data visualization",
+                "Handling missing values",
+                "Model training",
+                "Feature selection"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 6,
+            "text": "Which SQL clause is used to filter rows after grouping?",
+            "options": ["WHERE", "HAVING", "GROUP BY", "ORDER BY"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 7,
+            "text": "What is Apache Spark primarily used for?",
+            "options": [
+                "Web development",
+                "Big data processing",
+                "Database management",
+                "Graphic design"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 8,
+            "text": "What is feature engineering in machine learning?",
+            "options": [
+                "Selecting the best model",
+                "Creating new features from existing data",
+                "Reducing model complexity",
+                "Testing the model"
+            ],
+            "correct": 1,
+            "time_limit": 45
+        },
+        {
+            "id": 9,
+            "text": "Which framework is commonly used for deep learning?",
+            "options": ["Pandas", "TensorFlow", "Scikit-learn", "Flask"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 10,
+            "text": "What does ARIMA stand for in time series analysis?",
+            "options": [
+                "Auto-Regressive Integrated Moving Average",
+                "Adaptive Random Iterative Model Analysis",
+                "Automated Regression for Moving Averages",
+                "Analysis of Random Integrated Models"
+            ],
+            "correct": 0,
+            "time_limit": 45
+        }
+    ],
+    "Graphic Design": [
+        {
+            "id": 1,
+            "text": "What Photoshop tool is used to remove part of an image?",
+            "options": ["Brush Tool", "Eraser Tool", "Clone Stamp Tool", "Magic Wand Tool"],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 2,
+            "text": "In Adobe Illustrator, which tool creates shapes with anchor points?",
+            "options": ["Pen Tool", "Brush Tool", "Gradient Tool", "Eyedropper Tool"],
+            "correct": 0,
+            "time_limit": 30
+        },
+        {
+            "id": 3,
+            "text": "What does the color theory term 'complementary colors' mean?",
+            "options": [
+                "Colors that are similar in hue",
+                "Colors opposite each other on the color wheel",
+                "Colors that are monochromatic",
+                "Colors that are neutral"
+            ],
+            "correct": 1,
+            "time_limit": 45
+        },
+        {
+            "id": 4,
+            "text": "What is the primary purpose of typography in design?",
+            "options": [
+                "To fill empty space",
+                "To enhance readability and aesthetics",
+                "To create complex patterns",
+                "To replace images"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 5,
+            "text": "What are vector graphics primarily used for?",
+            "options": [
+                "Pixel-based images",
+                "Scalable images without quality loss",
+                "3D modeling",
+                "Video editing"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 6,
+            "text": "What does UX in UI/UX design stand for?",
+            "options": [
+                "User Experience",
+                "User Extension",
+                "Unique Experience",
+                "User Exploration"
+            ],
+            "correct": 0,
+            "time_limit": 30
+        },
+        {
+            "id": 7,
+            "text": "What is a key element of branding in design?",
+            "options": [
+                "Random color schemes",
+                "Consistency in visual identity",
+                "Using multiple logos",
+                "Avoiding typography"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 8,
+            "text": "What Adobe software is best for creating motion graphics?",
+            "options": ["Photoshop", "Illustrator", "After Effects", "InDesign"],
+            "correct": 2,
+            "time_limit": 30
+        },
+        {
+            "id": 9,
+            "text": "What is the standard resolution for print design?",
+            "options": ["72 DPI", "150 DPI", "300 DPI", "600 DPI"],
+            "correct": 2,
+            "time_limit": 30
+        },
+        {
+            "id": 10,
+            "text": "Which tool is commonly used for UI prototyping?",
+            "options": ["Photoshop", "Figma", "Illustrator", "Premiere Pro"],
+            "correct": 1,
+            "time_limit": 30
+        }
+    ],
+    "Business Management": [
+        {
+            "id": 1,
+            "text": "What does SWOT analysis stand for in strategic planning?",
+            "options": [
+                "Strengths, Weaknesses, Opportunities, Threats",
+                "Strategy, Work, Operations, Trends",
+                "Systems, Workflow, Objectives, Targets",
+                "Strengths, Work, Opportunities, Trends"
+            ],
+            "correct": 0,
+            "time_limit": 45
+        },
+        {
+            "id": 2,
+            "text": "What is the primary goal of financial forecasting?",
+            "options": [
+                "To spend the budget",
+                "To predict future financial performance",
+                "To reduce employee salaries",
+                "To increase marketing costs"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 3,
+            "text": "Which leadership style focuses on employee participation?",
+            "options": [
+                "Autocratic",
+                "Democratic",
+                "Transactional",
+                "Laissez-faire"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 4,
+            "text": "In project management, what does the Scrum framework emphasize?",
+            "options": [
+                "Long-term planning",
+                "Iterative development and teamwork",
+                "Individual tasks",
+                "Top-down management"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 5,
+            "text": "What is a key skill for effective negotiation?",
+            "options": [
+                "Ignoring the other party",
+                "Active listening",
+                "Dominating the conversation",
+                "Avoiding compromise"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 6,
+            "text": "What does Porter’s Five Forces analyze?",
+            "options": [
+                "Employee performance",
+                "Competitive environment of a business",
+                "Financial statements",
+                "Marketing strategies"
+            ],
+            "correct": 1,
+            "time_limit": 45
+        },
+        {
+            "id": 7,
+            "text": "What is the goal of change management?",
+            "options": [
+                "To resist organizational changes",
+                "To manage transitions effectively",
+                "To increase employee turnover",
+                "To reduce profits"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 8,
+            "text": "What is a common method for risk assessment?",
+            "options": [
+                "Ignoring risks",
+                "SWOT analysis",
+                "Probability and impact analysis",
+                "Random guessing"
+            ],
+            "correct": 2,
+            "time_limit": 45
+        },
+        {
+            "id": 9,
+            "text": "What does data-driven decision making rely on?",
+            "options": [
+                "Intuition",
+                "Quantitative analysis",
+                "Guesswork",
+                "Employee opinions"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        },
+        {
+            "id": 10,
+            "text": "Who is considered a stakeholder in a project?",
+            "options": [
+                "Only the project manager",
+                "Anyone impacted by the project",
+                "Only the CEO",
+                "Only the employees"
+            ],
+            "correct": 1,
+            "time_limit": 30
+        }
+    ]
+}
+
+LEARNING_RESOURCES = {
+    "Software Development": [
+        {"skill": "Proficiency in Python programming", "resource": "Learn Python on Codecademy", "link": "https://www.codecademy.com/learn/learn-python-3"},
+        {"skill": "Experience with Git version control", "resource": "Git Tutorial on Atlassian", "link": "https://www.atlassian.com/git/tutorials"},
+        {"skill": "Understanding of Object-Oriented Programming (OOP)", "resource": "OOP in Python on Real Python", "link": "https://realpython.com/python3-object-oriented-programming/"},
+        {"skill": "Knowledge of RESTful API development", "resource": "REST API Tutorial on freeCodeCamp", "link": "https://www.freecodecamp.org/news/rest-api-tutorial-rest-client-rest-service-and-api-calls-explained-with-code-examples/"},
+        {"skill": "Debugging and problem-solving skills", "resource": "Debugging in Python on Real Python", "link": "https://realpython.com/python-debugging-pdb/"},
+        {"skill": "Familiarity with Agile methodologies", "resource": "Agile Methodology on Coursera", "link": "https://www.coursera.org/learn/agile-development"},
+        {"skill": "Unit testing and Test-Driven Development (TDD)", "resource": "TDD in Python on TestDriven.io", "link": "https://testdriven.io/courses/tdd-python/"},
+        {"skill": "Database management (e.g., SQL)", "resource": "SQL for Beginners on Khan Academy", "link": "https://www.khanacademy.org/computing/computer-programming/sql"},
+        {"skill": "Frontend development (e.g., HTML, CSS, JavaScript)", "resource": "Frontend Development on freeCodeCamp", "link": "https://www.freecodecamp.org/learn/front-end-development/"},
+        {"skill": "Cloud computing basics (e.g., AWS, Azure)", "resource": "AWS Fundamentals on Coursera", "link": "https://www.coursera.org/learn/aws-fundamentals"}
+    ],
+    "Data Science": [
+        {"skill": "Proficiency in Python or R for data analysis", "resource": "Data Analysis with Python on Coursera", "link": "https://www.coursera.org/learn/data-analysis-python"},
+        {"skill": "Statistical analysis and hypothesis testing", "resource": "Statistics with Python on Coursera", "link": "https://www.coursera.org/learn/statistics-with-python"},
+        {"skill": "Experience with machine learning algorithms", "resource": "Machine Learning by Andrew Ng on Coursera", "link": "https://www.coursera.org/learn/machine-learning"},
+        {"skill": "Data visualization (e.g., Matplotlib, Tableau)", "resource": "Data Visualization with Python on Coursera", "link": "https://www.coursera.org/learn/python-for-data-visualization"},
+        {"skill": "Data wrangling and cleaning", "resource": "Data Wrangling with Pandas on DataCamp", "link": "https://www.datacamp.com/courses/data-manipulation-with-pandas"},
+        {"skill": "Knowledge of SQL for data querying", "resource": "SQL for Data Science on Coursera", "link": "https://www.coursera.org/learn/sql-for-data-science"},
+        {"skill": "Familiarity with big data tools (e.g., Hadoop, Spark)", "resource": "Big Data with Spark on Coursera", "link": "https://www.coursera.org/learn/big-data-spark"},
+        {"skill": "Feature engineering for machine learning", "resource": "Feature Engineering on Kaggle", "link": "https://www.kaggle.com/learn/feature-engineering"},
+        {"skill": "Understanding of deep learning frameworks (e.g., TensorFlow)", "resource": "Deep Learning with TensorFlow on Coursera", "link": "https://www.coursera.org/learn/deep-learning-tensorflow"},
+        {"skill": "Time series analysis", "resource": "Time Series Analysis on Coursera", "link": "https://www.coursera.org/learn/practical-time-series-analysis"}
+    ],
+    "Graphic Design": [
+        {"skill": "Proficiency in Adobe Photoshop", "resource": "Photoshop Tutorials on Adobe", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
+        {"skill": "Proficiency in Adobe Illustrator", "resource": "Illustrator Tutorials on Adobe", "link": "https://www.adobe.com/products/illustrator/tutorials.html"},
+        {"skill": "Understanding of color theory", "resource": "Color Theory on Coursera", "link": "https://www.coursera.org/learn/color-theory"},
+        {"skill": "Typography and font selection", "resource": "Typography Basics on Skillshare", "link": "https://www.skillshare.com/classes/Introduction-to-Typography/123456"},
+        {"skill": "Creating vector graphics", "resource": "Vector Graphics with Illustrator on Udemy", "link": "https://www.udemy.com/course/adobe-illustrator-cc-for-beginners/"},
+        {"skill": "UI/UX design principles", "resource": "UI/UX Design on Coursera", "link": "https://www.coursera.org/specializations/ui-ux-design"},
+        {"skill": "Branding and logo design", "resource": "Logo Design on Skillshare", "link": "https://www.skillshare.com/classes/Logo-Design-Masterclass/123456"},
+        {"skill": "Motion graphics (e.g., After Effects)", "resource": "Motion Graphics with After Effects on Udemy", "link": "https://www.udemy.com/course/after-effects-motion-graphics/"},
+        {"skill": "Print design and layout", "resource": "Print Design on Skillshare", "link": "https://www.skillshare.com/classes/Print-Design-Fundamentals/123456"},
+        {"skill": "Prototyping tools (e.g., Figma, Sketch)", "resource": "Figma for Beginners on Coursera", "link": "https://www.coursera.org/learn/figma-ux-ui"}
+    ],
+    "Business Management": [
+        {"skill": "Strategic planning and goal setting", "resource": "Strategic Management on Coursera", "link": "https://www.coursera.org/learn/strategic-management"},
+        {"skill": "Financial budgeting and forecasting", "resource": "Financial Management on Coursera", "link": "https://www.coursera.org/learn/financial-management"},
+        {"skill": "Leadership and team management", "resource": "Leadership Skills on Udemy", "link": "https://www.udemy.com/topic/leadership/"},
+        {"skill": "Project management (e.g., Agile, Scrum)", "resource": "Agile Project Management on Coursera", "link": "https://www.coursera.org/learn/agile-project-management"},
+        {"skill": "Effective communication and negotiation", "resource": "Negotiation Skills on Coursera", "link": "https://www.coursera.org/learn/negotiation-skills"},
+        {"skill": "Market analysis and competitive research", "resource": "Market Research on Coursera", "link": "https://www.coursera.org/learn/market-research"},
+        {"skill": "Change management", "resource": "Change Management on Coursera", "link": "https://www.coursera.org/learn/change-management"},
+        {"skill": "Risk assessment and mitigation", "resource": "Risk Management on Coursera", "link": "https://www.coursera.org/learn/risk-management"},
+        {"skill": "Data-driven decision making", "resource": "Data-Driven Decision Making on Coursera", "link": "https://www.coursera.org/learn/data-driven-decision-making"},
+        {"skill": "Stakeholder management", "resource": "Stakeholder Management on Coursera", "link": "https://www.coursera.org/learn/stakeholder-management"}
+    ]
+}
