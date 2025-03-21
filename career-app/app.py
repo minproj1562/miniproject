@@ -23,7 +23,7 @@ print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
 print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
 # Initialize Flask app
-app = Flask(_name_)
+app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -728,5 +728,5 @@ def not_found(error):
 def internal_error(error):
     return render_template('500.html'), 500
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
