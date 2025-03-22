@@ -205,7 +205,7 @@ base.html <!DOCTYPE html>
                                                 <i class="fas fa-tools"></i> Skill Gap Test
                                             </a>
                                         {% else %}
-                                            <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('interest_test')) }}">
+                                            <a class="dropdown-item test-link login-required" href="{{ url_for('test', type='skill_gap', field='Software Development') }}">
                                                 <i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span>
                                             </a>
                                         {% endif %}

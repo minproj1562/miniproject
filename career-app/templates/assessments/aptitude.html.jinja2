@@ -1,106 +1,108 @@
-{% extends "base.html" %}
-{% block title %}Aptitude Test{% endblock %}
+    {% extends "base.html" %}
+    {% block title %}Aptitude Test{% endblock %}
 
-{% block content %}
-    <div class="assessment-container">
-        <h1 class="text-3xl font-bold mb-8 text-center">Aptitude Test</h1>
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
-        </div>
+    {% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/aptitude.css') }}">
+    {% endblock %}
 
-        <div class="timer-alert" id="timer">
-            <i class="bi bi-clock"></i>
-            Time Left: <span id="time-left">{{ initial_time }}</span>
-        </div>
+    {% block content %}
+        <div class="assessment-container">
+            <h1 class="text-3xl font-bold mb-8 text-center">Aptitude Test</h1>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+            </div>
 
-        <div class="question-counter" id="question-counter">
-            Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
-        </div>
+            <div class="timer-alert" id="timer">
+                <i class="bi bi-clock"></i>
+                Time Left: <span id="time-left">{{ initial_time }}</span>
+            </div>
 
-        <form id="aptitude-form" method="POST" action="">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="hidden" name="time_spent" id="time-spent" value="0">
+            <div class="question-counter" id="question-counter">
+                Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
+            </div>
 
-            <div class="questions-wrapper">
-                {% for question in questions %}
-                <div class="question-card">
-                    <div class="question-header">
-                        <span class="category-badge">{{ question.type }}</span>
-                        <span class="time-limit">⏱ {{ question.time_limit }}s</span>
-                    </div>
-                    
-                    <h3 class="question-text">{{ question.text }}</h3>
-                    
-                    <div class="options-grid">
-                        {% for option in question.options %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" 
-                                   name="{{ question.id }}" 
-                                   value="{{ loop.index0 }}" 
-                                   id="{{ question.id }}-{{ loop.index0 }}"
-                                   data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
-                                   required>
-                            <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
-                                {{ option }}
-                            </label>
+            <form id="aptitude-form" method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="time_spent" id="time-spent" value="0">
+
+                <div class="questions-wrapper">
+                    {% for question in questions %}
+                    <div class="question-card">
+                        <div class="question-header">
+                            <span class="category-badge">{{ question.type }}</span>
+                            <span class="time-limit">⏱ {{ question.time_limit }}s</span>
                         </div>
-                        {% endfor %}
+                        
+                        <h3 class="question-text">{{ question.text }}</h3>
+                        
+                        <div class="options-grid">
+                            {% for option in question.options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                    name="{{ question.id }}" 
+                                    value="{{ loop.index0 }}" 
+                                    id="{{ question.id }}-{{ loop.index0 }}"
+                                    data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
+                                    required>
+                                <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
 
-            <div class="assessment-controls">
-                <button type="submit" class="submit-btn">Submit Assessment</button>
-            </div>
-        </form>
-    </div>
+                <div class="assessment-controls">
+                    <button type="submit" class="submit-btn">Submit Assessment</button>
+                </div>
+            </form>
+        </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const timerElement = document.getElementById('time-left');
-            const answeredCountElement = document.getElementById('answered-count');
-            const progressBar = document.getElementById('progress-bar');
-            const form = document.getElementById('aptitude-form');
-            const timeSpentInput = document.getElementById('time-spent');
-            let timeLeft = {{ initial_time|default(600) }};
-            let answeredCount = {{ completed_questions|default(0) }};
-            const totalQuestions = {{ total_questions|default(0) }};
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const timerElement = document.getElementById('time-left');
+                const answeredCountElement = document.getElementById('answered-count');
+                const progressBar = document.getElementById('progress-bar');
+                const form = document.getElementById('aptitude-form');
+                const timeSpentInput = document.getElementById('time-spent');
+                let timeLeft = {{ initial_time|default(600) }};
+                let answeredCount = {{ completed_questions|default(0) }};
+                const totalQuestions = {{ total_questions|default(0) }};
 
-            if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
-                const timerInterval = setInterval(() => {
-                    timeLeft--;
-                    const minutes = Math.floor(timeLeft / 60);
-                    const seconds = timeLeft % 60;
-                    timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                    if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        form.submit();
-                    }
-                }, 1000);
-
-                document.querySelectorAll('.form-check-input').forEach(input => {
-                    input.addEventListener('change', function() {
-                        const questionCard = this.closest('.question-card');
-                        const isCorrect = this.getAttribute('data-correct') === 'true';
-                        const questionId = this.name;
-
-                        // Update answered count only if it's the first answer for this question
-                        const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
-                        if (!alreadyAnswered) {
-                            answeredCount++;
-                            answeredCountElement.textContent = answeredCount;
-                            progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+                if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
+                    const timerInterval = setInterval(() => {
+                        timeLeft--;
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        if (timeLeft <= 0) {
+                            clearInterval(timerInterval);
+                            form.submit();
                         }
-                    });
-                });
+                    }, 1000);
 
-                form.addEventListener('submit', (e) => {
-                    timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
-                });
-            }
-        });
-    </script>
-{% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/aptitude.css') }}">
-{% endblock %}
+                    document.querySelectorAll('.form-check-input').forEach(input => {
+                        input.addEventListener('change', function() {
+                            const questionCard = this.closest('.question-card');
+                            const isCorrect = this.getAttribute('data-correct') === 'true';
+                            const questionId = this.name;
+
+                            // Update answered count only if it's the first answer for this question
+                            const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
+                            if (!alreadyAnswered) {
+                                answeredCount++;
+                                answeredCountElement.textContent = answeredCount;
+                                progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+                            }
+                        });
+                    });
+
+                    form.addEventListener('submit', (e) => {
+                        timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
+                    });
+                }
+            });
+        </script>
+    {% endblock %}

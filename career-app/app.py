@@ -27,7 +27,7 @@ print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = '033dc7a2f8382c4dd7bd18a473e24db20b088146eb846900'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -441,6 +441,9 @@ def dashboard():
         'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
         'types': [test.test_type for test in recent_tests[::-1]]
     }
+    # Ensure details is handled safely
+    for test in recent_tests:
+        test.details_dict = json.loads(test.details) if test.details else {}
     recommendation = "Take more tests for personalized advice!"
     if len(recent_tests) >= 3:
         recommendation = "You're doing great! Consider exploring advanced career options."
@@ -604,12 +607,49 @@ def test():
                               question=question,
                               csrf_token=generate_csrf())
 
-    flash('Invalid test type selected.', 'danger')
-    return redirect(url_for('index'))
+    elif test_type == 'skill_gap':
+        if not current_user.is_authenticated:
+            flash('Please log in to access the Skill Gap Test.', 'warning')
+            return redirect(url_for('login', next=request.url))
+        # Use the field from the query parameter or session
+        selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
+        session['selected_field'] = selected_field  # Store the field in session
+        questions = generate_questions('skill_gap')
+        if not questions:
+            flash('No questions available for the selected field. Please select a different field.', 'warning')
+            return redirect(url_for('interest_test'))
+        if request.method == 'POST':
+            if request.form:
+                correct = 0
+                total = len(questions)
+                for question in questions:
+                    answer = request.form.get(str(question['id']))
+                    if answer is not None and int(answer) == question['correct']:
+                        correct += 1
+                skill_score = (correct / total) * 100
+                detailed_scores = {selected_field: skill_score}
+                result = TestResult(
+                    user_id=current_user.id,
+                    test_type='skill_gap',
+                    score=skill_score,
+                    details=json.dumps(detailed_scores)
+                )
+                db.session.add(result)
+                db.session.commit()
+                return redirect(url_for('career_match'))
+        return render_template('assessments/interest_test.html.jinja2',
+                              selected_field=selected_field,
+                              questions=questions,
+                              instructions=instructions,
+                              csrf_token=generate_csrf())
 
-@app.route('/career_assessment')
+    else:
+        flash(f'Invalid test type selected: {test_type if test_type else "None"}. Please choose a valid test type.', 'danger')
+        return redirect(url_for('index'))
+
+@app.route('/career_assessment', methods=['GET'])
 def career_assessment():
-    return render_template('career_assessment.html')
+    return render_template('career_assessment.html', csrf_token=generate_csrf())
 
 @app.route('/interest_test', methods=['GET', 'POST'])
 @login_required
@@ -683,6 +723,7 @@ def submit_interests():
         return redirect(url_for('interest_test'))
 
     questions = SKILL_GAP_QUESTIONS[field]
+    print(f"Processing questions for field {field}: {questions}")  # Debug print
     correct = 0
     total = len(questions)
     for question in questions:
@@ -769,95 +810,49 @@ def submit_career_assessment():
     return redirect(url_for('career_match'))
 
 @app.route('/career_match')
-@login_required
 def career_match():
-    # Fetch all relevant test results
-    tests = TestResult.query.filter_by(user_id=current_user.id).all()
-    aptitude_scores = {}
-    personality_scores = {}
-    skill_scores = {}
-    interest_scores = {}
-
-    for test in tests:
-        if test.details:
-            details = json.loads(test.details)
-            if test.test_type == 'aptitude':
-                aptitude_scores = details
-            elif test.test_type == 'personality':
-                personality_scores = details
-            elif test.test_type == 'skill_gap':
-                skill_scores = details
-            elif test.test_type == 'interest':
-                interest_scores = details
-
-    # Calculate career match scores
-    career_matches = []
-    for career, requirements in CAREER_MAPPING.items():
-        match_score = 0
-        total_weight = 0
-
-        # Aptitude match
-        if aptitude_scores:
-            aptitude_match = 0
-            for category, required_score in requirements['aptitude'].items():
-                user_score = aptitude_scores.get(category, 0)
-                aptitude_match += min(user_score / required_score, 1) * 100
-            aptitude_match /= len(requirements['aptitude'])
-            match_score += aptitude_match * 0.3  # Weight: 30%
-            total_weight += 0.3
-
-        # Personality match
-        if personality_scores:
-            personality_match = 0
-            for trait, required_score in requirements['personality'].items():
-                user_score = personality_scores.get(trait, 0)
-                # For Neuroticism, lower is better
-                if trait == 'Neuroticism':
-                    user_score = 100 - user_score
-                    required_score = 100 - required_score
-                personality_match += min(user_score / required_score, 1) * 100
-            personality_match /= len(requirements['personality'])
-            match_score += personality_match * 0.3  # Weight: 30%
-            total_weight += 0.3
-
-        # Skills match
-        if skill_scores:
-            skills_match = 0
-            for field, required_score in requirements['skills'].items():
-                user_score = skill_scores.get(field, 0)
-                skills_match += min(user_score / required_score, 1) * 100
-            skills_match /= len(requirements['skills'])
-            match_score += skills_match * 0.2  # Weight: 20%
-            total_weight += 0.2
-
-        # Interests match
-        if interest_scores:
-            interests_match = 0
-            for interest in requirements['interests']:
-                user_score = interest_scores.get(interest, 0)
-                interests_match += user_score
-            interests_match = min(interests_match / 100, 1) * 100  # Normalize to 100
-            match_score += interests_match * 0.2  # Weight: 20%
-            total_weight += 0.2
-
-        if total_weight > 0:
-            match_score /= total_weight
-            career_matches.append({
-                'career': career,
-                'match_score': round(match_score, 2),
-                'description': requirements['description'],
-                'resources': requirements['resources']
-            })
-
-    # Sort by match score
+    if not current_user.is_authenticated:
+        flash('Please log in to view your career matches.', 'warning')
+        return redirect(url_for('login', next=request.url))
+    
+    results = TestResult.query.filter_by(user_id=current_user.id).all()
+    career_scores = defaultdict(float)
+    for result in results:
+        if result.test_type == 'aptitude':
+            career_scores['Software Development'] += result.score * 0.3
+            career_scores['Data Science'] += result.score * 0.25
+        elif result.test_type == 'personality':
+            details = json.loads(result.details) if result.details else {}
+            if details.get('trait') == 'analytical':
+                career_scores['Data Science'] += 20
+            elif details.get('trait') == 'creative':
+                career_scores['Graphic Design'] += 20
+        elif result.test_type == 'skill_gap':
+            details = json.loads(result.details) if result.details else {}
+            field = session.get('selected_field', 'Software Development')
+            career_scores[field] += result.score * 0.4
+    
+    career_matches = [
+        {'career': 'Software Development', 'match_score': round(career_scores.get('Software Development', 0), 2),
+         'description': 'Designs and builds software applications.',
+         'resources': [
+             {'name': 'Learn Python', 'link': 'https://www.python.org'},
+             {'name': 'Git Tutorial', 'link': 'https://git-scm.com/doc'}
+         ]},
+        {'career': 'Data Science', 'match_score': round(career_scores.get('Data Science', 0), 2),
+         'description': 'Analyzes data to derive actionable insights.',
+         'resources': [
+             {'name': 'Machine Learning by Andrew Ng', 'link': 'https://www.coursera.org/learn/machine-learning'},
+             {'name': 'SQL for Data Science', 'link': 'https://www.datacamp.com/courses/intro-to-sql-for-data-science'}
+         ]},
+        {'career': 'Graphic Design', 'match_score': round(career_scores.get('Graphic Design', 0), 2),
+         'description': 'Creates visual designs for branding and media.',
+         'resources': [
+             {'name': 'Photoshop Tutorials', 'link': 'https://www.adobe.com/products/photoshop.html'}
+         ]},
+    ]
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-
-    # If no matches, prompt user to take more tests
-    if not career_matches:
-        flash('Please complete more assessments to get career recommendations.', 'info')
-        return redirect(url_for('dashboard'))
-
-    return render_template('career_match.html', career_matches=career_matches[:3])  # Top 3 matches
+    return render_template('career_match.html', career_matches=career_matches)
 
 @app.route('/progress_tracking')
 @login_required
