@@ -59,26 +59,6 @@
     box-shadow: 0 16px 48px -8px rgba(99, 102, 241, 0.25);
 }
 
-.career-match::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, 
-        transparent 25%,
-        rgba(255,255,255,0.1) 50%,
-        transparent 75%);
-    transform: rotate(30deg);
-    animation: shine 8s infinite linear;
-}
-
-@keyframes shine {
-    0% { transform: translateX(-100%) rotate(30deg); }
-    100% { transform: translateX(100%) rotate(30deg); }
-}
-
 .match-score {
     background: var(--gradient);
     color: white;
@@ -91,7 +71,7 @@
     box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
 }
 
-.resources h3 {
+.resources h3, .analysis h3 {
     font-size: 1.4rem;
     color: var(--secondary);
     margin: 2rem 0 1.5rem;
@@ -100,18 +80,18 @@
     gap: 1rem;
 }
 
-.resources h3 i {
+.resources h3 i, .analysis h3 i {
     font-size: 1.6rem;
     color: var(--accent);
 }
 
-.resources ul {
+.resources ul, .analysis ul {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-.resources li {
+.resources li, .analysis li {
     padding: 1.2rem;
     border-radius: 1.2rem;
     background: rgba(99, 102, 241, 0.03);
@@ -147,15 +127,22 @@
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
 }
 
-/* Consistent with sample test style */
-.assessment-container {
-    @extend .results-container;
-    animation: none;
+.alignment-message {
+    background: rgba(99, 102, 241, 0.05);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--secondary);
 }
 
-.question-card {
-    @extend .career-match;
-    margin-bottom: 2rem;
+.skill-gap {
+    background: rgba(255, 215, 0, 0.1);
+    padding: 1rem;
+    border-radius: 1rem;
+    margin-top: 1rem;
+    text-align: center;
 }
 </style>
 {% endblock %}
@@ -164,7 +151,39 @@
 <div class="results-container">
     <h1>🌟 Your Perfect Career Matches</h1>
     <p class="text-center text-xl text-gray-600 mb-8">Discover your ideal career path based on AI analysis</p>
-    
+
+    {% if alignment_message %}
+    <div class="alignment-message">
+        <p>{{ alignment_message }}</p>
+        {% if skill_gap_result is not none %}
+        <div class="skill-gap">
+            <p>Your skill level in {{ selected_field }}: {{ skill_gap_result|round(2) }}%</p>
+            <p>Consider improving your skills to bridge the gap!</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if alternative_careers %}
+    <div class="alternative-careers">
+        <h2>Alternative Career Suggestions</h2>
+        <p>Based on your aptitude and personality, you might also be a great fit for:</p>
+        {% for career in alternative_careers %}
+        <div class="career-match">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ career.career }}</h2>
+                    <p class="text-gray-600 mt-2">{{ career.description }}</p>
+                </div>
+                <span class="match-score">
+                    {{ career.match_score }}%
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% for match in career_matches %}
     <div class="career-match">
         <div class="flex justify-between items-center mb-6">
@@ -174,10 +193,33 @@
             </div>
             <span class="match-score">
                 {{ match.match_score }}%
-                <div class="absolute inset-0 bg-white/10 w-20 -skew-x-12 animate-shine"></div>
             </span>
         </div>
-        
+
+        <div class="analysis">
+            <h3>
+                <i class="bi bi-briefcase"></i>
+                Career Analysis
+            </h3>
+            <ul>
+                <li>
+                    <strong>Skills Required:</strong> {{ match.requirements.skills|join(', ') }}
+                </li>
+                <li>
+                    <strong>Education:</strong> {{ match.requirements.education }}
+                </li>
+                <li>
+                    <strong>Experience:</strong> {{ match.requirements.experience }}
+                </li>
+                <li>
+                    <strong>Median Salary:</strong> ${{ match.salary|round(2)|int }}
+                </li>
+                <li>
+                    <strong>Job Growth:</strong> {{ match.scope }}%
+                </li>
+            </ul>
+        </div>
+
         <div class="resources">
             <h3>
                 <i class="bi bi-rocket-takeoff"></i>

@@ -6,7 +6,7 @@ APTITUDE_QUESTIONS = {
                 "type": "numerical",
                 "text": "Solve: 15 + 8 × 3 ÷ 4",
                 "options": ["21", "18.5", "19.5", "20.25"],
-                "correct": 2,
+                "correct": 0,  # Fixed: 15 + (8 × 3 ÷ 4) = 15 + 6 = 21
                 "time_limit": 60,
                 "irt_params": {"difficulty": -1.2, "discrimination": 0.8}
             },
@@ -206,7 +206,7 @@ ADAPTIVE_TEST_SETTINGS = {
         "time_penalty": -0.1  # per 10% over time limit
     },
     "proficiency_levels": {
-        "Mathematics": {"thresholds": [40, 70]},  # 0-40: easy, 40-70: moderate, 70+: hard
+        "Mathematics": {"thresholds": [40, 70]},
         "Logical Reasoning": {"thresholds": [45, 75]},
         "Verbal Ability": {"thresholds": [35, 65]}
     }
@@ -265,31 +265,31 @@ PERSONALITY_QUESTIONS = [
 ]
 
 SCORING_KEY = {
-    "O": {  # Openness
-        "max": 32,  # 8 items * 4 points max
+    "O": {
+        "max": 32,
         "norms": [(0, 16, "Very Low"), (17, 23, "Low"), (24, 29, "Average"), (30, 35, "High"), (36, 40, "Very High")],
         "mean": 24.5,
         "sd": 6.2
     },
-    "C": {  # Conscientiousness
+    "C": {
         "max": 32,
         "norms": [(0, 15, "Very Low"), (16, 22, "Low"), (23, 28, "Average"), (29, 34, "High"), (35, 40, "Very High")],
         "mean": 25.1,
         "sd": 5.8
     },
-    "E": {  # Extraversion
+    "E": {
         "max": 32,
         "norms": [(0, 14, "Very Low"), (15, 21, "Low"), (22, 27, "Average"), (28, 33, "High"), (34, 40, "Very High")],
         "mean": 23.8,
         "sd": 6.5
     },
-    "A": {  # Agreeableness
+    "A": {
         "max": 32,
         "norms": [(0, 16, "Very Low"), (17, 23, "Low"), (24, 29, "Average"), (30, 35, "High"), (36, 40, "Very High")],
         "mean": 25.3,
         "sd": 5.9
     },
-    "N": {  # Neuroticism
+    "N": {
         "max": 32,
         "norms": [(0, 13, "Very Low"), (14, 20, "Low"), (21, 26, "Average"), (27, 32, "High"), (33, 40, "Very High")],
         "mean": 22.7,
@@ -315,24 +315,117 @@ TRAIT_DEFINITIONS = {
 
 CAREER_MAPPING = {
     "Data Analyst": {
-        "requirements": {
-            "aptitude": {
-                "Mathematics": 75,
-                "Logical Reasoning": 80,
-                "Verbal Ability": 65
-            },
-            "personality": {
-                "C": 70,  # Conscientiousness
-                "O": 65,  # Openness
-                "N": 40   # Neuroticism (lower is better)
-            }
+        "aptitude": {
+            "Mathematics": 75,
+            "Logical Reasoning": 80,
+            "Verbal Ability": 65
         },
-        "description": "Requires strong numerical analysis and pattern recognition skills",
-        "development_path": [
-            {"step": "Learn Python for Data Analysis", "resource": "Data Analysis with Python on Coursera", "link": "https://www.coursera.org/learn/data-analysis-python"},
-            {"step": "Master Statistics", "resource": "Statistics with Python on Coursera", "link": "https://www.coursera.org/learn/statistics-with-python"},
-            {"step": "Gain Experience with SQL", "resource": "SQL for Data Science on Coursera", "link": "https://www.coursera.org/learn/sql-for-data-science"}
-        ]
+        "personality": {
+            "C": 70,
+            "O": 65,
+            "N": 40
+        },
+        "skills": {
+            "Proficiency in Python or R for data analysis": 20,
+            "Statistical analysis and hypothesis testing": 20,
+            "Experience with machine learning algorithms": 15,
+            "Data visualization (e.g., Matplotlib, Tableau)": 15,
+            "Knowledge of SQL for data querying": 15,
+            "Familiarity with big data tools (e.g., Hadoop, Spark)": 15
+        },
+        "description": "Analyze data to uncover insights and support decision-making.",
+        "resources": [
+            {"name": "Data Analysis with Python on Coursera", "link": "https://www.coursera.org/learn/data-analysis-python"},
+            {"name": "Statistics with Python on Coursera", "link": "https://www.coursera.org/learn/statistics-with-python"},
+            {"name": "SQL for Data Science on Coursera", "link": "https://www.coursera.org/learn/sql-for-data-science"}
+        ],
+        "salary": 75000,
+        "job_growth": 15
+    },
+    "Software Developer": {
+        "aptitude": {
+            "Mathematics": 70,
+            "Logical Reasoning": 85,
+            "Verbal Ability": 60
+        },
+        "personality": {
+            "C": 75,
+            "O": 60,
+            "N": 45
+        },
+        "skills": {
+            "Proficiency in Python programming": 20,
+            "Experience with Git version control": 15,
+            "Understanding of Object-Oriented Programming (OOP)": 15,
+            "Knowledge of RESTful API development": 15,
+            "Familiarity with Agile methodologies": 15,
+            "Database management (e.g., SQL)": 10,
+            "Frontend development (e.g., HTML, CSS, JavaScript)": 10
+        },
+        "description": "Design, develop, and maintain software applications.",
+        "resources": [
+            {"name": "Learn Python on Codecademy", "link": "https://www.codecademy.com/learn/learn-python-3"},
+            {"name": "Git Tutorial on Atlassian", "link": "https://www.atlassian.com/git/tutorials"},
+            {"name": "OOP in Python on Real Python", "link": "https://realpython.com/python3-object-oriented-programming/"}
+        ],
+        "salary": 85000,
+        "job_growth": 22
+    },
+    "Graphic Designer": {
+        "aptitude": {
+            "Mathematics": 50,
+            "Logical Reasoning": 60,
+            "Verbal Ability": 70
+        },
+        "personality": {
+            "O": 80,
+            "E": 65,
+            "N": 40
+        },
+        "skills": {
+            "Proficiency in Adobe Photoshop": 20,
+            "Proficiency in Adobe Illustrator": 20,
+            "Understanding of color theory": 15,
+            "Typography and font selection": 15,
+            "Creating vector graphics": 15,
+            "UI/UX design principles": 15
+        },
+        "description": "Create visual content to communicate messages effectively.",
+        "resources": [
+            {"name": "Photoshop Tutorials on Adobe", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
+            {"name": "Illustrator Tutorials on Adobe", "link": "https://www.adobe.com/products/illustrator/tutorials.html"},
+            {"name": "Color Theory on Coursera", "link": "https://www.coursera.org/learn/color-theory"}
+        ],
+        "salary": 55000,
+        "job_growth": 3
+    },
+    "Business Manager": {
+        "aptitude": {
+            "Mathematics": 65,
+            "Logical Reasoning": 75,
+            "Verbal Ability": 80
+        },
+        "personality": {
+            "E": 70,
+            "A": 65,
+            "C": 70
+        },
+        "skills": {
+            "Strategic planning and goal setting": 20,
+            "Financial budgeting and forecasting": 15,
+            "Leadership and team management": 20,
+            "Project management (e.g., Agile, Scrum)": 15,
+            "Effective communication and negotiation": 15,
+            "Market analysis and competitive research": 15
+        },
+        "description": "Oversee operations, lead teams, and drive organizational success.",
+        "resources": [
+            {"name": "Strategic Management on Coursera", "link": "https://www.coursera.org/learn/strategic-management"},
+            {"name": "Financial Management on Coursera", "link": "https://www.coursera.org/learn/financial-management"},
+            {"name": "Leadership Skills on Udemy", "link": "https://www.udemy.com/topic/leadership/"}
+        ],
+        "salary": 90000,
+        "job_growth": 7
     }
 }
 
@@ -342,7 +435,7 @@ SKILL_GAP_QUESTIONS = {
             "id": 1,
             "text": "What will be the output of the following Python code? \n\n```python\nx = [1, 2, 3]\ny = x\ny[0] = 5\nprint(x)\n```",
             "options": ["[1, 2, 3]", "[5, 2, 3]", "[5, 5, 5]", "Error"],
-            "correct": 1,  # [5, 2, 3] because lists are mutable and y references the same list as x
+            "correct": 1,
             "time_limit": 60
         },
         {
@@ -776,12 +869,12 @@ LEARNING_RESOURCES = {
         {"skill": "Proficiency in Adobe Photoshop", "resource": "Photoshop Tutorials on Adobe", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
         {"skill": "Proficiency in Adobe Illustrator", "resource": "Illustrator Tutorials on Adobe", "link": "https://www.adobe.com/products/illustrator/tutorials.html"},
         {"skill": "Understanding of color theory", "resource": "Color Theory on Coursera", "link": "https://www.coursera.org/learn/color-theory"},
-        {"skill": "Typography and font selection", "resource": "Typography Basics on Skillshare", "link": "https://www.skillshare.com/classes/Introduction-to-Typography/123456"},
+        {"skill": "Typography and font selection", "resource": "Typography Basics on Skillshare", "link": "https://www.skillshare.com/classes/Introduction-to-Typography"},
         {"skill": "Creating vector graphics", "resource": "Vector Graphics with Illustrator on Udemy", "link": "https://www.udemy.com/course/adobe-illustrator-cc-for-beginners/"},
         {"skill": "UI/UX design principles", "resource": "UI/UX Design on Coursera", "link": "https://www.coursera.org/specializations/ui-ux-design"},
-        {"skill": "Branding and logo design", "resource": "Logo Design on Skillshare", "link": "https://www.skillshare.com/classes/Logo-Design-Masterclass/123456"},
+        {"skill": "Branding and logo design", "resource": "Logo Design on Skillshare", "link": "https://www.skillshare.com/classes/Logo-Design-Masterclass"},
         {"skill": "Motion graphics (e.g., After Effects)", "resource": "Motion Graphics with After Effects on Udemy", "link": "https://www.udemy.com/course/after-effects-motion-graphics/"},
-        {"skill": "Print design and layout", "resource": "Print Design on Skillshare", "link": "https://www.skillshare.com/classes/Print-Design-Fundamentals/123456"},
+        {"skill": "Print design and layout", "resource": "Print Design on Skillshare", "link": "https://www.skillshare.com/classes/Print-Design-Fundamentals"},
         {"skill": "Prototyping tools (e.g., Figma, Sketch)", "resource": "Figma for Beginners on Coursera", "link": "https://www.coursera.org/learn/figma-ux-ui"}
     ],
     "Business Management": [

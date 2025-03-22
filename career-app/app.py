@@ -19,11 +19,13 @@ from collections import defaultdict
 import json
 from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
-print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
+
+# Load O*NET credentials
+ONET_USERNAME = os.getenv("ONET_USERNAME")
+ONET_PASSWORD = os.getenv("ONET_PASSWORD")
+
+print(f"Loaded ONET_USERNAME: {ONET_USERNAME}")
+print(f"Loaded ONET_PASSWORD: {ONET_PASSWORD}")
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -809,50 +811,115 @@ def submit_career_assessment():
 
     return redirect(url_for('career_match'))
 
-@app.route('/career_match')
+@app.route('/career_match', methods=['GET', 'POST'])
+@login_required
 def career_match():
-    if not current_user.is_authenticated:
-        flash('Please log in to view your career matches.', 'warning')
-        return redirect(url_for('login', next=request.url))
-    
+    # Fetch all test results for the user
     results = TestResult.query.filter_by(user_id=current_user.id).all()
-    career_scores = defaultdict(float)
-    for result in results:
-        if result.test_type == 'aptitude':
-            career_scores['Software Development'] += result.score * 0.3
-            career_scores['Data Science'] += result.score * 0.25
-        elif result.test_type == 'personality':
-            details = json.loads(result.details) if result.details else {}
-            if details.get('trait') == 'analytical':
-                career_scores['Data Science'] += 20
-            elif details.get('trait') == 'creative':
-                career_scores['Graphic Design'] += 20
-        elif result.test_type == 'skill_gap':
-            details = json.loads(result.details) if result.details else {}
-            field = session.get('selected_field', 'Software Development')
-            career_scores[field] += result.score * 0.4
     
-    career_matches = [
-        {'career': 'Software Development', 'match_score': round(career_scores.get('Software Development', 0), 2),
-         'description': 'Designs and builds software applications.',
-         'resources': [
-             {'name': 'Learn Python', 'link': 'https://www.python.org'},
-             {'name': 'Git Tutorial', 'link': 'https://git-scm.com/doc'}
-         ]},
-        {'career': 'Data Science', 'match_score': round(career_scores.get('Data Science', 0), 2),
-         'description': 'Analyzes data to derive actionable insights.',
-         'resources': [
-             {'name': 'Machine Learning by Andrew Ng', 'link': 'https://www.coursera.org/learn/machine-learning'},
-             {'name': 'SQL for Data Science', 'link': 'https://www.datacamp.com/courses/intro-to-sql-for-data-science'}
-         ]},
-        {'career': 'Graphic Design', 'match_score': round(career_scores.get('Graphic Design', 0), 2),
-         'description': 'Creates visual designs for branding and media.',
-         'resources': [
-             {'name': 'Photoshop Tutorials', 'link': 'https://www.adobe.com/products/photoshop.html'}
-         ]},
-    ]
+    # Determine which tests have been completed
+    has_aptitude = any(result.test_type == 'aptitude' for result in results)
+    has_personality = any(result.test_type == 'personality' for result in results)
+    has_skill_gap = any(result.test_type == 'skill_gap' for result in results)
+
+    # If both aptitude and personality are completed but skill gap is not, prompt for skill gap test
+    if has_aptitude and has_personality and not has_skill_gap:
+        if request.method == 'POST':
+            choice = request.form.get('take_skill_gap')
+            if choice == 'yes':
+                return redirect(url_for('interest_test'))
+            else:
+                # Proceed to career matching without skill gap
+                pass
+        else:
+            # Show prompt to take skill gap test
+            return render_template('prompt_skill_gap.html', csrf_token=generate_csrf())
+
+    # Initialize career scores
+    career_scores = defaultdict(float)
+    aptitude_scores = {}
+    personality_scores = {}
+    skill_scores = {}
+    selected_field = session.get('selected_field', 'Software Development')
+
+    # Process test results
+    for result in results:
+        details = json.loads(result.details) if result.details else {}
+        if result.test_type == 'aptitude':
+            # Normalize aptitude scores (already in percentage)
+            aptitude_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                score = 0
+                for category, weight in weights['aptitude'].items():
+                    score += (aptitude_scores.get(category, 0) * weight / 100)
+                career_scores[career] += score * 0.4  # Weight aptitude at 40%
+        elif result.test_type == 'personality':
+            personality_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                score = 0
+                for trait, weight in weights['personality'].items():
+                    score += (personality_scores.get(trait, 0) * weight / 100)
+                career_scores[career] += score * 0.3  # Weight personality at 30%
+        elif result.test_type == 'skill_gap':
+            skill_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                for skill, weight in weights['skills'].items():
+                    if skill in skill_scores:
+                        career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3  # Weight skill gap at 30%
+
+    # If only skill gap is completed, base results solely on skill gap
+    if has_skill_gap and not (has_aptitude or has_personality):
+        career_scores = defaultdict(float)
+        for career, weights in CAREER_MAPPING.items():
+            for skill, weight in weights['skills'].items():
+                if skill in skill_scores:
+                    career_scores[career] = skill_scores[skill]
+
+    # Prepare career matches
+    career_matches = []
+    for career, data in CAREER_MAPPING.items():
+        match_score = career_scores.get(career, 0)
+        career_matches.append({
+            'career': career,
+            'match_score': round(match_score, 2),
+            'description': data['description'],
+            'resources': data['resources'],
+            'requirements': {
+                'skills': list(data['skills'].keys()),
+                'education': "Bachelor's degree in related field",
+                'experience': "1-3 years of relevant experience"
+            },
+            'salary': data.get('salary', 0),  # Mock salary data
+            'scope': data.get('job_growth', 0)  # Mock job growth data
+        })
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-    return render_template('career_match.html', career_matches=career_matches)
+
+    # If all three tests are completed, check alignment
+    alignment_message = None
+    alternative_careers = []
+    skill_gap_result = None
+    if has_aptitude and has_personality and has_skill_gap:
+        # Check if the selected field aligns with aptitude and personality
+        selected_career = next((c for c in career_matches if c['career'] == selected_field), None)
+        if selected_career:
+            # Define alignment criteria: selected career should be in top 2 matches
+            top_matches = [c['career'] for c in career_matches[:2]]
+            if selected_field in top_matches:
+                alignment_message = f"Your chosen career ({selected_field}) aligns well with your aptitude and personality!"
+                skill_gap_result = skill_scores.get(selected_field, 0)
+            else:
+                alignment_message = f"Your chosen career ({selected_field}) may not be the best match based on your aptitude and personality."
+                alternative_careers = [c for c in career_matches if c['career'] != selected_field][:2]
+                skill_gap_result = skill_scores.get(selected_field, 0)
+
+    return render_template(
+        'career_match.html',
+        career_matches=career_matches,
+        alignment_message=alignment_message,
+        alternative_careers=alternative_careers,
+        skill_gap_result=skill_gap_result,
+        selected_field=selected_field
+    )
 
 @app.route('/progress_tracking')
 @login_required

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Take Skill Gap Test?{% endblock %}
+
+{% block content %}
+<div class="assessment-container">
+    <h1 class="text-3xl font-bold mb-8 text-center">Complete Your Assessment</h1>
+    <p class="text-center text-lg mb-6">
+        You've completed the Aptitude and Personality tests! To get a more accurate career match, we recommend taking the Skill Gap test.
+    </p>
+    <form method="POST" action="{{ url_for('career_match') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="text-center">
+            <button type="submit" name="take_skill_gap" value="yes" class="submit-btn">
+                Yes, Take Skill Gap Test
+            </button>
+            <button type="submit" name="take_skill_gap" value="no" class="submit-btn bg-gray-500 hover:bg-gray-600">
+                No, Proceed to Results
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
