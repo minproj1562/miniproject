@@ -5,13 +5,13 @@ from requests.auth import HTTPBasicAuth
 class ONetAPI:
     def __init__(self):
         # Load O*NET credentials from environment variables
-        self.user = os.getenv('ONET_USER')
-        self.pwd = os.getenv('ONET_PWD')
+        self.user = os.getenv('ONET_USERNAME')  # Changed from ONET_USER
+        self.pwd = os.getenv('ONET_PASSWORD')   # Changed from ONET_PWD
         self.base_url = "https://services.onetcenter.org/ws/"
 
         # Validate that credentials are available
         if not self.user or not self.pwd:
-            raise ValueError("O*NET API credentials (ONET_USER and ONET_PWD) must be set in environment variables.")
+            raise ValueError("O*NET API credentials (ONET_USERNAME and ONET_PASSWORD) must be set in environment variables.")
 
     def _make_request(self, endpoint):
         """

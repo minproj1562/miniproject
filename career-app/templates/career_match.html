@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Career Match Results{% endblock %}
+{% block title %}Career Match Results - Career Analytics{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
@@ -144,106 +144,145 @@
     margin-top: 1rem;
     text-align: center;
 }
+
+.no-results {
+    font-size: 1.2rem;
+    color: #666;
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8d7da;
+    border-radius: 1rem;
+    border: 1px solid #f5c6cb;
+}
+
+.acknowledgment {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #f0f4f8;
+    border-radius: 1rem;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="results-container">
     <h1>🌟 Your Perfect Career Matches</h1>
-    <p class="text-center text-xl text-gray-600 mb-8">Discover your ideal career path based on AI analysis</p>
+    <p class="text-center text-xl text-gray-600 mb-8">Discover your ideal career path based on your test results</p>
 
     {% if alignment_message %}
     <div class="alignment-message">
         <p>{{ alignment_message }}</p>
+        {% if only_skill_gap_completed %}
+        <div class="recommendation" style="margin-top: 1rem;">
+            <p>Would you like to improve accuracy?</p>
+            <div class="text-center mt-4">
+                <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-primary">Take Aptitude Test</a>
+                <a href="{{ url_for('test', type='personality') }}" class="btn btn-primary ml-2">Take Personality Test</a>
+                <a href="{{ url_for('career_match') }}" class="btn btn-secondary ml-2">Proceed with Current Results</a>
+            </div>
+        </div>
+        {% endif %}
         {% if skill_gap_result is not none %}
         <div class="skill-gap">
             <p>Your skill level in {{ selected_field }}: {{ skill_gap_result|round(2) }}%</p>
-            <p>Consider improving your skills to bridge the gap!</p>
+            <p>Consider improving your skills to bridge the gap! Check the resources below.</p>
         </div>
         {% endif %}
     </div>
     {% endif %}
 
-    {% if alternative_careers %}
-    <div class="alternative-careers">
-        <h2>Alternative Career Suggestions</h2>
-        <p>Based on your aptitude and personality, you might also be a great fit for:</p>
-        {% for career in alternative_careers %}
+    {% if career_matches %}
+    <div class="career-matches">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Top Career Matches</h2>
+        {% for match in career_matches %}
         <div class="career-match">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h2 class="text-3xl font-bold text-gray-800">{{ career.career }}</h2>
-                    <p class="text-gray-600 mt-2">{{ career.description }}</p>
+                    <h2 class="text-3xl font-bold text-gray-800">{{ match.career }}</h2>
+                    <p class="text-gray-600 mt-2">{{ match.description }}</p>
                 </div>
-                <span class="match-score">
-                    {{ career.match_score }}%
-                </span>
+                <span class="match-score">{{ match.match_score|round(2) }}%</span>
+            </div>
+
+            <div class="analysis">
+                <h3><i class="bi bi-briefcase"></i> Career Analysis</h3>
+                <ul>
+                    <li><strong>Skills Required:</strong> {{ match.requirements.skills|join(', ') }}</li>
+                    <li><strong>Education:</strong> {{ match.requirements.education }}</li>
+                    <li><strong>Experience:</strong> {{ match.requirements.experience }}</li>
+                    <li><strong>Median Salary:</strong> ${{ match.salary|round(2)|int }}</li>
+                    <li><strong>Job Growth:</strong> {{ match.scope|round(2) }}%</li>
+                </ul>
+            </div>
+
+            <div class="resources">
+                <h3><i class="bi bi-rocket-takeoff"></i> Launch Your Career Journey</h3>
+                {% if match.resources %}
+                <ul>
+                    {% for resource in match.resources %}
+                    <li><a href="{{ resource.link }}" target="_blank">{{ resource.name }}</a></li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>No resources available.</p>
+                {% endif %}
+            </div>
+
+            <div class="text-center mt-4">
+                <button class="btn btn-primary" data-toggle="modal" data-target="#analysisModal-{{ loop.index }}">Detailed Analysis</button>
+            </div>
+            <div class="modal fade" id="analysisModal-{{ loop.index }}" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Detailed Analysis for {{ match.career }}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            {% if session['aptitude_score'] %}
+                            <h6>Aptitude Alignment</h6>
+                            <p>Your aptitude score of {{ session['aptitude_score']|round(2) }}% suggests strong skills for {{ match.career }}.</p>
+                            {% endif %}
+                            {% if session['personality_scores'] %}
+                            <h6>Personality Alignment</h6>
+                            <p>Your traits (e.g., Conscientiousness: {{ session['personality_scores']['Conscientiousness'] }}%) align with {{ match.career }} requirements.</p>
+                            {% endif %}
+                            {% if session['skill_gap_score'] %}
+                            <h6>Skill Gap Analysis</h6>
+                            <p>Your skill level in {{ session['skill_gap_field'] }} is {{ session['skill_gap_score']|round(2) }}%. Improve in: {{ match.requirements.skills|join(', ') }}.</p>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="acknowledgment">
+        <p>This site incorporates information from <a href="https://services.onetcenter.org/" target="_blank" rel="noopener noreferrer">O*NET Web Services</a> by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA).</p>
+    </div>
+    {% else %}
+    <p class="no-results">No career matches found. Please complete more tests to get personalized career recommendations.</p>
+    <div class="acknowledgment">
+        <p>This site incorporates information from <a href="https://services.onetcenter.org/" target="_blank" rel="noopener noreferrer">O*NET Web Services</a> by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA).</p>
+    </div>
     {% endif %}
 
-    {% for match in career_matches %}
-    <div class="career-match">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-3xl font-bold text-gray-800">{{ match.career }}</h2>
-                <p class="text-gray-600 mt-2">{{ match.description }}</p>
-            </div>
-            <span class="match-score">
-                {{ match.match_score }}%
-            </span>
-        </div>
-
-        <div class="analysis">
-            <h3>
-                <i class="bi bi-briefcase"></i>
-                Career Analysis
-            </h3>
-            <ul>
-                <li>
-                    <strong>Skills Required:</strong> {{ match.requirements.skills|join(', ') }}
-                </li>
-                <li>
-                    <strong>Education:</strong> {{ match.requirements.education }}
-                </li>
-                <li>
-                    <strong>Experience:</strong> {{ match.requirements.experience }}
-                </li>
-                <li>
-                    <strong>Median Salary:</strong> ${{ match.salary|round(2)|int }}
-                </li>
-                <li>
-                    <strong>Job Growth:</strong> {{ match.scope }}%
-                </li>
-            </ul>
-        </div>
-
-        <div class="resources">
-            <h3>
-                <i class="bi bi-rocket-takeoff"></i>
-                Launch Your Career Journey
-            </h3>
-            <ul>
-                {% for resource in match.resources %}
-                <li class="hover:transform hover:translate-x-4 transition-all">
-                    <i class="bi bi-link-45deg text-purple-500"></i>
-                    <a href="{{ resource.link }}" class="text-gray-700 hover:text-purple-600 font-medium">
-                        {{ resource.name }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    {% endfor %}
-
     <div class="text-center mt-10">
-        <a href="{{ url_for('dashboard') }}" class="btn-primary">
-            <i class="bi bi-speedometer2"></i>
-            Return to Dashboard
-        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn-primary"><i class="bi bi-speedometer2"></i> Return to Dashboard</a>
+        <a href="{{ url_for('degree') }}" class="btn-primary ml-4"><i class="bi bi-book"></i> Explore Degrees</a>
     </div>
 </div>
 {% endblock %}

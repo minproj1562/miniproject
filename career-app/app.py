@@ -12,14 +12,21 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
 from datetime import datetime
+from flask_caching import Cache
 import requests
 import random
 import copy
 from collections import defaultdict
 import json
 from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES
+from apis import ONetAPI
 
-
+try:
+    onet_api = ONetAPI()
+except ValueError as e:
+    print(f"Failed to initialize O*NET API: {e}")
+    onet_api = None
+    
 # Load O*NET credentials
 ONET_USERNAME = os.getenv("ONET_USERNAME")
 ONET_PASSWORD = os.getenv("ONET_PASSWORD")
@@ -41,9 +48,16 @@ app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 3600  # Cache for 1 hour
+cache = Cache(app)
+
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+INDIA_API = 'https://colleges-api-india.fly.dev/colleges'
+GLOBAL_API = 'http://universities.hipolabs.com/search?country='
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -443,74 +457,170 @@ def dashboard():
         'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
         'types': [test.test_type for test in recent_tests[::-1]]
     }
-    # Ensure details is handled safely
-    for test in recent_tests:
-        test.details_dict = json.loads(test.details) if test.details else {}
-    recommendation = "Take more tests for personalized advice!"
-    if len(recent_tests) >= 3:
-        recommendation = "You're doing great! Consider exploring advanced career options."
-    return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, test_data=test_data, recommendation=recommendation)
+    # Track test completion
+    all_tests = TestResult.query.filter_by(user_id=current_user.id).all()
+    test_status = {
+        'aptitude': any(test.test_type == 'aptitude' for test in all_tests),
+        'personality': any(test.test_type == 'personality' for test in all_tests),
+        'skill_gap': any(test.test_type == 'skill_gap' for test in all_tests)
+    }
+    recommendation = "Complete all tests for the best career matches!"
+    if all(test_status.values()):
+        recommendation = "Great job! View your career matches now."
+    return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, 
+                          test_data=test_data, recommendation=recommendation, test_status=test_status)
 
 @app.route('/student')
 @login_required
 def student():
     return render_template('student.html', user=current_user)
 
-@app.route('/degree', methods=['GET'])
+@app.route('/degree', methods=['GET', 'POST'])
 @login_required
 def degree():
-    onet_api = get_onet_api()
-    print(f"ONET_USER: {os.getenv('ONET_USER')}")
-    print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
+    # Get the selected country from the request arguments (default to "India")
+    selected_country = request.args.get('country', 'India')
 
-    degrees = [
-        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "soc_code": "15-1132.00"},
-        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles.", "degree_level": "Master", "field_of_study": "Business", "soc_code": "11-1021.00"},
-        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior.", "degree_level": "Bachelor", "field_of_study": "Psychology", "soc_code": "19-3031.00"},
-        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data.", "degree_level": "Master", "field_of_study": "Data Science", "soc_code": "15-2051.00"}
+    # Cached function to fetch universities based on country
+    @cache.cached(key_prefix=f'universities_{selected_country}')
+    def get_universities(country):
+        try:
+            if country == 'India':
+                response = requests.get(INDIA_API, timeout=10)
+            else:
+                response = requests.get(f'{GLOBAL_API}{country}', timeout=10)
+            response.raise_for_status()
+            universities = response.json()
+            if country == 'India':
+                university_names = [uni['name'] for uni in universities]
+            else:
+                university_names = [uni['name'] for uni in universities]
+            return sorted(set(university_names))  # Remove duplicates and sort
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch universities for {country}: {e}")
+            return ["Sample University 1", "Sample University 2"]  # Fallback list
+
+    university_names = get_universities(selected_country)
+    if university_names == ["Sample University 1", "Sample University 2"]:
+        flash(f'Unable to fetch universities for {selected_country}. Using default options.', 'warning')
+
+    # Hardcoded list of countries for the dropdown (can be expanded or fetched dynamically)
+    countries = ["India", "United States", "United Kingdom", "Canada", "Australia"]
+
+    # Mock degree data (updated to include Indian universities)
+    degree_data = [
+        {
+            "title": "Bachelor of Science in Computer Science",
+            "university": "Massachusetts Institute of Technology (MIT)",
+            "duration": "4 years",
+            "description": "A comprehensive program covering software development, algorithms, and data structures.",
+            "field_of_study": "Computer Science",
+            "degree_level": "Bachelor",
+            "soc_code": "15-1252.00"  # Software Developer
+        },
+        {
+            "title": "Master of Business Administration (MBA)",
+            "university": "Harvard University",
+            "duration": "2 years",
+            "description": "Focuses on leadership, strategy, and management skills for business professionals.",
+            "field_of_study": "Business",
+            "degree_level": "Master",
+            "soc_code": "11-1021.00"  # Business Manager
+        },
+        {
+            "title": "Bachelor of Arts in Psychology",
+            "university": "Stanford University",
+            "duration": "4 years",
+            "description": "Explores human behavior, cognition, and mental health.",
+            "field_of_study": "Psychology",
+            "degree_level": "Bachelor",
+            "soc_code": "19-3031.00"  # Clinical Psychologist
+        },
+        {
+            "title": "Master of Science in Data Science",
+            "university": "University of California, Berkeley (UC Berkeley)",
+            "duration": "1.5 years",
+            "description": "Covers data analysis, machine learning, and big data technologies.",
+            "field_of_study": "Data Science",
+            "degree_level": "Master",
+            "soc_code": "15-2051.00"  # Data Analyst
+        },
+        {
+            "title": "Bachelor of Technology in Computer Science",
+            "university": "Indian Institute of Technology Bombay",
+            "duration": "4 years",
+            "description": "A rigorous program focusing on computer science and engineering.",
+            "field_of_study": "Computer Science",
+            "degree_level": "Bachelor",
+            "soc_code": "15-1252.00"  # Software Developer
+        },
+        {
+            "title": "Master of Business Administration (MBA)",
+            "university": "Indian Institute of Management Ahmedabad",
+            "duration": "2 years",
+            "description": "Prepares students for leadership roles in business and management.",
+            "field_of_study": "Business",
+            "degree_level": "Master",
+            "soc_code": "11-1021.00"  # Business Manager
+        }
     ]
 
-    mock_career_data = {
-        "Bachelor of Science in Computer Science": {'job_title': 'Software Developer', 'salary': 105000, 'job_growth': 22},
-        "Master of Business Administration": {'job_title': 'Business Manager', 'salary': 120000, 'job_growth': 8},
-        "Bachelor of Arts in Psychology": {'job_title': 'Clinical Psychologist', 'salary': 82000, 'job_growth': 14},
-        "Master of Science in Data Science": {'job_title': 'Data Scientist', 'salary': 115000, 'job_growth': 31}
-    }
+    # Get search parameters from the form
+    degree_level = request.args.get('degree_level', '')
+    field_of_study = request.args.get('field_of_study', '')
+    duration = request.args.get('duration', '')
+    university = request.args.get('university', '')
+    keyword = request.args.get('keyword', '').lower()
+    sort_by = request.args.get('sort_by', '')
 
-    degree_level = request.args.get('degree_level', '').strip()
-    field_of_study = request.args.get('field_of_study', '').strip()
-    duration = request.args.get('duration', '').strip()
-    keyword = request.args.get('keyword', '').strip().lower()
-    sort_by = request.args.get('sort_by', '').strip()
+    # Filter degrees based on search parameters
+    filtered_degrees = degree_data
 
-    filtered_degrees = degrees
-    if degree_level: filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
-    if field_of_study: filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
-    if duration: filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
-    if keyword: filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
-    if sort_by == 'title': filtered_degrees.sort(key=lambda x: x['title'])
-    elif sort_by == 'duration': filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
-    elif sort_by == 'university': filtered_degrees.sort(key=lambda x: x['university'])
+    if degree_level:
+        filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
+    if field_of_study:
+        filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
+    if duration:
+        filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
+    if university:
+        filtered_degrees = [d for d in filtered_degrees if d['university'] == university]
+    if keyword:
+        filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
 
+    # Sort degrees
+    if sort_by:
+        filtered_degrees.sort(key=lambda x: x.get(sort_by, ''))
+
+    # Fetch career data, education, and skills from O*NET API for each degree
     for degree in filtered_degrees:
-        try:
-            career_data = onet_api.get_career_details(degree['soc_code'])
-            degree['career_data'] = {
-                'job_title': career_data.get('title', 'N/A'),
-                'salary': career_data.get('wages', {}).get('median', 'N/A'),
-                'job_growth': career_data.get('outlook', {}).get('growth_rate', 'N/A')
-            }
-        except Exception as e:
-            print(f"Error fetching career data for {degree['title']}: {e}")
-            degree['career_data'] = mock_career_data.get(degree['title'], {
-                'job_title': 'N/A',
-                'salary': 'N/A',
-                'job_growth': 'N/A'
-            })
-            flash(f"Failed to fetch career data for {degree['title']}. Using mock data.", 'warning')
+        if onet_api:
+            try:
+                career_data = onet_api.get_career_details(degree['soc_code'])
+                degree['career_data'] = {
+                    "job_title": career_data.get("title", "N/A"),
+                    "salary": career_data.get("wages", {}).get("median", "N/A"),
+                    "job_growth": career_data.get("outlook", {}).get("growth_rate", "N/A")
+                }
+                education_data = onet_api.get_education_for_occupation(degree['soc_code'])
+                degree['education'] = {
+                    "typical_level": education_data.get("typical_level", "N/A"),
+                    "required_level": education_data.get("required_level", "N/A")
+                }
+                skills_data = onet_api.get_skills_for_occupation(degree['soc_code'])
+                degree['skills'] = [skill.get("name", "N/A") for skill in skills_data[:5]]
+            except Exception as e:
+                print(f"Error fetching O*NET data for SOC code {degree['soc_code']}: {e}")
+                degree['career_data'] = {"job_title": "N/A", "salary": "N/A", "job_growth": "N/A"}
+                degree['education'] = {"typical_level": "N/A", "required_level": "N/A"}
+                degree['skills'] = []
+        else:
+            degree['career_data'] = {"job_title": "N/A", "salary": "N/A", "job_growth": "N/A"}
+            degree['education'] = {"typical_level": "N/A", "required_level": "N/A"}
+            degree['skills'] = []
 
-    return render_template('degree.html', user=current_user, degrees=filtered_degrees)
-
+    return render_template('degree.html.jinja2', degrees=filtered_degrees, universities=university_names, 
+                          countries=countries, selected_country=selected_country)
+    
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     test_type = request.args.get('type')
@@ -577,7 +687,8 @@ def test():
                 )
                 db.session.add(result)
                 db.session.commit()
-                return render_template('results.html.jinja2', score_data={
+                return redirect(url_for('dashboard'))
+            return render_template('results.html.jinja2', score_data={
                     'score': score,
                     'correct': correct,
                     'total': total,
@@ -746,6 +857,7 @@ def submit_interests():
     db.session.commit()
 
     return redirect(url_for('career_match'))
+    return redirect(url_for('dashboard'))
 
 @app.route('/personality_results')
 @login_required
@@ -814,111 +926,84 @@ def submit_career_assessment():
 @app.route('/career_match', methods=['GET', 'POST'])
 @login_required
 def career_match():
-    # Fetch all test results for the user
     results = TestResult.query.filter_by(user_id=current_user.id).all()
+    has_aptitude = any(r.test_type == 'aptitude' for r in results)
+    has_personality = any(r.test_type == 'personality' for r in results)
+    has_skill_gap = any(r.test_type == 'skill_gap' for r in results)
     
-    # Determine which tests have been completed
-    has_aptitude = any(result.test_type == 'aptitude' for result in results)
-    has_personality = any(result.test_type == 'personality' for result in results)
-    has_skill_gap = any(result.test_type == 'skill_gap' for result in results)
+    # Handle prompt response
+    if request.method == 'POST' and 'take_skill_gap' in request.form:
+        if request.form['take_skill_gap'] == 'yes':
+            return redirect(url_for('interest_test'))
+    
+    # Prompt for skill gap if aptitude and personality are done
+    if has_aptitude and has_personality and not has_skill_gap and request.method == 'GET':
+        return render_template('prompt_skill_gap.html', csrf_token=generate_csrf())
 
-    # If both aptitude and personality are completed but skill gap is not, prompt for skill gap test
-    if has_aptitude and has_personality and not has_skill_gap:
-        if request.method == 'POST':
-            choice = request.form.get('take_skill_gap')
-            if choice == 'yes':
-                return redirect(url_for('interest_test'))
-            else:
-                # Proceed to career matching without skill gap
-                pass
-        else:
-            # Show prompt to take skill gap test
-            return render_template('prompt_skill_gap.html', csrf_token=generate_csrf())
-
-    # Initialize career scores
+    # Initialize scores
     career_scores = defaultdict(float)
     aptitude_scores = {}
     personality_scores = {}
     skill_scores = {}
     selected_field = session.get('selected_field', 'Software Development')
+    alignment_message = None
+    only_skill_gap = has_skill_gap and not (has_aptitude or has_personality)
 
     # Process test results
     for result in results:
         details = json.loads(result.details) if result.details else {}
         if result.test_type == 'aptitude':
-            # Normalize aptitude scores (already in percentage)
             aptitude_scores = details
             for career, weights in CAREER_MAPPING.items():
-                score = 0
-                for category, weight in weights['aptitude'].items():
-                    score += (aptitude_scores.get(category, 0) * weight / 100)
-                career_scores[career] += score * 0.4  # Weight aptitude at 40%
+                score = sum(aptitude_scores.get(cat, 0) * weight / 100 
+                           for cat, weight in weights['aptitude'].items())
+                career_scores[career] += score * 0.4
         elif result.test_type == 'personality':
             personality_scores = details
             for career, weights in CAREER_MAPPING.items():
-                score = 0
-                for trait, weight in weights['personality'].items():
-                    score += (personality_scores.get(trait, 0) * weight / 100)
-                career_scores[career] += score * 0.3  # Weight personality at 30%
+                score = sum(personality_scores.get(trait, 0) * weight / 100 
+                           for trait, weight in weights['personality'].items())
+                career_scores[career] += score * 0.3
         elif result.test_type == 'skill_gap':
             skill_scores = details
             for career, weights in CAREER_MAPPING.items():
                 for skill, weight in weights['skills'].items():
                     if skill in skill_scores:
-                        career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3  # Weight skill gap at 30%
+                        career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3
 
-    # If only skill gap is completed, base results solely on skill gap
-    if has_skill_gap and not (has_aptitude or has_personality):
+    # Override if only skill gap is completed
+    if only_skill_gap:
         career_scores = defaultdict(float)
         for career, weights in CAREER_MAPPING.items():
-            for skill, weight in weights['skills'].items():
+            for skill in weights['skills']:
                 if skill in skill_scores:
                     career_scores[career] = skill_scores[skill]
+        alignment_message = "Your matches are based solely on your skill gap test. For more accurate results, consider taking the aptitude and personality tests."
 
-    # Prepare career matches
-    career_matches = []
-    for career, data in CAREER_MAPPING.items():
-        match_score = career_scores.get(career, 0)
-        career_matches.append({
+    # Prepare matches
+    career_matches = [
+        {
             'career': career,
-            'match_score': round(match_score, 2),
+            'match_score': round(career_scores.get(career, 0), 2),
             'description': data['description'],
             'resources': data['resources'],
             'requirements': {
-                'skills': list(data['skills'].keys()),
-                'education': "Bachelor's degree in related field",
-                'experience': "1-3 years of relevant experience"
-            },
-            'salary': data.get('salary', 0),  # Mock salary data
-            'scope': data.get('job_growth', 0)  # Mock job growth data
-        })
+                'aptitude': data['aptitude'],
+                'personality': data['personality'],
+                'skills': list(data['skills'].keys())
+            }
+        } for career, data in CAREER_MAPPING.items()
+    ]
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-
-    # If all three tests are completed, check alignment
-    alignment_message = None
-    alternative_careers = []
-    skill_gap_result = None
-    if has_aptitude and has_personality and has_skill_gap:
-        # Check if the selected field aligns with aptitude and personality
-        selected_career = next((c for c in career_matches if c['career'] == selected_field), None)
-        if selected_career:
-            # Define alignment criteria: selected career should be in top 2 matches
-            top_matches = [c['career'] for c in career_matches[:2]]
-            if selected_field in top_matches:
-                alignment_message = f"Your chosen career ({selected_field}) aligns well with your aptitude and personality!"
-                skill_gap_result = skill_scores.get(selected_field, 0)
-            else:
-                alignment_message = f"Your chosen career ({selected_field}) may not be the best match based on your aptitude and personality."
-                alternative_careers = [c for c in career_matches if c['career'] != selected_field][:2]
-                skill_gap_result = skill_scores.get(selected_field, 0)
 
     return render_template(
         'career_match.html',
-        career_matches=career_matches,
+        career_matches=career_matches[:5],
         alignment_message=alignment_message,
-        alternative_careers=alternative_careers,
-        skill_gap_result=skill_gap_result,
-        selected_field=selected_field
+        only_skill_gap_completed=only_skill_gap,
+        has_aptitude=has_aptitude,
+        has_personality=has_personality,
+        has_skill_gap=has_skill_gap
     )
 
 @app.route('/progress_tracking')
@@ -948,6 +1033,14 @@ def progress_tracking():
 
     return render_template('progress_tracking.html', user=current_user, test_history=test_history, 
                           avg_scores=avg_scores, progress_data=progress_data)
+    
+@app.route('/compare_degrees', methods=['GET', 'POST'])
+@login_required
+def compare_degrees():
+    degree_data = [...]  # Same degree data as in /degree route
+    selected_degrees = request.args.getlist('degrees')  # Get selected degrees from query params
+    compared_degrees = [d for d in degree_data if d['title'] in selected_degrees]
+    return render_template('compare_degrees.html', degrees=compared_degrees)
 
 @app.route('/profile')
 @login_required
@@ -1129,5 +1222,29 @@ def not_found(error):
 def internal_error(error):
     return render_template('500.html'), 500
 
+def populate_universities():
+    sample_universities = [
+        {"name": "Massachusetts Institute of Technology (MIT)", "country": "United States"},
+        {"name": "Harvard University", "country": "United States"},
+        {"name": "Stanford University", "country": "United States"},
+        {"name": "University of California, Berkeley (UC Berkeley)", "country": "United States"},
+        {"name": "University of Toronto", "country": "Canada"},
+        {"name": "University of British Columbia", "country": "Canada"},
+        {"name": "University of Oxford", "country": "United Kingdom"},
+        {"name": "University of Cambridge", "country": "United Kingdom"},
+        {"name": "ETH Zurich", "country": "Switzerland"},
+        {"name": "University of Tokyo", "country": "Japan"}
+    ]
+
+    with app.app_context():
+        for uni in sample_universities:
+            # Check if the university already exists to avoid duplicates
+            if not University.query.filter_by(name=uni['name']).first():
+                new_uni = University(name=uni['name'], country=uni['country'])
+                db.session.add(new_uni)
+        db.session.commit()
+        print(f"Added {len(sample_universities)} universities to the database.")
+with app.app_context():
+    db.create_all()
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
