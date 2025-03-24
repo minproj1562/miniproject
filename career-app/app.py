@@ -24,6 +24,10 @@ from PIL import Image  # Added for image resizing
 
 # Import ProfileForm from forms.py
 from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
+from flask_caching import Cache
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 3600
+cache = Cache(app)
 
 # Placeholder for questions.py imports (since the file wasn't provided)
 APTITUDE_QUESTIONS = {
@@ -182,6 +186,11 @@ class TestResult(db.Model):
     details = db.Column(db.Text, nullable=True)  # Store JSON string of detailed results
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class University(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), unique=True, nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+
 class Badge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -298,6 +307,24 @@ def fetch_opentdb_questions(category_id, amount=5):
         return questions
     return []
 
+def populate_universities():
+    sample_universities = [
+        {"name": "Massachusetts Institute of Technology (MIT)", "country": "United States"},
+        {"name": "Harvard University", "country": "United States"},
+        # Add more as needed
+    ]
+    with app.app_context():
+        for uni in sample_universities:
+            if not University.query.filter_by(name=uni['name']).first():
+                new_uni = University(name=uni['name'], country=uni['country'])
+                db.session.add(new_uni)
+        db.session.commit()
+        print(f"Added {len(sample_universities)} universities to the database.")
+
+with app.app_context():
+    db.create_all()
+    populate_universities()
+    
 # Generate dynamic test questions
 def generate_questions(test_type):
     if test_type == 'sample':
@@ -552,7 +579,7 @@ def test():
                 flash(f'Your work ethics score: {score} out of {max_score}', 'success')
                 return redirect(url_for('index'))
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
+        return render_template('sample_test.html', questions=questions, instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
 
     elif test_type == 'aptitude':
         if not current_user.is_authenticated:
@@ -613,7 +640,7 @@ def test():
                 db.session.add(notification)
                 db.session.commit()
                 notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-                return render_template('results.html.jinja2', score_data={
+                return render_template('results.html', score_data={
                     'score': score,
                     'correct': correct,
                     'total': total,
@@ -622,9 +649,9 @@ def test():
                 }, active_page='test', test_type='aptitude', notifications=notifications)
         total_questions = len(questions)
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
+        return render_template('assessments/aptitude.html', questions=questions, instructions=instructions,
                               current_category='Mathematics', total_questions=total_questions,
-                              initial_time=600, completed_questions=0, csrf_token=generate_csrf(), active_page='test', test_type='aptitude', notifications=notifications)
+                              initial_time=600, completed_questions=0,active_page='test', test_type='aptitude', notifications=notifications)
 
     elif test_type == 'personality':
         if not current_user.is_authenticated:
@@ -640,12 +667,11 @@ def test():
             current_question_index = 0
         question = questions[current_question_index]
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('assessments/personality.html.jinja2',
+        return render_template('assessments/personality.html',
                               questions=questions,
                               instructions=instructions,
                               current_question_index=current_question_index,
                               question=question,
-                              csrf_token=generate_csrf(),
                               active_page='test',
                               test_type='personality',
                               notifications=notifications)
@@ -707,11 +733,10 @@ def test():
                 db.session.commit()
                 return redirect(url_for('career_match'))
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('assessments/interest_test.html.jinja2',
+        return render_template('assessments/interest_test.html',
                               selected_field=selected_field,
                               questions=questions,
                               instructions=instructions,
-                              csrf_token=generate_csrf(),
                               active_page='test',
                               test_type='skill_gap',
                               notifications=notifications)
@@ -723,7 +748,7 @@ def test():
 @app.route('/career_assessment', methods=['GET'])
 def career_assessment():
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
-    return render_template('career_assessment.html', csrf_token=generate_csrf(), active_page='career_assessment', notifications=notifications)
+    return render_template('career_assessment.html',active_page='career_assessment', notifications=notifications)
 
 @app.route('/interest_test', methods=['GET', 'POST'])
 @login_required
@@ -733,10 +758,9 @@ def interest_test():
         session['selected_field'] = selected_field
     questions = generate_questions('skill_gap') if selected_field else []
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('assessments/interest_test.html.jinja2', 
+    return render_template('assessments/interest_test.html', 
                           selected_field=selected_field, 
                           questions=questions, 
-                          csrf_token=generate_csrf(),
                           active_page='interest_test',
                           notifications=notifications)
 
@@ -898,7 +922,7 @@ def personality_results():
         dominant_trait = 'Openness'
 
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names, active_page='test', test_type='personality', notifications=notifications)
+    return render_template('personality_results.html.jinja2', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names, active_page='test', test_type='personality', notifications=notifications)
 
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required
@@ -956,52 +980,85 @@ def submit_career_assessment():
 
     return redirect(url_for('career_match'))
 
-@app.route('/career_match')
+@app.route('/career_match', methods=['GET', 'POST'])
+@login_required
 def career_match():
-    if not current_user.is_authenticated:
-        flash('Please log in to view your career matches.', 'warning')
-        return redirect(url_for('login', next=request.url))
-    
     results = TestResult.query.filter_by(user_id=current_user.id).all()
-    career_scores = defaultdict(float)
-    for result in results:
-        if result.test_type == 'aptitude':
-            career_scores['Software Development'] += result.score * 0.3
-            career_scores['Data Science'] += result.score * 0.25
-        elif result.test_type == 'personality':
-            details = json.loads(result.details) if result.details else {}
-            if details.get('trait') == 'analytical':
-                career_scores['Data Science'] += 20
-            elif details.get('trait') == 'creative':
-                career_scores['Graphic Design'] += 20
-        elif result.test_type == 'skill_gap':
-            details = json.loads(result.details) if result.details else {}
-            field = session.get('selected_field', 'Software Development')
-            career_scores[field] += result.score * 0.4
+    has_aptitude = any(r.test_type == 'aptitude' for r in results)
+    has_personality = any(r.test_type == 'personality' for r in results)
+    has_skill_gap = any(r.test_type == 'skill_gap' for r in results)
     
+    if request.method == 'POST' and 'take_skill_gap' in request.form:
+        if request.form['take_skill_gap'] == 'yes':
+            return redirect(url_for('interest_test'))
+    
+    if has_aptitude and has_personality and not has_skill_gap and request.method == 'GET':
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+        return render_template('prompt_skill_gap.html', active_page='career_match', notifications=notifications)
+    
+    career_scores = defaultdict(float)
+    aptitude_scores = {}
+    personality_scores = {}
+    skill_scores = {}
+    only_skill_gap = has_skill_gap and not (has_aptitude or has_personality)
+    alignment_message = None
+
+    for result in results:
+        details = json.loads(result.details) if result.details else {}
+        if result.test_type == 'aptitude':
+            aptitude_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                score = sum(aptitude_scores.get(cat, 0) * weight / 100 
+                           for cat, weight in weights['aptitude'].items())
+                career_scores[career] += score * 0.4
+        elif result.test_type == 'personality':
+            personality_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                score = sum(personality_scores.get(trait, 0) * weight / 100 
+                           for trait, weight in weights['personality'].items())
+                career_scores[career] += score * 0.3
+        elif result.test_type == 'skill_gap':
+            skill_scores = details
+            for career, weights in CAREER_MAPPING.items():
+                for skill, weight in weights['skills'].items():
+                    if skill in skill_scores:
+                        career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3
+
+    if only_skill_gap:
+        career_scores = defaultdict(float)
+        for career, weights in CAREER_MAPPING.items():
+            for skill in weights['skills']:
+                if skill in skill_scores:
+                    career_scores[career] = skill_scores[skill]
+        alignment_message = "Your matches are based solely on your skill gap test. For more accurate results, consider taking the aptitude and personality tests."
+
     career_matches = [
-        {'career': 'Software Development', 'match_score': round(career_scores.get('Software Development', 0), 2),
-         'description': 'Designs and builds software applications.',
-         'resources': [
-             {'name': 'Learn Python', 'link': 'https://www.python.org'},
-             {'name': 'Git Tutorial', 'link': 'https://git-scm.com/doc'}
-         ]},
-        {'career': 'Data Science', 'match_score': round(career_scores.get('Data Science', 0), 2),
-         'description': 'Analyzes data to derive actionable insights.',
-         'resources': [
-             {'name': 'Machine Learning by Andrew Ng', 'link': 'https://www.coursera.org/learn/machine-learning'},
-             {'name': 'SQL for Data Science', 'link': 'https://www.datacamp.com/courses/intro-to-sql-for-data-science'}
-         ]},
-        {'career': 'Graphic Design', 'match_score': round(career_scores.get('Graphic Design', 0), 2),
-         'description': 'Creates visual designs for branding and media.',
-         'resources': [
-             {'name': 'Photoshop Tutorials', 'link': 'https://www.adobe.com/products/photoshop.html'}
-         ]},
+        {
+            'career': career,
+            'match_score': round(career_scores.get(career, 0), 2),
+            'description': data['description'],
+            'resources': data['resources'],
+            'requirements': {
+                'aptitude': data['aptitude'],
+                'personality': data['personality'],
+                'skills': list(data['skills'].keys())
+            }
+        } for career, data in CAREER_MAPPING.items()
     ]
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('career_match.html', career_matches=career_matches, active_page='career_match', notifications=notifications)
-
+    return render_template(
+        'career_match.html',
+        career_matches=career_matches[:5],
+        alignment_message=alignment_message,
+        only_skill_gap_completed=only_skill_gap,
+        has_aptitude=has_aptitude,
+        has_personality=has_personality,
+        has_skill_gap=has_skill_gap,
+        active_page='career_match',
+        notifications=notifications
+    )
+    
 @app.route('/progress_tracking')
 @login_required
 def progress_tracking():
@@ -1123,7 +1180,7 @@ def results():
             'time_spent': latest_test.time_spent or 0
         }
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('results.html.jinja2', score_data=score_data, active_page='results', notifications=notifications)
+        return render_template('results.html', score_data=score_data, active_page='results', notifications=notifications)
     elif latest_test.test_type == 'personality':
         return redirect(url_for('personality_results'))
     elif latest_test.test_type == 'skill_gap':
