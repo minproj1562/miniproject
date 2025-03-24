@@ -146,6 +146,7 @@ with app.app_context():
     db.create_all()
 
 csrf = CSRFProtect(app)
+app.config['WTF_CSRF_HEADERS'] = ['X-CSRF-Token']
 mail = Mail(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -539,7 +540,7 @@ def test():
                     else:
                         flash('Please answer all questions before submitting.', 'danger')
                         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
-                        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
+                        return render_template('sample_test.html', questions=questions, instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
                 score = sum(3 - answers[q['id']] for q in questions)
                 max_score = len(questions) * 3
                 if current_user.is_authenticated:
@@ -586,79 +587,83 @@ def test():
             flash('Please log in to access the Aptitude Test.', 'warning')
             return redirect(url_for('login', next=request.url))
         questions = generate_questions('aptitude')
-        session['aptitude_questions'] = questions
+        session['aptitude_questions'] = questions  # Store questions in session for validation
         if request.method == 'POST':
-            if request.form:
-                time_spent = int(request.form.get('time_spent', 0))
-                correct = 0
-                total = len(questions)
-                category_scores = defaultdict(int)
-                category_counts = defaultdict(int)
-                for question in questions:
-                    answer = request.form.get(str(question['id']))
-                    category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
-                    category_counts[category] += 1
-                    if answer is not None and int(answer) == question['correct']:
+            if not request.form:
+                flash('No form data received. Please try again.', 'danger')
+                return redirect(url_for('test', type='aptitude'))
+            time_spent = int(request.form.get('time_spent', 0))
+            correct = 0
+            total = len(questions)
+            category_scores = defaultdict(int)
+            category_counts = defaultdict(int)
+            for question in questions:
+                answer = request.form.get(str(question['id']))
+                category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
+                category_counts[category] += 1
+                if answer is not None:  # Handle missing answers gracefully
+                    if int(answer) == question['correct']:
                         correct += 1
                         category_scores[category] += 1
-                # Calculate scores per category as percentages
-                detailed_scores = {cat: (category_scores[cat] / category_counts[cat]) * 100 for cat in category_scores}
-                score = (correct / total) * 100
-                result = TestResult(
+                else:
+                    print(f"Missing answer for question {question['id']}")
+            detailed_scores = {cat: (category_scores[cat] / category_counts[cat]) * 100 for cat in category_scores if category_counts[cat] > 0}
+            score = (correct / total) * 100 if total > 0 else 0
+            result = TestResult(
+                user_id=current_user.id,
+                test_type='aptitude',
+                score=score,
+                time_spent=time_spent,
+                details=json.dumps(detailed_scores)
+            )
+            db.session.add(result)
+            # Award "First Test" Badge if not already earned
+            if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                badge = Badge(
                     user_id=current_user.id,
-                    test_type='aptitude',
-                    score=score,
-                    time_spent=time_spent,
-                    details=json.dumps(detailed_scores)
+                    name="First Test Completed",
+                    description="Completed your first test!",
+                    icon="fas fa-trophy"
                 )
-                db.session.add(result)
-                # Award "First Test" Badge if not already earned
-                if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                db.session.add(badge)
+            # Award "High Scorer" Badge if score is high
+            if score >= 80:
+                if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
                     badge = Badge(
                         user_id=current_user.id,
-                        name="First Test Completed",
-                        description="Completed your first test!",
-                        icon="fas fa-trophy"
+                        name="High Scorer",
+                        description="Scored 80% or higher on a test!",
+                        icon="fas fa-star"
                     )
                     db.session.add(badge)
-                # Award "High Scorer" Badge if score is high
-                if score >= 80:
-                    if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
-                        badge = Badge(
-                            user_id=current_user.id,
-                            name="High Scorer",
-                            description="Scored 80% or higher on a test!",
-                            icon="fas fa-star"
-                        )
-                        db.session.add(badge)
-                # Add Notification
-                notification = Notification(
-                    user_id=current_user.id,
-                    message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
-                    type="test_result"
-                )
-                db.session.add(notification)
-                db.session.commit()
-                notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-                return render_template('results.html', score_data={
-                    'score': score,
-                    'correct': correct,
-                    'total': total,
-                    'time_spent': time_spent,
-                    'details': detailed_scores
-                }, active_page='test', test_type='aptitude', notifications=notifications)
+            # Add Notification
+            notification = Notification(
+                user_id=current_user.id,
+                message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
+                type="test_result"
+            )
+            db.session.add(notification)
+            db.session.commit()
+            notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+            return render_template('results.html', score_data={
+                'score': score,
+                'correct': correct,
+                'total': total,
+                'time_spent': time_spent,
+                'details': detailed_scores
+            }, active_page='test', test_type='aptitude', notifications=notifications)
         total_questions = len(questions)
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/aptitude.html', questions=questions, instructions=instructions,
                               current_category='Mathematics', total_questions=total_questions,
-                              initial_time=600, completed_questions=0,active_page='test', test_type='aptitude', notifications=notifications)
+                              initial_time=600, completed_questions=0, active_page='test', test_type='aptitude', notifications=notifications)
 
     elif test_type == 'personality':
         if not current_user.is_authenticated:
             flash('Please log in to access the Personality Test.', 'warning')
             return redirect(url_for('login', next=request.url))
         questions = generate_questions('personality')
-        session['personality_questions'] = questions
+        session['personality_questions'] = questions  # Store for /submit_assessment
         if request.method == 'POST':
             flash('Personality test submission should use the /submit_assessment endpoint.', 'warning')
             return redirect(url_for('test', type='personality'))
@@ -680,7 +685,6 @@ def test():
         if not current_user.is_authenticated:
             flash('Please log in to access the Skill Gap Test.', 'warning')
             return redirect(url_for('login', next=request.url))
-        # Use the field from the query parameter or session
         selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
         session['selected_field'] = selected_field  # Store the field in session
         questions = generate_questions('skill_gap')
@@ -688,55 +692,60 @@ def test():
             flash('No questions available for the selected field. Please select a different field.', 'warning')
             return redirect(url_for('interest_test'))
         if request.method == 'POST':
-            if request.form:
-                correct = 0
-                total = len(questions)
-                for question in questions:
-                    answer = request.form.get(str(question['id']))
-                    if answer is not None and int(answer) == question['correct']:
-                        correct += 1
-                skill_score = (correct / total) * 100
-                detailed_scores = {selected_field: skill_score}
-                result = TestResult(
+            if not request.form:
+                flash('No form data received. Please try again.', 'danger')
+                return redirect(url_for('test', type='skill_gap', field=selected_field))
+            correct = 0
+            total = len(questions)
+            for question in questions:
+                answer = request.form.get(str(question['id']))
+                if answer is not None and int(answer) == question['correct']:
+                    correct += 1
+            skill_score = (correct / total) * 100 if total > 0 else 0
+            detailed_scores = {selected_field: skill_score}
+            result = TestResult(
+                user_id=current_user.id,
+                test_type='skill_gap',
+                score=skill_score,
+                details=json.dumps(detailed_scores)
+            )
+            db.session.add(result)
+            # Award "First Test" Badge if not already earned
+            if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                badge = Badge(
                     user_id=current_user.id,
-                    test_type='skill_gap',
-                    score=skill_score,
-                    details=json.dumps(detailed_scores)
+                    name="First Test Completed",
+                    description="Completed your first test!",
+                    icon="fas fa-trophy"
                 )
-                db.session.add(result)
-                # Award "First Test" Badge if not already earned
-                if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                db.session.add(badge)
+            # Award "High Scorer" Badge if score is high
+            if skill_score >= 80:
+                if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
                     badge = Badge(
                         user_id=current_user.id,
-                        name="First Test Completed",
-                        description="Completed your first test!",
-                        icon="fas fa-trophy"
+                        name="High Scorer",
+                        description="Scored 80% or higher on a test!",
+                        icon="fas fa-star"
                     )
                     db.session.add(badge)
-                # Award "High Scorer" Badge if score is high
-                if skill_score >= 80:
-                    if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
-                        badge = Badge(
-                            user_id=current_user.id,
-                            name="High Scorer",
-                            description="Scored 80% or higher on a test!",
-                            icon="fas fa-star"
-                        )
-                        db.session.add(badge)
-                # Add Notification
-                notification = Notification(
-                    user_id=current_user.id,
-                    message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
-                    type="test_result"
-                )
-                db.session.add(notification)
-                db.session.commit()
-                return redirect(url_for('career_match'))
+            # Add Notification
+            notification = Notification(
+                user_id=current_user.id,
+                message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
+                type="test_result"
+            )
+            db.session.add(notification)
+            db.session.commit()
+            return redirect(url_for('career_match'))
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/interest_test.html',
                               selected_field=selected_field,
                               questions=questions,
                               instructions=instructions,
+                              total_questions=len(questions),
+                              initial_time=600,
+                              completed_questions=0,
                               active_page='test',
                               test_type='skill_gap',
                               notifications=notifications)
@@ -764,43 +773,76 @@ def interest_test():
                           active_page='interest_test',
                           notifications=notifications)
 
-@app.route('/submit_assessment', methods=['POST'])
+@ap@app.route('/submit_assessment', methods=['POST'])
 @login_required
 def submit_assessment():
+    # Ensure the request contains JSON data
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided in request'}), 400
+
     test_type = data.get('type')
     responses = data.get('responses', [])
     duration = data.get('duration', 0)
 
+    # Validate test type
     if test_type != 'personality':
-        return jsonify({'error': 'Invalid test type'}), 400
+        return jsonify({'error': 'Invalid test type. Only "personality" is supported.'}), 400
 
-    questions = session.get('personality_questions', generate_questions('personality'))
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
+    # Retrieve questions from session (set in /test route)
+    questions = session.get('personality_questions')
+    if not questions:
+        # Regenerate questions if session is lost (fallback)
+        questions = generate_questions('personality')
+        session['personality_questions'] = questions
+        print("Warning: Personality questions were regenerated due to missing session data.")
+
+    # Initialize scores for personality traits
+    scores = {
+        'Openness': 0,
+        'Conscientiousness': 0,
+        'Extraversion': 0,
+        ' Agreeableness': 0,
+        'Neuroticism': 0
+    }
     question_traits = {str(q['id']): (q['trait'], q['direction']) for q in questions}
 
+    # Process responses
+    responded_questions = set()
     for response in responses:
-        question_id = response['questionId']
-        value = int(response['answer'])
-        trait, direction = question_traits.get(question_id, (None, True))
-        if trait:
-            if not direction:
+        question_id = response.get('questionId')
+        value = response.get('answer')
+        if question_id not in question_traits or value is None:
+            print(f"Invalid or missing response for question ID: {question_id}")
+            continue
+        try:
+            value = int(value)
+            if value < 0 or value > 4:  # Likert scale is 0-4
+                print(f"Invalid answer value {value} for question {question_id}")
+                continue
+            trait, direction = question_traits[question_id]
+            responded_questions.add(question_id)
+            if not direction:  # Reverse scoring if direction is False
                 value = 4 - value
-            scores[trait] += value + 1
+            scores[trait] += value + 1  # Add 1 to shift 0-4 to 1-5
+        except ValueError:
+            print(f"Non-integer answer provided for question {question_id}: {value}")
+            continue
 
+    # Check if all questions were answered
+    if len(responded_questions) != len(questions):
+        unanswered = len(questions) - len(responded_questions)
+        print(f"Warning: {unanswered} questions were not answered.")
+
+    # Calculate percentage scores for each trait
     for trait in scores:
         count = sum(1 for q in questions if q['trait'] == trait)
         scores[trait] = (scores[trait] / (count * 5)) * 100 if count > 0 else 0
 
-    dominant_trait = max(scores, key=scores.get)
-    trait_names = {
-        'Openness': 'Openness',
-        'Conscientiousness': 'Conscientiousness',
-        'Extraversion': 'Extraversion',
-        ' Agreeableness': ' Agreeableness',
-        'Neuroticism': 'Neuroticism'
-    }
+    # Determine dominant trait
+    dominant_trait = max(scores, key=scores.get) if scores else 'Openness'  # Fallback if scores are empty
 
+    # Save result to database
     result = TestResult(
         user_id=current_user.id,
         test_type='personality',
@@ -809,6 +851,7 @@ def submit_assessment():
         details=json.dumps(scores)
     )
     db.session.add(result)
+
     # Award "First Test" Badge if not already earned
     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
         badge = Badge(
@@ -818,6 +861,7 @@ def submit_assessment():
             icon="fas fa-trophy"
         )
         db.session.add(badge)
+
     # Award "High Scorer" Badge if score is high
     if scores[dominant_trait] >= 80:
         if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
@@ -828,6 +872,7 @@ def submit_assessment():
                 icon="fas fa-star"
             )
             db.session.add(badge)
+
     # Add Notification
     notification = Notification(
         user_id=current_user.id,
@@ -837,10 +882,23 @@ def submit_assessment():
     db.session.add(notification)
     db.session.commit()
 
-    return jsonify({
-        'redirect': url_for('personality_results', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
-    })
+    # Prepare trait names for results page
+    trait_names = {
+        'Openness': 'Openness',
+        'Conscientiousness': 'Conscientiousness',
+        'Extraversion': 'Extraversion',
+        ' Agreeableness': ' Agreeableness',
+        'Neuroticism': 'Neuroticism'
+    }
 
+    # Return redirect URL as JSON
+    return jsonify({
+        'redirect': url_for('personality_results',
+                           scores=json.dumps(scores),
+                           dominant_trait=dominant_trait,
+                           trait_names=json.dumps(trait_names))
+    }), 200
+    
 @app.route('/submit_interests', methods=['POST'])
 @login_required
 def submit_interests():

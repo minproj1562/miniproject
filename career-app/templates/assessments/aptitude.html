@@ -21,8 +21,8 @@
                 Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
             </div>
 
-            <form id="aptitude-form" method="POST" action="">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <form id="aptitude-form" method="POST" action="{{ url_for('test', type='aptitude') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="time_spent" id="time-spent" value="0">
 
                 <div class="questions-wrapper">

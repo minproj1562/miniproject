@@ -37,7 +37,7 @@
     </div>
 
     <form id="skill-gap-form" method="POST" action="{{ url_for('submit_interests') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="time_spent" id="time-spent" value="0">
         <input type="hidden" name="field" value="{{ selected_field }}">
 
@@ -112,7 +112,16 @@
                         answeredCount++;
                         answeredCountElement.textContent = answeredCount;
                         progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-                    }
+                    },
+                    form.addEventListener('submit', (e) => {
+                        const unanswered = document.querySelectorAll('.form-check-input:not(:checked)').length === totalQuestions;
+                        if (unanswered) {
+                            e.preventDefault();
+                            alert('Please answer all questions before submitting.');
+                            return;
+                        }
+                        timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
+                    });
                 });
             });
 

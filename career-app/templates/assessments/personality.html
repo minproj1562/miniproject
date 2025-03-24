@@ -197,26 +197,23 @@
 
     // Submit assessment
     function submitAssessment() {
-        // Validate that all questions are answered
-        let allAnswered = true;
-        questions.forEach((question, index) => {
-            const questionId = question.querySelector('.option-card').dataset.questionId;
-            if (!responses[questionId]) {
-                allAnswered = false;
-            }
-        });
-        if (!allAnswered) {
-            alert('Please answer all questions before submitting.');
-            return;
-        }
+    let allAnswered = true;
+    questions.forEach((question) => {
+        const questionId = question.querySelector('.option-card').dataset.questionId;
+        if (!responses[questionId]) allAnswered = false;
+    });
+    if (!allAnswered) {
+        alert('Please answer all questions before submitting.');
+        return;
+    }
 
-        const csrfToken = "{{ csrf_token }}";
-        fetch("{{ url_for('submit_assessment') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken
-            },
+    const csrfToken = "{{ csrf_token() }}";
+    fetch("{{ url_for('submit_assessment') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken  // Changed from X-CSRF-Token
+        },
             body: JSON.stringify({
                 type: 'personality',
                 responses: Object.keys(responses).map(id => ({
