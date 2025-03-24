@@ -4,7 +4,7 @@
     <style>
         .login-container {
             max-width: 450px;
-            margin: 50px auto;
+            margin: 0 auto;
             padding: 30px;
             background: linear-gradient(to bottom, #89f7feee, #66a6ffee);
             border-radius: 15px;
@@ -28,7 +28,7 @@
             font-weight: 600;
             font-size: 16px;
         }
-        input[type="text"], input[type="password"], input[type="email"] {
+        input[type="text"], input[type="password"] {
             width: 100%;
             padding: 12px;
             border: none;
@@ -59,7 +59,6 @@
             font-weight: normal;
             color: #4a6278;
             font-size: 16px;
-            line-height: 20px;
         }
         .btn-submit {
             display: block;
@@ -94,24 +93,35 @@
             color: #1e3c72;
             text-decoration: underline;
         }
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
     </style>
-    <div class="login-container">
+    <div class="login-container mt-5">
         <h1>Login</h1>
         <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ form.hidden_tag() }}
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                {{ form.username.label }}
+                {{ form.username() }}
+                {% for error in form.username.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                {{ form.password.label }}
+                {{ form.password() }}
+                {% for error in form.password.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="checkbox">
-                <input type="checkbox" id="remember_me" name="remember_me">
-                <label for="remember_me">Remember me</label>
+                {{ form.remember_me() }}
+                {{ form.remember_me.label }}
             </div>
-            <button type="submit" class="btn-submit">Login</button>
+            {{ form.submit(class="btn-submit") }}
         </form>
         <div class="links">
             <a href="{{ url_for('forgot_password') }}" class="link">Forgot Password?</a>

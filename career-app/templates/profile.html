@@ -1,117 +1,155 @@
 {% extends "base.html" %}
-{% block title %}Profile{% endblock %}
+
+{% block title %}Profile - Career Analytics{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+        color: #2c3e50;
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    .profile-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    h1, h2 {
+        text-align: center;
+        color: #e91e63;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    h1 {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+    h2 {
+        font-size: 24px;
+        margin-top: 30px;
+        margin-bottom: 15px;
+    }
+    .profile-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .profile-image {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #ff6f61;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        margin-bottom: 15px;
+    }
+    .profile-info p {
+        font-size: 16px;
+        margin: 10px 0;
+        color: #2c3e50;
+    }
+    .profile-info p strong {
+        color: #e91e63;
+    }
+    .btn-edit {
+        display: inline-block;
+        padding: 10px 20px;
+        background: linear-gradient(90deg, #ff6f61, #ff3d2e);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(255, 111, 97, 0.4);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .btn-edit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(255, 111, 97, 0.6);
+    }
+    .test-history, .badges {
+        margin-top: 30px;
+    }
+    .test-history ul, .badges ul {
+        list-style: none;
+        padding: 0;
+    }
+    .test-history li, .badges li {
+        background: rgba(255, 255, 255, 0.5);
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .test-history li p, .badges li p {
+        margin: 5px 0;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <style>
-        .profile-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 30px;
-            background: linear-gradient(to bottom, #a1c4fdee, #89f7feee);
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(5px);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #1e3c72;
-            font-size: 32px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .profile-info {
-            margin-bottom: 40px;
-            padding: 20px;
-            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .profile-info p {
-            margin: 10px 0;
-            color: #2a5298;
-            font-size: 16px;
-        }
-        .btn-edit {
-            display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(to right, #2e89ff, #1e3c72);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
-            transition: transform 0.2s, box-shadow 0.3s;
-        }
-        .btn-edit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
-        }
-        .test-history {
-            margin-top: 40px;
-        }
-        h3 {
-            color: #2a5298;
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            background: linear-gradient(to bottom, #ffffffee, #f8f9faee);
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        .table th, .table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .table th {
-            background: linear-gradient(to right, #2a5298, #1e3c72);
-            color: #fff;
-            font-weight: 600;
-        }
-        .table tr:nth-child(even) {
-            background: #f8f9faee;
-        }
-        .table tr:hover {
-            background: #e9ecefee;
-        }
-    </style>
-    <div class="profile-container">
-        <h1>Your Profile</h1>
-        <div class="profile-info">
-            <p><strong>Username:</strong> {{ user.username }}</p>
-            <p><strong>Email:</strong> {{ user.email or 'Not set' }}</p>
-            <p><strong>Mobile Number:</strong> {{ user.mobile_number or 'Not set' }}</p>
-            <p><strong>Pin Code:</strong> {{ user.pin_code or 'Not set' }}</p>
-            <p><strong>Date of Birth:</strong> {{ user.dob.strftime('%Y-%m-%d') if user.dob else 'Not set' }}</p>
-            <p><strong>Account Created:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-            <a href="{{ url_for('profile_edit') }}" class="btn-edit">Edit Profile</a>
-        </div>
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>{{ user.username }}'s Profile</h1>
+        <img src="{{ url_for('static', filename=user.profile_image if user.profile_image else 'images/default_profile.jpg') }}" alt="Profile Picture" class="profile-image">
+        <a href="{{ url_for('profile_edit') }}" class="btn-edit">Edit Profile</a>
+    </div>
+
+    <div class="profile-info">
+        <p><strong>Email:</strong> {{ user.email or 'Not provided' }}</p>
+        <p><strong>Mobile Number:</strong> {{ user.mobile_number or 'Not provided' }}</p>
+        <p><strong>Pin Code:</strong> {{ user.pin_code or 'Not provided' }}</p>
+        <p><strong>Date of Birth:</strong> {{ user.dob.strftime('%Y-%m-%d') if user.dob else 'Not provided' }}</p>
+        <p><strong>Bio:</strong> {{ user.bio or 'No bio available' }}</p>
+        <p><strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+    </div>
+
+    <div class="test-history">
+        <h2>Test History</h2>
         {% if test_history %}
-            <div class="test-history">
-                <h3>Test History</h3>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Test Type</th>
-                            <th>Score</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for test in test_history %}
-                            <tr>
-                                <td>{{ test.test_type }}</td>
-                                <td>{{ test.score }} / {{ 9 if test.test_type == 'sample' else 8 }}</td>
-                                <td>{{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <ul>
+                {% for test in test_history %}
+                    <li>
+                        <p><strong>Test Type:</strong> {{ test.test_type | capitalize }}</p>
+                        <p><strong>Score:</strong> {{ test.score }}%</p>
+                        <p><strong>Completed:</strong> {{ test.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No tests taken yet.</p>
         {% endif %}
     </div>
+
+    <div class="badges">
+        <h2>Badges</h2>
+        {% if badges %}
+            <ul>
+                {% for badge in badges %}
+                    <li>
+                        <p><strong>{{ badge.name }}</strong></p>
+                        <p>{{ badge.description }}</p>
+                        <p><strong>Earned:</strong> {{ badge.date_earned.strftime('%Y-%m-%d') }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No badges earned yet.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

@@ -2,86 +2,337 @@
 {% block title %}Contact{% endblock %}
 {% block content %}
     <style>
-        .contact-container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 30px;
-            background: linear-gradient(to bottom, #4a90e2, #7bb9e1);
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(5px);
+        /* Page Background - Ocean Theme */
+        body {
+            background: linear-gradient(135deg, #4dd0e1, #26c6da, #0288d1) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.3), transparent 70%);
+            z-index: 0;
+        }
+
+        /* Navbar Styling for This Page */
+        .navbar.custom-navbar {
+            background: linear-gradient(90deg, #0288d1, #4dd0e1) !important;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #00f7ff !important;
+        }
+
+        /* Contact Container */
+        .contact-container {
+            max-width: 700px;
+            margin: 80px auto;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(77, 208, 225, 0.7));
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Heading */
         h1 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             color: #1a6642;
-            font-size: 32px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: wave 2s infinite;
         }
+        h1::after {
+            content: '🌊';
+            position: absolute;
+            top: -10px;
+            right: 20%;
+            font-size: 2rem;
+            color: #0288d1;
+            animation: sparkle 2s infinite;
+        }
+
+        /* Form Group */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.8s ease-out forwards;
         }
+        .form-group:nth-child(1) { animation-delay: 0.2s; }
+        .form-group:nth-child(2) { animation-delay: 0.4s; }
+        .form-group:nth-child(3) { animation-delay: 0.6s; }
+
+        /* Label */
         label {
             display: block;
             margin-bottom: 8px;
             color: #2a5298;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 1.1rem;
         }
+
+        /* Input and Textarea */
         input, textarea {
             width: 100%;
-            padding: 12px;
+            padding: 12px 12px 12px 40px;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(to right,#ffffff70, #e9eff5);
+            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-            font-size: 16px;
-            transition: box-shadow 0.3s;
+            font-size: 1rem;
+            transition: box-shadow 0.3s, transform 0.3s;
+            position: relative;
         }
         input:focus, textarea:focus {
-            box-shadow: 0 0 10px rgba(46, 137, 255, 0.5);
+            box-shadow: 0 0 15px rgba(2, 136, 209, 0.7);
+            transform: scale(1.02);
             outline: none;
         }
         textarea {
             height: 150px;
             resize: vertical;
         }
-        .btn-submit {
+        input::placeholder, textarea::placeholder {
+            color: #90a4ae;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        input:focus::placeholder, textarea:focus::placeholder {
+            transform: translateX(10px);
+            opacity: 0;
+        }
+
+        /* Input Icons */
+        .form-group::before {
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 15px;
+            top: 42px;
+            color: #4dd0e1;
+            font-size: 1.1rem;
+            z-index: 1;
+        }
+        .form-group:nth-child(1)::before {
+            content: '\f007'; /* User icon for name */
+        }
+        .form-group:nth-child(2)::before {
+            content: '\f0e0'; /* Envelope icon for email */
+        }
+        .form-group:nth-child(3)::before {
+            content: '\f075'; /* Comment icon for message */
+            top: 48px;
+        }
+
+        /* Validation Feedback */
+        .form-group.valid::after,
+        .form-group.invalid::after {
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 15px;
+            top: 42px;
+            font-size: 1.1rem;
+            z-index: 1;
+        }
+        .form-group.valid::after {
+            content: '\f00c'; /* Checkmark */
+            color: #1a6642;
+        }
+        .form-group.invalid::after {
+            content: '\f00d'; /* Cross */
+            color: #d32f2f;
+        }
+        .form-group textarea + .valid::after,
+        .form-group textarea + .invalid::after {
+            top: 48px;
+        }
+
+        /* Validation Errors */
+        .error {
+            color: #d32f2f;
+            font-size: 0.9rem;
+            margin-top: 5px;
             display: block;
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             padding: 14px;
-            background: linear-gradient(to right, #2e89ff, #1e3c72);
+            background: linear-gradient(to right, #0288d1, #4dd0e1);
             color: #fff;
             border: none;
             border-radius: 25px;
-            font-size: 18px;
+            font-size: 1.2rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(2, 136, 209, 0.4);
             transition: transform 0.2s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            animation: neonPulse 2s infinite;
         }
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
+            box-shadow: 0 6px 20px rgba(2, 136, 209, 0.6);
+        }
+        .btn-submit:disabled {
+            background: #90a4ae;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-submit .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #fff;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        .btn-submit.loading .spinner {
+            display: inline-block;
+        }
+        .btn-submit.loading span {
+            display: none;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.3); }
+        }
+        @keyframes neonPulse {
+            0% { box-shadow: 0 4px 15px rgba(2, 136, 209, 0.4); }
+            50% { box-shadow: 0 6px 20px rgba(2, 136, 209, 0.6); }
+            100% { box-shadow: 0 4px 15px rgba(2, 136, 209, 0.4); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
+
     <div class="contact-container">
         <h1>Contact Us</h1>
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <form method="POST" id="contactForm" aria-label="Contact Us Form">
+            {{ form.hidden_tag() }}
             <div class="form-group">
                 <label for="name">Name</label>
-                <input type="text" id="name" name="name" required>
+                {{ form.name(id="name", required=True, aria_required="true") }}
+                {% if form.name.errors %}
+                    <div class="error">
+                        {% for error in form.name.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                {{ form.email(id="email", required=True, aria_required="true") }}
+                {% if form.email.errors %}
+                    <div class="error">
+                        {% for error in form.email.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
             <div class="form-group">
                 <label for="message">Message</label>
-                <textarea id="message" name="message" required></textarea>
+                {{ form.message(id="message", required=True, aria_required="true") }}
+                {% if form.message.errors %}
+                    <div class="error">
+                        {% for error in form.message.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
-            <button type="submit" class="btn-submit">Send Message</button>
+            {{ form.submit(class="btn-submit", id="submitBtn") }}
+            <div class="spinner"></div>
+            <span>Send Message</span>
         </form>
     </div>
+
+    <script>
+        // Real-time Email Validation
+        const emailInput = document.getElementById('email');
+        const emailFormGroup = emailInput.parentElement;
+
+        emailInput.addEventListener('input', () => {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (emailInput.value && emailPattern.test(emailInput.value)) {
+                emailFormGroup.classList.remove('invalid');
+                emailFormGroup.classList.add('valid');
+            } else if (emailInput.value) {
+                emailFormGroup.classList.remove('valid');
+                emailFormGroup.classList.add('invalid');
+            } else {
+                emailFormGroup.classList.remove('valid', 'invalid');
+            }
+        });
+
+        // Form Submission with Loading Spinner
+        const form = document.getElementById('contactForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.classList.add('loading');
+
+            const formData = new FormData(form);
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-Token': form.querySelector('[name="csrf_token"]').value
+                    }
+                });
+                if (response.ok) {
+                    window.location.href = '{{ url_for("contact") }}';
+                } else {
+                    throw new Error('Form submission failed');
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                // Flash message will be handled by Flask
+            }
+        });
+    </script>
 {% endblock %}

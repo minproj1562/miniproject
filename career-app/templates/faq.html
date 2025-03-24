@@ -2,41 +2,173 @@
 {% block title %}FAQ{% endblock %}
 {% block content %}
     <style>
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 30px;
-            background: linear-gradient(to bottom, #4a90e2, #7bb9e1);
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(5px);
+        /* Page Background - Sky Theme */
+        body {
+            background: linear-gradient(135deg, #e0f7fa, #80deea, #4fc3f7) !important;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.3), transparent 70%);
+            z-index: 0;
+        }
+
+        /* Navbar Styling for This Page */
+        .navbar {
+            background: linear-gradient(90deg, #4fc3f7, #0288d1);
+        }
+        .navbar a:hover {
+            color: #fff;
+        }
+
+        /* FAQ Container */
+        .faq-container {
+            max-width: 900px;
+            margin: 60px auto;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(128, 222, 234, 0.7));
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Heading */
         h1 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             color: #1e3c72;
-            font-size: 32px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: glowText 2s infinite alternate;
         }
+        h1::after {
+            content: '❓';
+            position: absolute;
+            top: -10px;
+            right: 20%;
+            font-size: 2rem;
+            color: #0288d1;
+            animation: sparkle 2s infinite;
+        }
+
+        /* FAQ Item */
         .faq-item {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: linear-gradient(to right, #ffffff70, #e9eff5);
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(to right, rgba(248, 249, 250, 0.9), rgba(233, 236, 239, 0.8));
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
         }
+        .faq-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .faq-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* FAQ Question */
         .faq-question {
-            font-weight: 600;
+            font-weight: 700;
             color: #2a5298;
-            font-size: 18px;
+            font-size: 1.4rem;
             margin-bottom: 10px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s ease;
         }
+        .faq-question:hover {
+            color: #0288d1;
+        }
+        .faq-question::before {
+            content: '❔';
+            margin-right: 10px;
+            color: #4fc3f7;
+            font-size: 1.2rem;
+        }
+        .faq-question::after {
+            content: '\f078'; /* Font Awesome chevron-down */
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 10px;
+            color: #2a5298;
+            transition: transform 0.3s ease;
+        }
+        .faq-question.active::after {
+            transform: rotate(180deg);
+        }
+
+        /* FAQ Answer */
         .faq-answer {
             color: #4a6278;
-            line-height: 1.6;
-            font-size: 16px;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 20px;
+        }
+        .faq-answer.active {
+            max-height: 200px; /* Adjust based on content length */
+            padding: 10px 20px;
+        }
+
+        /* Ensure Footer Styling Matches base.html */
+        footer {
+            background: linear-gradient(90deg, #2e3c56, #34495e) !important;
+            padding: 2rem 0 !important;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.4) !important;
+        }
+        footer p {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #fff !important;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+            background: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes glowText {
+            0% { text-shadow: 0 3px 10px rgba(2, 136, 209, 0.5); }
+            100% { text-shadow: 0 3px 15px rgba(2, 136, 209, 0.8); }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.3); }
+        }
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
     </style>
+
     <div class="faq-container">
         <h1>Frequently Asked Questions</h1>
         <div class="faq-item">
@@ -52,4 +184,59 @@
             <div class="faq-answer">Yes, core features are free, with premium options coming soon.</div>
         </div>
     </div>
+
+    <script>
+        // Accordion Functionality
+        document.querySelectorAll('.faq-question').forEach(item => {
+            item.addEventListener('click', () => {
+                const answer = item.nextElementSibling;
+                const isActive = answer.classList.contains('active');
+
+                // Close all other answers
+                document.querySelectorAll('.faq-answer').forEach(ans => {
+                    ans.classList.remove('active');
+                    ans.style.maxHeight = '0';
+                    ans.style.padding = '0 20px';
+                });
+                document.querySelectorAll('.faq-question').forEach(q => {
+                    q.classList.remove('active');
+                });
+
+                // Toggle the clicked answer
+                if (!isActive) {
+                    answer.classList.add('active');
+                    item.classList.add('active');
+                    answer.style.maxHeight = answer.scrollHeight + 'px';
+                }
+            });
+        });
+
+        // Scroll-Triggered Animation for FAQ Items
+        window.addEventListener('scroll', () => {
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach((item, index) => {
+                const itemPosition = item.getBoundingClientRect().top;
+                const screenPosition = window.innerHeight / 1.2;
+                if (itemPosition < screenPosition) {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 200); // Staggered animation
+                }
+            });
+        });
+
+        // Trigger animation on page load for items already in view
+        document.addEventListener('DOMContentLoaded', () => {
+            const faqItems = document.querySelectorAll('.faq-item');
+            faqItems.forEach((item, index) => {
+                const itemPosition = item.getBoundingClientRect().top;
+                const screenPosition = window.innerHeight / 1.2;
+                if (itemPosition < screenPosition) {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 200);
+                }
+            });
+        });
+    </script>
 {% endblock %}

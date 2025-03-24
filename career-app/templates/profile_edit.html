@@ -1,48 +1,312 @@
 {% extends "base.html" %}
-{% block title %}Edit Profile{% endblock %}
+
+{% block title %}Edit Profile - Career Analytics{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+        color: #2c3e50;
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    .edit-profile-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #e91e63;
+        font-size: 32px;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    input, textarea, .form-control {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(to right, #f8f9faee, #e9ecefee);
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+        font-size: 16px;
+        transition: box-shadow 0.3s;
+    }
+    input:focus, textarea:focus, .form-control:focus {
+        box-shadow: 0 0 10px rgba(255, 111, 97, 0.5);
+        outline: none;
+    }
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 5px;
+        display: block;
+    }
+    .btn-submit {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(90deg, #ff6f61, #ff3d2e);
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(255, 111, 97, 0.4);
+        transition: transform 0.2s, box-shadow 0.3s;
+        position: relative;
+    }
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 111, 97, 0.6);
+    }
+    .btn-submit.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #fff;
+        border-top: 3px solid transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        transform: translate(-50%, -50%);
+    }
+    @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .alert {
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #e9ecef, #d1d9e6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 2.5rem;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        margin: 0 auto 10px;
+    }
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .btn-remove-pic {
+        display: block;
+        margin: 0 auto 20px;
+        padding: 8px 20px;
+        background: linear-gradient(90deg, #dc3545, #c82333);
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(220, 53, 69, 0.4);
+        transition: transform 0.2s, box-shadow 0.3s;
+    }
+    .btn-remove-pic:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.6);
+    }
+    .btn-remove-pic.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #fff;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        transform: translate(-50%, -50%);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center mb-4">Edit Profile</h1>
-    <div class="card p-4 mx-auto" style="max-width: 500px;">
-        <form method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user.email else '' }}">
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">New Password (leave blank to keep current)</label>
-                <input type="password" class="form-control" id="password" name="password">
-            </div>
-            <div class="mb-3">
-                <label for="mobile_number" class="form-label">Mobile Number</label>
-                <input type="text" class="form-control" id="mobile_number" name="mobile_number" value="{{ user.mobile_number if user.mobile_number else '' }}">
-            </div>
-            <div class="mb-3">
-                <label for="pin_code" class="form-label">Pin Code</label>
-                <input type="text" class="form-control" id="pin_code" name="pin_code" value="{{ user.pin_code if user.pin_code else '' }}">
-            </div>
-            <div class="mb-3">
-                <label for="dob" class="form-label">Date of Birth</label>
-                <input type="date" class="form-control" id="dob" name="dob" value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}">
-            </div>
-            <div class="mb-3">
-                <label for="profile_image" class="form-label">Profile Image</label>
-                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
-                {% if user.profile_image %}
-                    <img src="{{ url_for('static', filename=user.profile_image) }}" alt="Profile Image" class="img-thumbnail mt-2" style="max-width: 150px;">
-                {% endif %}
-            </div>
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary">Update Profile</button>
-                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+<div class="edit-profile-container">
+    <h1>Edit Profile</h1>
+
+    <!-- Display Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Profile Picture Preview -->
+    <div class="text-center">
+        <div class="profile-avatar">
+            {% if user.profile_image and user.profile_image != 'images/default_profile.jpg' %}
+                <img src="{{ url_for('static', filename=user.profile_image) }}" alt="{{ user.username }}'s Profile Image">
+            {% else %}
+                <i class="fas fa-user"></i>
+            {% endif %}
+        </div>
+        {% if user.profile_image and user.profile_image != 'images/default_profile.jpg' %}
+            <form method="POST" action="{{ url_for('delete_profile_picture') }}" id="deletePicForm">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="btn-remove-pic">Remove Profile Picture</button>
+            </form>
+        {% endif %}
     </div>
+
+    <form method="POST" enctype="multipart/form-data" id="profileForm">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label for="profile_image">Profile Picture (Max 5MB)</label>
+            {{ form.profile_image(class="form-control", id="profile_image") }}
+            {% if form.profile_image.errors %}
+                {% for error in form.profile_image.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="bio">Bio</label>
+            {{ form.bio(class="form-control", id="bio") }}
+            {% if form.bio.errors %}
+                {% for error in form.bio.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            {{ form.email(class="form-control", id="email") }}
+            {% if form.email.errors %}
+                {% for error in form.email.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="password">New Password (leave blank to keep current)</label>
+            {{ form.password(class="form-control", id="password") }}
+            {% if form.password.errors %}
+                {% for error in form.password.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="password_confirm">Confirm New Password</label>
+            {{ form.password_confirm(class="form-control", id="password_confirm") }}
+            {% if form.password_confirm.errors %}
+                {% for error in form.password_confirm.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="mobile_number">Mobile Number</label>
+            {{ form.mobile_number(class="form-control", id="mobile_number") }}
+            {% if form.mobile_number.errors %}
+                {% for error in form.mobile_number.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="pin_code">Pin Code</label>
+            {{ form.pin_code(class="form-control", id="pin_code") }}
+            {% if form.pin_code.errors %}
+                {% for error in form.pin_code.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="dob">Date of Birth</label>
+            {{ form.dob(class="form-control", id="dob", type="date") }}
+            {% if form.dob.errors %}
+                {% for error in form.dob.errors %}
+                    <small class="text-danger">{{ error }}</small>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {{ form.submit(class="btn-submit", id="submitBtn") }}
+    </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Add loading animation on form submission
+    document.getElementById('profileForm').addEventListener('submit', function() {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+    });
+
+    // Add loading animation for delete profile picture
+    document.getElementById('deletePicForm')?.addEventListener('submit', function() {
+        const deleteBtn = this.querySelector('.btn-remove-pic');
+        deleteBtn.classList.add('loading');
+        deleteBtn.disabled = true;
+    });
+
+    // Preview the selected profile picture
+    document.getElementById('profile_image').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatar = document.querySelector('.profile-avatar');
+                avatar.innerHTML = ''; // Clear existing content
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                avatar.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
 {% endblock %}

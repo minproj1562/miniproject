@@ -9,30 +9,113 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, TextAreaField
+from wtforms.validators import DataRequired, Length, EqualTo, Email
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
 from datetime import datetime
-from flask_caching import Cache
 import requests
 import random
 import copy
 from collections import defaultdict
 import json
-from questions import APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES
-from apis import ONetAPI
+from PIL import Image  # Added for image resizing
 
-try:
-    onet_api = ONetAPI()
-except ValueError as e:
-    print(f"Failed to initialize O*NET API: {e}")
-    onet_api = None
-    
-# Load O*NET credentials
-ONET_USERNAME = os.getenv("ONET_USERNAME")
-ONET_PASSWORD = os.getenv("ONET_PASSWORD")
+# Import ProfileForm from forms.py
+from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
 
-print(f"Loaded ONET_USERNAME: {ONET_USERNAME}")
-print(f"Loaded ONET_PASSWORD: {ONET_PASSWORD}")
+# Placeholder for questions.py imports (since the file wasn't provided)
+APTITUDE_QUESTIONS = {
+    "Mathematics": {
+        "easy": [
+            {"id": "M1-E", "type": "numerical", "text": "Solve: 15 + 8 × 3 ÷ 4", "options": ["21", "18.5", "19.5", "20.25"], "correct": 2, "time_limit": 60},
+        ],
+        "moderate": [
+            {"id": "M2-M", "type": "algebra", "text": "If x + y = 15 and 2x - y = 6, what is the value of x?", "options": ["7", "8", "9", "10"], "correct": 0, "time_limit": 90},
+        ],
+        "hard": [
+            {"id": "M3-H", "type": "calculus", "text": "What is the derivative of f(x) = 3x² + 2eˣ - ln(x)?", "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"], "correct": 0, "time_limit": 120},
+        ]
+    },
+    "Logical Reasoning": {
+        "easy": [
+            {"id": "LR1-E", "type": "pattern", "text": "Complete the sequence: A, C, E, G, ___", "options": ["H", "I", "J", "K"], "correct": 1, "time_limit": 45},
+        ],
+        "moderate": [
+            {"id": "LR2-M", "type": "deductive", "text": "All managers are leaders. Some leaders are visionary. Therefore:", "options": ["All managers are visionary", "Some managers may be visionary", "No managers are visionary", "Visionary people cannot be managers"], "correct": 1, "time_limit": 75},
+        ],
+        "hard": [
+            {"id": "LR3-H", "type": "analytical", "text": "If 3★5 = 16, 4★7 = 30, then 5★9 = ___", "options": ["44", "46", "48", "50"], "correct": 1, "time_limit": 150},
+        ]
+    },
+    "Verbal Ability": {
+        "easy": [
+            {"id": "VA1-E", "type": "vocabulary", "text": "Select the antonym of EPHEMERAL:", "options": ["Transient", "Enduring", "Fleeting", "Momentary"], "correct": 1, "time_limit": 45},
+        ],
+        "moderate": [
+            {"id": "VA2-M", "type": "comprehension", "text": "'The company’s pecuniary situation was precarious.' What does 'pecuniary' mean?", "options": ["Legal", "Financial", "Ethical", "Structural"], "correct": 1, "time_limit": 60},
+        ],
+        "hard": [
+            {"id": "VA3-H", "type": "critical_reasoning", "text": "Which weakens: 'Remote work increases productivity because employees save commute time'?", "options": ["Commute time averages 45 minutes daily", "Home distractions reduce focused work hours", "Companies report higher profits with remote teams", "Video conferencing tools improve collaboration"], "correct": 1, "time_limit": 120},
+        ]
+    }
+}
+
+PERSONALITY_QUESTIONS = [
+    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 31, "trait": " Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
+]
+
+SKILL_GAP_QUESTIONS = {
+    "Software Development": [
+        {"id": "SD1", "text": "What does API stand for?", "options": ["Application Programming Interface", "Automated Process Integration", "Application Process Interface", "Automated Programming Interface"], "correct": 0},
+    ],
+    "Data Science": [
+        {"id": "DS1", "text": "What is a common Python library for data analysis?", "options": ["Pandas", "Django", "Flask", "Tkinter"], "correct": 0},
+    ],
+    "Graphic Design": [
+        {"id": "GD1", "text": "What is the primary color model for digital screens?", "options": ["CMYK", "RGB", "Pantone", "HSL"], "correct": 1},
+    ],
+    "Business Management": [
+        {"id": "BM1", "text": "What does SWOT stand for?", "options": ["Strengths, Weaknesses, Opportunities, Threats", "Systems, Workflows, Operations, Targets", "Strengths, Workflows, Opportunities, Trends", "Systems, Weaknesses, Operations, Threats"], "correct": 0},
+    ],
+    "Scientific": [
+        {"id": "SC1", "text": "What is the primary source of energy for Earth's climate system?", "options": ["Geothermal heat", "Solar radiation", "Ocean currents", "Wind energy"], "correct": 1},
+    ]
+}
+
+LEARNING_RESOURCES = {
+    "Software Development": [
+        {"name": "Learn Python", "link": "https://www.codecademy.com/learn/learn-python-3"},
+        {"name": "Git Tutorial", "link": "https://www.atlassian.com/git/tutorials"}
+    ],
+    "Data Science": [
+        {"name": "Machine Learning by Andrew Ng", "link": "https://www.coursera.org/learn/machine-learning"},
+        {"name": "SQL for Data Science", "link": "https://www.coursera.org/learn/sql-for-data-science"}
+    ],
+    "Graphic Design": [
+        {"name": "Photoshop Tutorials", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
+        {"name": "UI/UX Design", "link": "https://www.coursera.org/specializations/ui-ux-design"}
+    ],
+    "Business Management": [
+        {"name": "Leadership Skills", "link": "https://www.udemy.com/topic/leadership/"},
+        {"name": "Strategic Management", "link": "https://www.coursera.org/learn/strategic-management"}
+    ],
+    "Scientific": [
+        {"name": "Research Methods", "link": "https://www.coursera.org/learn/research-methods"},
+        {"name": "Statistics with Python", "link": "https://www.coursera.org/learn/statistics-with-python"}
+    ]
+}
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
+print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -47,17 +130,11 @@ app.config['MAIL_PASSWORD'] = 'your-app-password-here'
 app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
-
-app.config['CACHE_TYPE'] = 'SimpleCache'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 3600  # Cache for 1 hour
-cache = Cache(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit uploads to 16MB
 
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-
-INDIA_API = 'https://colleges-api-india.fly.dev/colleges'
-GLOBAL_API = 'http://universities.hipolabs.com/search?country='
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -78,7 +155,7 @@ def datetimeformat(value, format='%Y'):
     return value
 app.jinja_env.filters['datetimeformat'] = datetimeformat
 
-# User model
+# Models
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -92,8 +169,10 @@ class User(UserMixin, db.Model):
     theme = db.Column(db.String(20), default='dark')
     animations_enabled = db.Column(db.Boolean, default=True)
     profile_image = db.Column(db.String(150), nullable=True, default='images/default_profile.jpg')
+    bio = db.Column(db.Text, nullable=True)  # Added bio field to User model
+    badges = db.relationship('Badge', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
 
-# TestResult model
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -103,6 +182,22 @@ class TestResult(db.Model):
     details = db.Column(db.Text, nullable=True)  # Store JSON string of detailed results
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Badge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
+    date_earned = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(200), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # e.g., 'test_result', 'badge_earned'
+    is_read = db.Column(db.Boolean, default=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -110,126 +205,25 @@ def load_user(user_id):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-# Lazy import of ONetAPI to avoid circular imports
+# Placeholder for ONetAPI (since apis.py wasn't provided)
+class ONetAPI:
+    def get_career_details(self, soc_code):
+        # Mock implementation
+        return {
+            'title': 'Software Developer' if soc_code == '15-1132.00' else 'Business Manager',
+            'wages': {'median': 105000},
+            'outlook': {'growth_rate': 22}
+        }
+
 def get_onet_api():
-    from apis import ONetAPI
     return ONetAPI()
 
-# Aptitude Questions Definition
-APTITUDE_QUESTIONS = {
-    "Mathematics": {
-        "easy": [
-            {"id": "M1-E", "type": "numerical", "text": "Solve: 15 + 8 × 3 ÷ 4", "options": ["21", "18.5", "19.5", "20.25"], "correct": 2, "time_limit": 60},
-            {"id": "M4-E", "type": "geometry", "text": "What is the area of a rectangle with length 5 cm and width 3 cm?", "options": ["15 cm²", "16 cm²", "18 cm²", "20 cm²"], "correct": 0, "time_limit": 45}
-        ],
-        "moderate": [
-            {"id": "M2-M", "type": "algebra", "text": "If x + y = 15 and 2x - y = 6, what is the value of x?", "options": ["7", "8", "9", "10"], "correct": 0, "time_limit": 90},
-            {"id": "M5-M", "type": "statistics", "text": "Find the median of: 3, 7, 2, 8, 5", "options": ["5", "6", "7", "8"], "correct": 0, "time_limit": 75}
-        ],
-        "hard": [
-            {"id": "M3-H", "type": "calculus", "text": "What is the derivative of f(x) = 3x² + 2eˣ - ln(x)?", "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"], "correct": 0, "time_limit": 120},
-            {"id": "M6-H", "type": "probability", "text": "A bag has 4 red and 6 blue balls. What’s the probability of drawing 2 red balls in a row without replacement?", "options": ["1/15", "2/15", "4/45", "6/45"], "correct": 2, "time_limit": 150}
-        ]
-    },
-    "Logical Reasoning": {
-        "easy": [
-            {"id": "LR1-E", "type": "pattern", "text": "Complete the sequence: A, C, E, G, ___", "options": ["H", "I", "J", "K"], "correct": 1, "time_limit": 45},
-            {"id": "LR4-E", "type": "analogy", "text": "Bird is to Fly as Fish is to ___", "options": ["Swim", "Walk", "Jump", "Crawl"], "correct": 0, "time_limit": 40}
-        ],
-        "moderate": [
-            {"id": "LR2-M", "type": "deductive", "text": "All managers are leaders. Some leaders are visionary. Therefore:", "options": ["All managers are visionary", "Some managers may be visionary", "No managers are visionary", "Visionary people cannot be managers"], "correct": 1, "time_limit": 75},
-            {"id": "LR5-M", "type": "syllogism", "text": "Some A are B. All B are C. Therefore:", "options": ["All A are C", "Some A are C", "No A are C", "All C are A"], "correct": 1, "time_limit": 90}
-        ],
-        "hard": [
-            {"id": "LR3-H", "type": "analytical", "text": "If 3★5 = 16, 4★7 = 30, then 5★9 = ___", "options": ["44", "46", "48", "50"], "correct": 1, "time_limit": 150},
-            {"id": "LR6-H", "type": "logic_puzzle", "text": "Three friends rank 1st, 2nd, 3rd in a race. A is not last, B is ahead of C. Who is 2nd?", "options": ["A", "B", "C", "Cannot determine"], "correct": 0, "time_limit": 180}
-        ]
-    },
-    "Verbal Ability": {
-        "easy": [
-            {"id": "VA1-E", "type": "vocabulary", "text": "Select the antonym of EPHEMERAL:", "options": ["Transient", "Enduring", "Fleeting", "Momentary"], "correct": 1, "time_limit": 45},
-            {"id": "VA4-E", "type": "synonym", "text": "Find a synonym for 'Benevolent':", "options": ["Kind", "Harsh", "Greedy", "Silent"], "correct": 0, "time_limit": 40}
-        ],
-        "moderate": [
-            {"id": "VA2-M", "type": "comprehension", "text": "'The company’s pecuniary situation was precarious.' What does 'pecuniary' mean?", "options": ["Legal", "Financial", "Ethical", "Structural"], "correct": 1, "time_limit": 60},
-            {"id": "VA5-M", "type": "sentence_completion", "text": "Her ___ attitude inspired the team to exceed their goals.", "options": ["apathetic", "motivating", "indifferent", "hostile"], "correct": 1, "time_limit": 70}
-        ],
-        "hard": [
-            {"id": "VA3-H", "type": "critical_reasoning", "text": "Which weakens: 'Remote work increases productivity because employees save commute time'?", "options": ["Commute time averages 45 minutes daily", "Home distractions reduce focused work hours", "Companies report higher profits with remote teams", "Video conferencing tools improve collaboration"], "correct": 1, "time_limit": 120},
-            {"id": "VA6-H", "type": "analogies", "text": "Mitigate : Severity :: Amplify : ___", "options": ["Volume", "Calmness", "Silence", "Weakness"], "correct": 0, "time_limit": 100}
-        ]
-    }
-}
-
-# Personality Questions (Big Five Inventory) - Fixed Agreeableness trait names
-PERSONALITY_QUESTIONS = [
-    # Openness (O) - 8 items
-    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 2, "trait": "Openness", "text": "I avoid philosophical discussions", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 3, "trait": "Openness", "text": "I have a vivid imagination", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 4, "trait": "Openness", "text": "I prefer routine over variety", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 5, "trait": "Openness", "text": "I appreciate abstract art", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 6, "trait": "Openness", "text": "I dislike complex theoretical concepts", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 7, "trait": "Openness", "text": "I enjoy trying new cultural experiences", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 8, "trait": "Openness", "text": "I prefer practical over creative tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    
-    # Conscientiousness (C) - 8 items
-    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 12, "trait": "Conscientiousness", "text": "I often forget to put things back in their proper place", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 13, "trait": "Conscientiousness", "text": "I complete tasks thoroughly", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 14, "trait": "Conscientiousness", "text": "I often procrastinate important tasks", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 15, "trait": "Conscientiousness", "text": "I follow through on my commitments", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 16, "trait": "Conscientiousness", "text": "I struggle with time management", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 17, "trait": "Conscientiousness", "text": "I keep my living space organized", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 18, "trait": "Conscientiousness", "text": "I often make careless mistakes", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    
-    # Extraversion (E) - 8 items
-    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 22, "trait": "Extraversion", "text": "I prefer quiet evenings at home to parties", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 23, "trait": "Extraversion", "text": "I am the life of the party", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 24, "trait": "Extraversion", "text": "Large social gatherings drain my energy", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 25, "trait": "Extraversion", "text": "I enjoy being the center of attention", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 26, "trait": "Extraversion", "text": "I find it hard to start conversations", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 27, "trait": "Extraversion", "text": "I make friends easily", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 28, "trait": "Extraversion", "text": "I prefer working alone rather than in teams", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    
-    # Agreeableness (A) - 8 items (Removed leading spaces)
-    {"id": 31, "trait": "Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 32, "trait": "Agreeableness", "text": "I often argue with authority figures", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 33, "trait": "Agreeableness", "text": "I trust others' intentions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 34, "trait": "Agreeableness", "text": "I enjoy competitive situations more than cooperative ones", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 35, "trait": "Agreeableness", "text": "I go out of my way to help others", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 36, "trait": "Agreeableness", "text": "I sometimes take advantage of others", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 37, "trait": "Agreeableness", "text": "I value harmony in relationships", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 38, "trait": "Agreeableness", "text": "I enjoy debating controversial topics", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    
-    # Neuroticism (N) - 8 items
-    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 42, "trait": "Neuroticism", "text": "I remain calm under pressure", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 43, "trait": "Neuroticism", "text": "I worry about things that might go wrong", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 44, "trait": "Neuroticism", "text": "I rarely feel sad or depressed", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 45, "trait": "Neuroticism", "text": "I often feel emotionally vulnerable", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 46, "trait": "Neuroticism", "text": "I handle stress well", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 47, "trait": "Neuroticism", "text": "I often feel overwhelmed by my emotions", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]},
-    {"id": 48, "trait": "Neuroticism", "text": "I rarely experience mood swings", "direction": False, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"]}
-]
+# CAREER_MAPPING (as defined in your original code)
 CAREER_MAPPING = {
     "Software Developer": {
-        "aptitude": {
-            "Mathematics": 70,
-            "Logical Reasoning": 80,
-            "Verbal Ability": 60
-        },
-        "personality": {
-            "Openness": 60,
-            "Conscientiousness": 70,
-            "Extraversion": 50,
-            "Agreeableness": 50,
-            "Neuroticism": 40
-        },
-        "skills": {
-            "Software Development": 70
-        },
+        "aptitude": {"Mathematics": 70, "Logical Reasoning": 80, "Verbal Ability": 60},
+        "personality": {"Openness": 60, "Conscientiousness": 70, "Extraversion": 50, " Agreeableness": 50, "Neuroticism": 40},
+        "skills": {"Software Development": 70},
         "interests": ["Software Development"],
         "description": "Designs and builds software applications.",
         "resources": [
@@ -238,21 +232,9 @@ CAREER_MAPPING = {
         ]
     },
     "Data Scientist": {
-        "aptitude": {
-            "Mathematics": 80,
-            "Logical Reasoning": 75,
-            "Verbal Ability": 60
-        },
-        "personality": {
-            "Openness": 70,
-            "Conscientiousness": 65,
-            "Extraversion": 40,
-            "Agreeableness": 50,
-            "Neuroticism": 40
-        },
-        "skills": {
-            "Data Science": 75
-        },
+        "aptitude": {"Mathematics": 80, "Logical Reasoning": 75, "Verbal Ability": 60},
+        "personality": {"Openness": 70, "Conscientiousness": 65, "Extraversion": 40, " Agreeableness": 50, "Neuroticism": 40},
+        "skills": {"Data Science": 75},
         "interests": ["Data Science"],
         "description": "Analyzes data to derive actionable insights.",
         "resources": [
@@ -261,21 +243,9 @@ CAREER_MAPPING = {
         ]
     },
     "Graphic Designer": {
-        "aptitude": {
-            "Mathematics": 50,
-            "Logical Reasoning": 60,
-            "Verbal Ability": 70
-        },
-        "personality": {
-            "Openness": 80,
-            "Conscientiousness": 60,
-            "Extraversion": 50,
-            "Agreeableness": 60,
-            "Neuroticism": 40
-        },
-        "skills": {
-            "Graphic Design": 70
-        },
+        "aptitude": {"Mathematics": 50, "Logical Reasoning": 60, "Verbal Ability": 70},
+        "personality": {"Openness": 80, "Conscientiousness": 60, "Extraversion": 50, " Agreeableness": 60, "Neuroticism": 40},
+        "skills": {"Graphic Design": 70},
         "interests": ["Graphic Design"],
         "description": "Creates visual designs for branding and media.",
         "resources": [
@@ -284,21 +254,9 @@ CAREER_MAPPING = {
         ]
     },
     "Business Manager": {
-        "aptitude": {
-            "Mathematics": 60,
-            "Logical Reasoning": 70,
-            "Verbal Ability": 80
-        },
-        "personality": {
-            "Openness": 50,
-            "Conscientiousness": 80,
-            "Extraversion": 70,
-            "Agreeableness": 70,
-            "Neuroticism": 30
-        },
-        "skills": {
-            "Business Management": 70
-        },
+        "aptitude": {"Mathematics": 60, "Logical Reasoning": 70, "Verbal Ability": 80},
+        "personality": {"Openness": 50, "Conscientiousness": 80, "Extraversion": 70, " Agreeableness": 70, "Neuroticism": 30},
+        "skills": {"Business Management": 70},
         "interests": ["Business Management"],
         "description": "Leads teams and manages business operations.",
         "resources": [
@@ -307,21 +265,9 @@ CAREER_MAPPING = {
         ]
     },
     "Research Scientist": {
-        "aptitude": {
-            "Mathematics": 85,
-            "Logical Reasoning": 80,
-            "Verbal Ability": 65
-        },
-        "personality": {
-            "Openness": 75,
-            "Conscientiousness": 70,
-            "Extraversion": 40,
-            "Agreeableness": 50,
-            "Neuroticism": 35
-        },
-        "skills": {
-            "Data Science": 60
-        },
+        "aptitude": {"Mathematics": 85, "Logical Reasoning": 80, "Verbal Ability": 65},
+        "personality": {"Openness": 75, "Conscientiousness": 70, "Extraversion": 40, " Agreeableness": 50, "Neuroticism": 35},
+        "skills": {"Data Science": 60},
         "interests": ["Scientific"],
         "description": "Conducts research in scientific fields.",
         "resources": [
@@ -385,7 +331,7 @@ def generate_questions(test_type):
         random.shuffle(flat_questions)
         return flat_questions[:10]
     elif test_type == 'personality':
-        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], 'Agreeableness': [], 'Neuroticism': []}
+        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], ' Agreeableness': [], 'Neuroticism': []}
         for q in PERSONALITY_QUESTIONS:
             if q['trait'] in traits:
                 traits[q['trait']].append(q)
@@ -402,38 +348,41 @@ def generate_questions(test_type):
         questions = SKILL_GAP_QUESTIONS.get(field, [])
         return questions[:10]
     return []
+
 # Routes
 @app.route('/')
 def index():
     if not current_user.is_authenticated and not session.get('_flashes'):
         flash('Kindly log in to unlock comprehensive access to all features.', 'info')
-    return render_template('index.html')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('index.html', active_page='index', notifications=notifications)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
-            login_user(user, remember=request.form.get('remember_me') == 'on')
+            login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next', url_for('dashboard'))
+            flash('Logged in successfully!', 'success')
             return redirect(next_page)
         else:
             flash('Invalid username or password.', 'danger')
-    return render_template('auth/login.html')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('auth/login.html', form=form, active_page='login', notifications=notifications)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        email = request.form.get('email', None)
-        captcha = request.form.get('captcha')
-        if password != confirm_password:
-            flash('Passwords do not match.', 'danger')
-        elif captcha != '5':
+    form = RegisterForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        email = form.email.data
+        captcha = form.captcha.data
+        if captcha != '5':
             flash('Verification failed. Please enter the correct answer (2 + 3 = 5).', 'danger')
         elif User.query.filter_by(username=username).first():
             flash('Username already exists.', 'danger')
@@ -446,181 +395,102 @@ def register():
             db.session.commit()
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
-    return render_template('auth/register.html')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('auth/register.html', form=form, active_page='register', notifications=notifications)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('index'))
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
     recent_tests = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).limit(5).all()
-    test_data = {
-        'labels': [test.completed_at.strftime('%Y-%m-%d %H:%M') for test in recent_tests[::-1]],
-        'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score / 8 * 100 for test in recent_tests[::-1]],
-        'types': [test.test_type for test in recent_tests[::-1]]
-    }
-    # Track test completion
-    all_tests = TestResult.query.filter_by(user_id=current_user.id).all()
-    test_status = {
-        'aptitude': any(test.test_type == 'aptitude' for test in all_tests),
-        'personality': any(test.test_type == 'personality' for test in all_tests),
-        'skill_gap': any(test.test_type == 'skill_gap' for test in all_tests)
-    }
-    recommendation = "Complete all tests for the best career matches!"
-    if all(test_status.values()):
-        recommendation = "Great job! View your career matches now."
-    return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, 
-                          test_data=test_data, recommendation=recommendation, test_status=test_status)
+    badges = Badge.query.filter_by(user_id=current_user.id).order_by(Badge.date_earned.desc()).limit(5).all()
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    
+    if recent_tests:
+        test_data = {
+            'labels': [test.completed_at.strftime('%Y-%m-%d %H:%M') for test in recent_tests[::-1]],
+            'scores': [test.score / 9 * 100 if test.test_type == 'sample' else test.score for test in recent_tests[::-1]],
+            'types': [test.test_type for test in recent_tests[::-1]]
+        }
+        # Ensure details is handled safely
+        for test in recent_tests:
+            test.details_dict = json.loads(test.details) if test.details else {}
+        max_score = 9 if recent_tests[0].test_type == 'sample' else 8
+    else:
+        test_data = {'labels': [], 'scores': [], 'types': []}
+        max_score = 8  # Default max score when no tests exist
+    
+    recommendation = "Take more tests for personalized advice!" if len(recent_tests) < 3 else "You're doing great! Consider exploring advanced career options."
+    return render_template('dashboard.html', user=current_user, recent_tests=recent_tests, badges=badges, notifications=notifications, test_data=test_data, recommendation=recommendation, max_score=max_score, active_page='dashboard')
 
 @app.route('/student')
 @login_required
 def student():
-    return render_template('student.html', user=current_user)
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('student.html', user=current_user, active_page='student', notifications=notifications)
 
-@app.route('/degree', methods=['GET', 'POST'])
+@app.route('/degree', methods=['GET'])
 @login_required
 def degree():
-    # Get the selected country from the request arguments (default to "India")
-    selected_country = request.args.get('country', 'India')
+    onet_api = get_onet_api()
+    print(f"ONET_USER: {os.getenv('ONET_USER')}")
+    print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
 
-    # Cached function to fetch universities based on country
-    @cache.cached(key_prefix=f'universities_{selected_country}')
-    def get_universities(country):
-        try:
-            if country == 'India':
-                response = requests.get(INDIA_API, timeout=10)
-            else:
-                response = requests.get(f'{GLOBAL_API}{country}', timeout=10)
-            response.raise_for_status()
-            universities = response.json()
-            if country == 'India':
-                university_names = [uni['name'] for uni in universities]
-            else:
-                university_names = [uni['name'] for uni in universities]
-            return sorted(set(university_names))  # Remove duplicates and sort
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch universities for {country}: {e}")
-            return ["Sample University 1", "Sample University 2"]  # Fallback list
-
-    university_names = get_universities(selected_country)
-    if university_names == ["Sample University 1", "Sample University 2"]:
-        flash(f'Unable to fetch universities for {selected_country}. Using default options.', 'warning')
-
-    # Hardcoded list of countries for the dropdown (can be expanded or fetched dynamically)
-    countries = ["India", "United States", "United Kingdom", "Canada", "Australia"]
-
-    # Mock degree data (updated to include Indian universities)
-    degree_data = [
-        {
-            "title": "Bachelor of Science in Computer Science",
-            "university": "Massachusetts Institute of Technology (MIT)",
-            "duration": "4 years",
-            "description": "A comprehensive program covering software development, algorithms, and data structures.",
-            "field_of_study": "Computer Science",
-            "degree_level": "Bachelor",
-            "soc_code": "15-1252.00"  # Software Developer
-        },
-        {
-            "title": "Master of Business Administration (MBA)",
-            "university": "Harvard University",
-            "duration": "2 years",
-            "description": "Focuses on leadership, strategy, and management skills for business professionals.",
-            "field_of_study": "Business",
-            "degree_level": "Master",
-            "soc_code": "11-1021.00"  # Business Manager
-        },
-        {
-            "title": "Bachelor of Arts in Psychology",
-            "university": "Stanford University",
-            "duration": "4 years",
-            "description": "Explores human behavior, cognition, and mental health.",
-            "field_of_study": "Psychology",
-            "degree_level": "Bachelor",
-            "soc_code": "19-3031.00"  # Clinical Psychologist
-        },
-        {
-            "title": "Master of Science in Data Science",
-            "university": "University of California, Berkeley (UC Berkeley)",
-            "duration": "1.5 years",
-            "description": "Covers data analysis, machine learning, and big data technologies.",
-            "field_of_study": "Data Science",
-            "degree_level": "Master",
-            "soc_code": "15-2051.00"  # Data Analyst
-        },
-        {
-            "title": "Bachelor of Technology in Computer Science",
-            "university": "Indian Institute of Technology Bombay",
-            "duration": "4 years",
-            "description": "A rigorous program focusing on computer science and engineering.",
-            "field_of_study": "Computer Science",
-            "degree_level": "Bachelor",
-            "soc_code": "15-1252.00"  # Software Developer
-        },
-        {
-            "title": "Master of Business Administration (MBA)",
-            "university": "Indian Institute of Management Ahmedabad",
-            "duration": "2 years",
-            "description": "Prepares students for leadership roles in business and management.",
-            "field_of_study": "Business",
-            "degree_level": "Master",
-            "soc_code": "11-1021.00"  # Business Manager
-        }
+    degrees = [
+        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "soc_code": "15-1132.00"},
+        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles.", "degree_level": "Master", "field_of_study": "Business", "soc_code": "11-1021.00"},
+        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior.", "degree_level": "Bachelor", "field_of_study": "Psychology", "soc_code": "19-3031.00"},
+        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data.", "degree_level": "Master", "field_of_study": "Data Science", "soc_code": "15-2051.00"}
     ]
 
-    # Get search parameters from the form
-    degree_level = request.args.get('degree_level', '')
-    field_of_study = request.args.get('field_of_study', '')
-    duration = request.args.get('duration', '')
-    university = request.args.get('university', '')
-    keyword = request.args.get('keyword', '').lower()
-    sort_by = request.args.get('sort_by', '')
+    mock_career_data = {
+        "Bachelor of Science in Computer Science": {'job_title': 'Software Developer', 'salary': 105000, 'job_growth': 22},
+        "Master of Business Administration": {'job_title': 'Business Manager', 'salary': 120000, 'job_growth': 8},
+        "Bachelor of Arts in Psychology": {'job_title': 'Clinical Psychologist', 'salary': 82000, 'job_growth': 14},
+        "Master of Science in Data Science": {'job_title': 'Data Scientist', 'salary': 115000, 'job_growth': 31}
+    }
 
-    # Filter degrees based on search parameters
-    filtered_degrees = degree_data
+    degree_level = request.args.get('degree_level', '').strip()
+    field_of_study = request.args.get('field_of_study', '').strip()
+    duration = request.args.get('duration', '').strip()
+    keyword = request.args.get('keyword', '').strip().lower()
+    sort_by = request.args.get('sort_by', '').strip()
 
-    if degree_level:
-        filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
-    if field_of_study:
-        filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
-    if duration:
-        filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
-    if university:
-        filtered_degrees = [d for d in filtered_degrees if d['university'] == university]
-    if keyword:
-        filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
+    filtered_degrees = degrees
+    if degree_level: filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
+    if field_of_study: filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
+    if duration: filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
+    if keyword: filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
+    if sort_by == 'title': filtered_degrees.sort(key=lambda x: x['title'])
+    elif sort_by == 'duration': filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
+    elif sort_by == 'university': filtered_degrees.sort(key=lambda x: x['university'])
 
-    # Sort degrees
-    if sort_by:
-        filtered_degrees.sort(key=lambda x: x.get(sort_by, ''))
-
-    # Fetch career data, education, and skills from O*NET API for each degree
     for degree in filtered_degrees:
-        if onet_api:
-            try:
-                career_data = onet_api.get_career_details(degree['soc_code'])
-                degree['career_data'] = {
-                    "job_title": career_data.get("title", "N/A"),
-                    "salary": career_data.get("wages", {}).get("median", "N/A"),
-                    "job_growth": career_data.get("outlook", {}).get("growth_rate", "N/A")
-                }
-                education_data = onet_api.get_education_for_occupation(degree['soc_code'])
-                degree['education'] = {
-                    "typical_level": education_data.get("typical_level", "N/A"),
-                    "required_level": education_data.get("required_level", "N/A")
-                }
-                skills_data = onet_api.get_skills_for_occupation(degree['soc_code'])
-                degree['skills'] = [skill.get("name", "N/A") for skill in skills_data[:5]]
-            except Exception as e:
-                print(f"Error fetching O*NET data for SOC code {degree['soc_code']}: {e}")
-                degree['career_data'] = {"job_title": "N/A", "salary": "N/A", "job_growth": "N/A"}
-                degree['education'] = {"typical_level": "N/A", "required_level": "N/A"}
-                degree['skills'] = []
-        else:
-            degree['career_data'] = {"job_title": "N/A", "salary": "N/A", "job_growth": "N/A"}
-            degree['education'] = {"typical_level": "N/A", "required_level": "N/A"}
-            degree['skills'] = []
+        try:
+            career_data = onet_api.get_career_details(degree['soc_code'])
+            degree['career_data'] = {
+                'job_title': career_data.get('title', 'N/A'),
+                'salary': career_data.get('wages', {}).get('median', 'N/A'),
+                'job_growth': career_data.get('outlook', {}).get('growth_rate', 'N/A')
+            }
+        except Exception as e:
+            print(f"Error fetching career data for {degree['title']}: {e}")
+            degree['career_data'] = mock_career_data.get(degree['title'], {
+                'job_title': 'N/A',
+                'salary': 'N/A',
+                'job_growth': 'N/A'
+            })
+            flash(f"Failed to fetch career data for {degree['title']}. Using mock data.", 'warning')
 
-    return render_template('degree.html.jinja2', degrees=filtered_degrees, universities=university_names, 
-                          countries=countries, selected_country=selected_country)
-    
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('degree.html', user=current_user, degrees=filtered_degrees, active_page='degree', notifications=notifications)
+
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     test_type = request.args.get('type')
@@ -641,8 +511,10 @@ def test():
                         answers[q['id']] = int(answer)
                     else:
                         flash('Please answer all questions before submitting.', 'danger')
-                        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+                        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+                        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
                 score = sum(3 - answers[q['id']] for q in questions)
+                max_score = len(questions) * 3
                 if current_user.is_authenticated:
                     result = TestResult(
                         user_id=current_user.id,
@@ -650,10 +522,37 @@ def test():
                         score=score
                     )
                     db.session.add(result)
+                    # Award "First Test" Badge if not already earned
+                    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                        badge = Badge(
+                            user_id=current_user.id,
+                            name="First Test Completed",
+                            description="Completed your first test!",
+                            icon="fas fa-trophy"
+                        )
+                        db.session.add(badge)
+                    # Award "High Scorer" Badge if score is high
+                    if score >= 0.8 * max_score:
+                        if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                            badge = Badge(
+                                user_id=current_user.id,
+                                name="High Scorer",
+                                description="Scored 80% or higher on a test!",
+                                icon="fas fa-star"
+                            )
+                            db.session.add(badge)
+                    # Add Notification
+                    notification = Notification(
+                        user_id=current_user.id,
+                        message=f"You completed the Sample Test with a score of {score}/{max_score}!",
+                        type="test_result"
+                    )
+                    db.session.add(notification)
                     db.session.commit()
-                flash(f'Your work ethics score: {score} out of {len(questions) * 3}', 'success')
+                flash(f'Your work ethics score: {score} out of {max_score}', 'success')
                 return redirect(url_for('index'))
-        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions)
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+        return render_template('sample_test.html', questions=questions, csrf_token=generate_csrf(), instructions=instructions, active_page='test', test_type='sample', notifications=notifications)
 
     elif test_type == 'aptitude':
         if not current_user.is_authenticated:
@@ -686,19 +585,46 @@ def test():
                     details=json.dumps(detailed_scores)
                 )
                 db.session.add(result)
+                # Award "First Test" Badge if not already earned
+                if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                    badge = Badge(
+                        user_id=current_user.id,
+                        name="First Test Completed",
+                        description="Completed your first test!",
+                        icon="fas fa-trophy"
+                    )
+                    db.session.add(badge)
+                # Award "High Scorer" Badge if score is high
+                if score >= 80:
+                    if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                        badge = Badge(
+                            user_id=current_user.id,
+                            name="High Scorer",
+                            description="Scored 80% or higher on a test!",
+                            icon="fas fa-star"
+                        )
+                        db.session.add(badge)
+                # Add Notification
+                notification = Notification(
+                    user_id=current_user.id,
+                    message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
+                    type="test_result"
+                )
+                db.session.add(notification)
                 db.session.commit()
-                return redirect(url_for('dashboard'))
-            return render_template('results.html.jinja2', score_data={
+                notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+                return render_template('results.html.jinja2', score_data={
                     'score': score,
                     'correct': correct,
                     'total': total,
                     'time_spent': time_spent,
                     'details': detailed_scores
-                })
+                }, active_page='test', test_type='aptitude', notifications=notifications)
         total_questions = len(questions)
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/aptitude.html.jinja2', questions=questions, instructions=instructions,
                               current_category='Mathematics', total_questions=total_questions,
-                              initial_time=600, completed_questions=0, csrf_token=generate_csrf())
+                              initial_time=600, completed_questions=0, csrf_token=generate_csrf(), active_page='test', test_type='aptitude', notifications=notifications)
 
     elif test_type == 'personality':
         if not current_user.is_authenticated:
@@ -713,12 +639,16 @@ def test():
         if current_question_index < 0 or current_question_index >= len(questions):
             current_question_index = 0
         question = questions[current_question_index]
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/personality.html.jinja2',
                               questions=questions,
                               instructions=instructions,
                               current_question_index=current_question_index,
                               question=question,
-                              csrf_token=generate_csrf())
+                              csrf_token=generate_csrf(),
+                              active_page='test',
+                              test_type='personality',
+                              notifications=notifications)
 
     elif test_type == 'skill_gap':
         if not current_user.is_authenticated:
@@ -748,13 +678,43 @@ def test():
                     details=json.dumps(detailed_scores)
                 )
                 db.session.add(result)
+                # Award "First Test" Badge if not already earned
+                if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                    badge = Badge(
+                        user_id=current_user.id,
+                        name="First Test Completed",
+                        description="Completed your first test!",
+                        icon="fas fa-trophy"
+                    )
+                    db.session.add(badge)
+                # Award "High Scorer" Badge if score is high
+                if skill_score >= 80:
+                    if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                        badge = Badge(
+                            user_id=current_user.id,
+                            name="High Scorer",
+                            description="Scored 80% or higher on a test!",
+                            icon="fas fa-star"
+                        )
+                        db.session.add(badge)
+                # Add Notification
+                notification = Notification(
+                    user_id=current_user.id,
+                    message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
+                    type="test_result"
+                )
+                db.session.add(notification)
                 db.session.commit()
                 return redirect(url_for('career_match'))
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/interest_test.html.jinja2',
                               selected_field=selected_field,
                               questions=questions,
                               instructions=instructions,
-                              csrf_token=generate_csrf())
+                              csrf_token=generate_csrf(),
+                              active_page='test',
+                              test_type='skill_gap',
+                              notifications=notifications)
 
     else:
         flash(f'Invalid test type selected: {test_type if test_type else "None"}. Please choose a valid test type.', 'danger')
@@ -762,7 +722,8 @@ def test():
 
 @app.route('/career_assessment', methods=['GET'])
 def career_assessment():
-    return render_template('career_assessment.html', csrf_token=generate_csrf())
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('career_assessment.html', csrf_token=generate_csrf(), active_page='career_assessment', notifications=notifications)
 
 @app.route('/interest_test', methods=['GET', 'POST'])
 @login_required
@@ -771,10 +732,13 @@ def interest_test():
     if selected_field:
         session['selected_field'] = selected_field
     questions = generate_questions('skill_gap') if selected_field else []
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template('assessments/interest_test.html.jinja2', 
                           selected_field=selected_field, 
                           questions=questions, 
-                          csrf_token=generate_csrf())
+                          csrf_token=generate_csrf(),
+                          active_page='interest_test',
+                          notifications=notifications)
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -788,7 +752,7 @@ def submit_assessment():
         return jsonify({'error': 'Invalid test type'}), 400
 
     questions = session.get('personality_questions', generate_questions('personality'))
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
+    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, ' Agreeableness': 0, 'Neuroticism': 0}
     question_traits = {str(q['id']): (q['trait'], q['direction']) for q in questions}
 
     for response in responses:
@@ -809,7 +773,7 @@ def submit_assessment():
         'Openness': 'Openness',
         'Conscientiousness': 'Conscientiousness',
         'Extraversion': 'Extraversion',
-        'Agreeableness': 'Agreeableness',
+        ' Agreeableness': ' Agreeableness',
         'Neuroticism': 'Neuroticism'
     }
 
@@ -821,6 +785,32 @@ def submit_assessment():
         details=json.dumps(scores)
     )
     db.session.add(result)
+    # Award "First Test" Badge if not already earned
+    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+        badge = Badge(
+            user_id=current_user.id,
+            name="First Test Completed",
+            description="Completed your first test!",
+            icon="fas fa-trophy"
+        )
+        db.session.add(badge)
+    # Award "High Scorer" Badge if score is high
+    if scores[dominant_trait] >= 80:
+        if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+            badge = Badge(
+                user_id=current_user.id,
+                name="High Scorer",
+                description="Scored 80% or higher on a test!",
+                icon="fas fa-star"
+            )
+            db.session.add(badge)
+    # Add Notification
+    notification = Notification(
+        user_id=current_user.id,
+        message=f"You completed the Personality Test! Dominant trait: {dominant_trait} ({scores[dominant_trait]:.1f}%)",
+        type="test_result"
+    )
+    db.session.add(notification)
     db.session.commit()
 
     return jsonify({
@@ -854,10 +844,35 @@ def submit_interests():
         details=json.dumps(detailed_scores)
     )
     db.session.add(result)
+    # Award "First Test" Badge if not already earned
+    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+        badge = Badge(
+            user_id=current_user.id,
+            name="First Test Completed",
+            description="Completed your first test!",
+            icon="fas fa-trophy"
+        )
+        db.session.add(badge)
+    # Award "High Scorer" Badge if score is high
+    if skill_score >= 80:
+        if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+            badge = Badge(
+                user_id=current_user.id,
+                name="High Scorer",
+                description="Scored 80% or higher on a test!",
+                icon="fas fa-star"
+            )
+            db.session.add(badge)
+    # Add Notification
+    notification = Notification(
+        user_id=current_user.id,
+        message=f"You completed the Skill Gap Test for {field} with a score of {skill_score:.1f}%!",
+        type="test_result"
+    )
+    db.session.add(notification)
     db.session.commit()
 
     return redirect(url_for('career_match'))
-    return redirect(url_for('dashboard'))
 
 @app.route('/personality_results')
 @login_required
@@ -872,17 +887,18 @@ def personality_results():
         scores = json.loads(scores.replace("'", "\"")) if isinstance(scores, str) else scores
         trait_names = json.loads(trait_names.replace("'", "\"")) if isinstance(trait_names, str) else trait_names
     except json.JSONDecodeError:
-        scores = {'Openness': 50, 'Conscientiousness': 50, 'Extraversion': 50, 'Agreeableness': 50, 'Neuroticism': 50}
+        scores = {'Openness': 50, 'Conscientiousness': 50, 'Extraversion': 50, ' Agreeableness': 50, 'Neuroticism': 50}
         trait_names = {
             'Openness': 'Openness',
             'Conscientiousness': 'Conscientiousness',
             'Extraversion': 'Extraversion',
-            'Agreeableness': 'Agreeableness',
+            ' Agreeableness': ' Agreeableness',
             'Neuroticism': 'Neuroticism'
         }
         dominant_trait = 'Openness'
 
-    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names)
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('personality_results.html', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names, active_page='test', test_type='personality', notifications=notifications)
 
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required
@@ -919,92 +935,72 @@ def submit_career_assessment():
         details=json.dumps(dict(interest_scores))
     )
     db.session.add(result)
+    # Award "First Test" Badge if not already earned
+    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+        badge = Badge(
+            user_id=current_user.id,
+            name="First Test Completed",
+            description="Completed your first test!",
+            icon="fas fa-trophy"
+        )
+        db.session.add(badge)
+    # Add Notification
+    top_field = max(interest_scores, key=interest_scores.get, default="None")
+    notification = Notification(
+        user_id=current_user.id,
+        message=f"You completed the Career Assessment! Top interest: {top_field} ({interest_scores[top_field]}%)",
+        type="test_result"
+    )
+    db.session.add(notification)
     db.session.commit()
 
     return redirect(url_for('career_match'))
 
-@app.route('/career_match', methods=['GET', 'POST'])
-@login_required
+@app.route('/career_match')
 def career_match():
+    if not current_user.is_authenticated:
+        flash('Please log in to view your career matches.', 'warning')
+        return redirect(url_for('login', next=request.url))
+    
     results = TestResult.query.filter_by(user_id=current_user.id).all()
-    has_aptitude = any(r.test_type == 'aptitude' for r in results)
-    has_personality = any(r.test_type == 'personality' for r in results)
-    has_skill_gap = any(r.test_type == 'skill_gap' for r in results)
-    
-    # Handle prompt response
-    if request.method == 'POST' and 'take_skill_gap' in request.form:
-        if request.form['take_skill_gap'] == 'yes':
-            return redirect(url_for('interest_test'))
-    
-    # Prompt for skill gap if aptitude and personality are done
-    if has_aptitude and has_personality and not has_skill_gap and request.method == 'GET':
-        return render_template('prompt_skill_gap.html', csrf_token=generate_csrf())
-
-    # Initialize scores
     career_scores = defaultdict(float)
-    aptitude_scores = {}
-    personality_scores = {}
-    skill_scores = {}
-    selected_field = session.get('selected_field', 'Software Development')
-    alignment_message = None
-    only_skill_gap = has_skill_gap and not (has_aptitude or has_personality)
-
-    # Process test results
     for result in results:
-        details = json.loads(result.details) if result.details else {}
         if result.test_type == 'aptitude':
-            aptitude_scores = details
-            for career, weights in CAREER_MAPPING.items():
-                score = sum(aptitude_scores.get(cat, 0) * weight / 100 
-                           for cat, weight in weights['aptitude'].items())
-                career_scores[career] += score * 0.4
+            career_scores['Software Development'] += result.score * 0.3
+            career_scores['Data Science'] += result.score * 0.25
         elif result.test_type == 'personality':
-            personality_scores = details
-            for career, weights in CAREER_MAPPING.items():
-                score = sum(personality_scores.get(trait, 0) * weight / 100 
-                           for trait, weight in weights['personality'].items())
-                career_scores[career] += score * 0.3
+            details = json.loads(result.details) if result.details else {}
+            if details.get('trait') == 'analytical':
+                career_scores['Data Science'] += 20
+            elif details.get('trait') == 'creative':
+                career_scores['Graphic Design'] += 20
         elif result.test_type == 'skill_gap':
-            skill_scores = details
-            for career, weights in CAREER_MAPPING.items():
-                for skill, weight in weights['skills'].items():
-                    if skill in skill_scores:
-                        career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3
-
-    # Override if only skill gap is completed
-    if only_skill_gap:
-        career_scores = defaultdict(float)
-        for career, weights in CAREER_MAPPING.items():
-            for skill in weights['skills']:
-                if skill in skill_scores:
-                    career_scores[career] = skill_scores[skill]
-        alignment_message = "Your matches are based solely on your skill gap test. For more accurate results, consider taking the aptitude and personality tests."
-
-    # Prepare matches
+            details = json.loads(result.details) if result.details else {}
+            field = session.get('selected_field', 'Software Development')
+            career_scores[field] += result.score * 0.4
+    
     career_matches = [
-        {
-            'career': career,
-            'match_score': round(career_scores.get(career, 0), 2),
-            'description': data['description'],
-            'resources': data['resources'],
-            'requirements': {
-                'aptitude': data['aptitude'],
-                'personality': data['personality'],
-                'skills': list(data['skills'].keys())
-            }
-        } for career, data in CAREER_MAPPING.items()
+        {'career': 'Software Development', 'match_score': round(career_scores.get('Software Development', 0), 2),
+         'description': 'Designs and builds software applications.',
+         'resources': [
+             {'name': 'Learn Python', 'link': 'https://www.python.org'},
+             {'name': 'Git Tutorial', 'link': 'https://git-scm.com/doc'}
+         ]},
+        {'career': 'Data Science', 'match_score': round(career_scores.get('Data Science', 0), 2),
+         'description': 'Analyzes data to derive actionable insights.',
+         'resources': [
+             {'name': 'Machine Learning by Andrew Ng', 'link': 'https://www.coursera.org/learn/machine-learning'},
+             {'name': 'SQL for Data Science', 'link': 'https://www.datacamp.com/courses/intro-to-sql-for-data-science'}
+         ]},
+        {'career': 'Graphic Design', 'match_score': round(career_scores.get('Graphic Design', 0), 2),
+         'description': 'Creates visual designs for branding and media.',
+         'resources': [
+             {'name': 'Photoshop Tutorials', 'link': 'https://www.adobe.com/products/photoshop.html'}
+         ]},
     ]
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
-
-    return render_template(
-        'career_match.html',
-        career_matches=career_matches[:5],
-        alignment_message=alignment_message,
-        only_skill_gap_completed=only_skill_gap,
-        has_aptitude=has_aptitude,
-        has_personality=has_personality,
-        has_skill_gap=has_skill_gap
-    )
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('career_match.html', career_matches=career_matches, active_page='career_match', notifications=notifications)
 
 @app.route('/progress_tracking')
 @login_required
@@ -1031,59 +1027,81 @@ def progress_tracking():
         'types': [test.test_type for test in test_history]
     }
 
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template('progress_tracking.html', user=current_user, test_history=test_history, 
-                          avg_scores=avg_scores, progress_data=progress_data)
-    
-@app.route('/compare_degrees', methods=['GET', 'POST'])
-@login_required
-def compare_degrees():
-    degree_data = [...]  # Same degree data as in /degree route
-    selected_degrees = request.args.getlist('degrees')  # Get selected degrees from query params
-    compared_degrees = [d for d in degree_data if d['title'] in selected_degrees]
-    return render_template('compare_degrees.html', degrees=compared_degrees)
+                          avg_scores=avg_scores, progress_data=progress_data, active_page='progress_tracking', notifications=notifications)
 
 @app.route('/profile')
 @login_required
 def profile():
     test_history = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.desc()).all()
-    return render_template('profile.html', user=current_user, test_history=test_history)
+    badges = Badge.query.filter_by(user_id=current_user.id).order_by(Badge.date_earned.desc()).all()
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('profile.html', user=current_user, test_history=test_history, badges=badges, active_page='profile', notifications=notifications)
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def profile_edit():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        mobile_number = request.form.get('mobile_number')
-        pin_code = request.form.get('pin_code')
-        dob = request.form.get('dob')
+    form = ProfileForm()
+    
+    if form.validate_on_submit():
+        # Update user details
+        current_user.email = form.email.data
+        if form.password.data:
+            current_user.password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        current_user.mobile_number = form.mobile_number.data
+        current_user.pin_code = form.pin_code.data
+        if form.dob.data:
+            current_user.dob = form.dob.data
+        
+        # Handle profile picture upload
+        if form.profile_image.data:
+            # Generate a unique filename based on user ID
+            file_extension = form.profile_image.data.filename.rsplit('.', 1)[1].lower()
+            filename = f"profile_{current_user.id}.{file_extension}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Resize and save the image
+            image = Image.open(form.profile_image.data)
+            image = image.resize((150, 150), Image.LANCZOS)
+            image.save(filepath)
+            current_user.profile_image = f"uploads/{filename}"
+        
+        # Update bio
+        current_user.bio = form.bio.data
+        
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('profile'))
+    
+    # Pre-fill the form with current user data
+    if request.method == 'GET':
+        form.email.data = current_user.email
+        form.mobile_number.data = current_user.mobile_number
+        form.pin_code.data = current_user.pin_code
+        form.dob.data = current_user.dob
+        form.bio.data = current_user.bio
+    
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('profile_edit.html', form=form, user=current_user, active_page='profile', notifications=notifications)
 
-        # Handle file upload
-        file = request.files.get('profile_image')
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            unique_filename = f"{current_user.id}_{filename}"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
-            current_user.profile_image = f"uploads/{unique_filename}"
-
-        if email and email != current_user.email and User.query.filter_by(email=email).first():
-            flash('Email already in use by another account.', 'danger')
-        else:
-            if password:
-                current_user.password = generate_password_hash(password)
-            current_user.email = email or current_user.email
-            current_user.mobile_number = mobile_number or current_user.mobile_number
-            current_user.pin_code = pin_code or current_user.pin_code
-            if dob:
-                try:
-                    current_user.dob = datetime.strptime(dob, '%Y-%m-%d')
-                except ValueError:
-                    flash('Invalid date format for Date of Birth. Use YYYY-MM-DD.', 'danger')
-                    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
-            db.session.commit()
-            flash('Profile updated successfully!', 'success')
-            return redirect(url_for('profile'))
-    return render_template('profile_edit.html', user=current_user, csrf_token=generate_csrf())
+@app.route('/delete_profile_picture', methods=['POST'])
+@login_required
+def delete_profile_picture():
+    # Delete the current profile picture file if it exists and isn’t the default
+    if current_user.profile_image and current_user.profile_image != 'images/default_profile.jpg':
+        try:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(current_user.profile_image))
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            flash(f'Error deleting profile picture: {str(e)}', 'danger')
+    
+    # Reset the profile picture to the default
+    current_user.profile_image = 'images/default_profile.jpg'
+    db.session.commit()
+    flash('Profile picture removed successfully!', 'success')
+    return redirect(url_for('profile'))
 
 @app.route('/forgot_password')
 def forgot_password():
@@ -1104,7 +1122,8 @@ def results():
             'total': 10,
             'time_spent': latest_test.time_spent or 0
         }
-        return render_template('results.html.jinja2', score_data=score_data)
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+        return render_template('results.html.jinja2', score_data=score_data, active_page='results', notifications=notifications)
     elif latest_test.test_type == 'personality':
         return redirect(url_for('personality_results'))
     elif latest_test.test_type == 'skill_gap':
@@ -1113,41 +1132,35 @@ def results():
         flash('No detailed results available for this test type.', 'info')
         return redirect(url_for('dashboard'))
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('Logged out successfully!', 'success')
-    return redirect(url_for('index'))
-
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('about.html', active_page='about', notifications=notifications)
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        message = request.form.get('message')
-        if not name or not email or not message:
-            flash('All fields are required.', 'danger')
-        else:
-            msg = Message(subject=f"Contact Form Submission from {name}",
-                          recipients=['abc@gmail.com'],
-                          body=f"Name: {name}\nEmail: {email}\nMessage: {message}")
-            try:
-                mail.send(msg)
-                flash('Your message has been sent successfully!', 'success')
-                return redirect(url_for('contact'))
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                flash('Failed to send message. Please try again later.', 'danger')
-    return render_template('contact.html', csrf_token=generate_csrf())
+    form = ContactForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        email = form.email.data
+        message = form.message.data
+        msg = Message(subject=f"Contact Form Submission from {name}",
+                      recipients=['abc@gmail.com'],
+                      body=f"Name: {name}\nEmail: {email}\nMessage: {message}")
+        try:
+            mail.send(msg)
+            flash('Your message has been sent successfully!', 'success')
+            return redirect(url_for('contact'))
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            flash('Failed to send message. Please try again later.', 'danger')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('contact.html',form=form, active_page='contact', notifications=notifications)
 
 @app.route('/faq')
 def faq():
-    return render_template('faq.html')
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('faq.html', active_page='faq', notifications=notifications)
 
 @app.route('/roadmap')
 @login_required
@@ -1162,10 +1175,13 @@ def roadmap():
         destination = "Tech Lead"
     else:
         destination = "Junior Developer"
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template('roadmap.html', 
                          milestones_completed=milestones_completed, 
                          destination=destination, 
-                         animations_enabled=current_user.animations_enabled)
+                         animations_enabled=current_user.animations_enabled,
+                         active_page='roadmap',
+                         notifications=notifications)
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -1212,39 +1228,52 @@ def settings():
             logout_user()
             flash('Your account has been deleted.', 'info')
             return redirect(url_for('index'))
-    return render_template('settings.html', user=current_user, csrf_token=generate_csrf())
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    return render_template('settings.html', user=current_user, csrf_token=generate_csrf(), active_page='settings', notifications=notifications)
+
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('q', '').strip()
+    if not query:
+        flash('Please enter a search term.', 'warning')
+        return redirect(url_for('index'))
+    # Search for tests and careers
+    results = [
+        {'title': 'Sample Test', 'type': 'test', 'url': url_for('test', type='sample')},
+        {'title': 'Aptitude Test', 'type': 'test', 'url': url_for('test', type='aptitude')},
+        {'title': 'Personality Test', 'type': 'test', 'url': url_for('test', type='personality')},
+        {'title': 'Skill Gap Test', 'type': 'test', 'url': url_for('interest_test')},
+        {'title': 'Career Assessment', 'type': 'test', 'url': url_for('career_assessment')},
+        {'title': 'Software Developer', 'type': 'career', 'url': url_for('career_match')},
+        {'title': 'Data Scientist', 'type': 'career', 'url': url_for('career_match')},
+        {'title': 'Graphic Designer', 'type': 'career', 'url': url_for('career_match')},
+        {'title': 'Business Manager', 'type': 'career', 'url': url_for('career_match')},
+        {'title': 'Research Scientist', 'type': 'career', 'url': url_for('career_match')}
+    ]
+    # Filter results based on query
+    filtered_results = [r for r in results if query.lower() in r['title'].lower()]
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('search.html', query=query, results=filtered_results, active_page='search', notifications=notifications)
+
+@app.route('/mark_notification_read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    if notification.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    notification.is_read = True
+    db.session.commit()
+    return jsonify({'success': True})
 
 @app.errorhandler(404)
 def not_found(error):
-    return render_template('404.html'), 404
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('404.html', active_page='404', notifications=notifications), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return render_template('500.html'), 500
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all() if current_user.is_authenticated else []
+    return render_template('500.html', active_page='500', notifications=notifications), 500
 
-def populate_universities():
-    sample_universities = [
-        {"name": "Massachusetts Institute of Technology (MIT)", "country": "United States"},
-        {"name": "Harvard University", "country": "United States"},
-        {"name": "Stanford University", "country": "United States"},
-        {"name": "University of California, Berkeley (UC Berkeley)", "country": "United States"},
-        {"name": "University of Toronto", "country": "Canada"},
-        {"name": "University of British Columbia", "country": "Canada"},
-        {"name": "University of Oxford", "country": "United Kingdom"},
-        {"name": "University of Cambridge", "country": "United Kingdom"},
-        {"name": "ETH Zurich", "country": "Switzerland"},
-        {"name": "University of Tokyo", "country": "Japan"}
-    ]
-
-    with app.app_context():
-        for uni in sample_universities:
-            # Check if the university already exists to avoid duplicates
-            if not University.query.filter_by(name=uni['name']).first():
-                new_uni = University(name=uni['name'], country=uni['country'])
-                db.session.add(new_uni)
-        db.session.commit()
-        print(f"Added {len(sample_universities)} universities to the database.")
-with app.app_context():
-    db.create_all()
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

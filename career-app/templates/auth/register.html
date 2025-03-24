@@ -4,9 +4,9 @@
     <style>
         .register-container {
             max-width: 450px;
-            margin: 50px auto;
+            margin: 0 auto;
             padding: 30px;
-            background: linear-gradient(to bottom, #ff9a9eee, #fad0c4ee);
+            background: linear-gradient(to bottom, #36D1DCee, #5B86E5ee); /* Teal to light cyan gradient */
             border-radius: 15px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(5px);
@@ -14,7 +14,7 @@
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            color: #1e3c72;
+            color: #1A3C34; /* Deep navy blue */
             font-size: 32px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
@@ -24,7 +24,7 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #2a5298;
+            color: #1A3C34; /* Deep navy blue */
             font-weight: 600;
             font-size: 16px;
         }
@@ -33,73 +33,94 @@
             padding: 12px;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(to right, #f8f9faee, #e9ecefee);
+            background: linear-gradient(to right, #F8F9FAee, #E9ECEFee); /* Soft white gradient */
             box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
             font-size: 16px;
             transition: box-shadow 0.3s;
         }
         input:focus {
-            box-shadow: 0 0 10px rgba(46, 137, 255, 0.5);
+            box-shadow: 0 0 10px rgba(0, 196, 180, 0.5); /* Teal shadow on focus */
             outline: none;
         }
         .btn-submit {
             display: block;
             width: 100%;
             padding: 14px;
-            background: linear-gradient(to right, #2e89ff, #1e3c72);
+            background: linear-gradient(to right, #00C4B4, #28A745); /* Lime green to emerald green */
             color: #fff;
             border: none;
             border-radius: 25px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(46, 137, 255, 0.4);
+            box-shadow: 0 4px 15px rgba(0, 196, 180, 0.4); /* Teal shadow */
             transition: transform 0.2s, box-shadow 0.3s;
         }
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 137, 255, 0.6);
+            box-shadow: 0 6px 20px rgba(33, 136, 56, 0.6); /* Darker green shadow on hover */
+            background: linear-gradient(to right, #00B3A3, #218838); /* Slightly darker gradient on hover */
         }
         .links {
             text-align: center;
             margin-top: 20px;
         }
         .link {
-            color: #2e89ff;
+            color: #00C4B4; /* Bright teal */
             text-decoration: none;
             font-size: 14px;
             transition: color 0.3s;
         }
         .link:hover {
-            color: #1e3c72;
+            color: #009B8F; /* Darker teal on hover */
             text-decoration: underline;
         }
+        .error {
+            color: #E63946; /* Softer red for errors */
+            font-size: 14px;
+            margin-top: 5px;
+        }
     </style>
-    <div class="register-container">
+    <div class="register-container mt-5">
         <h1>Register</h1>
         <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {{ form.hidden_tag() }}
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                {{ form.username.label }}
+                {{ form.username() }}
+                {% for error in form.username.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                {{ form.email.label }}
+                {{ form.email() }}
+                {% for error in form.email.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
+                {{ form.password.label }}
+                {{ form.password() }}
+                {% for error in form.password.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="form-group">
-                <label for="email">Email (Optional)</label>
-                <input type="email" id="email" name="email">
+                {{ form.confirm_password.label }}
+                {{ form.confirm_password() }}
+                {% for error in form.confirm_password.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
             <div class="form-group">
-                <label for="captcha">Verification: What is 2 + 3?</label>
-                <input type="text" id="captcha" name="captcha" required>
+                {{ form.captcha.label }}
+                {{ form.captcha() }}
+                {% for error in form.captcha.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
             </div>
-            <button type="submit" class="btn-submit">Register</button>
+            {{ form.submit(class="btn-submit") }}
         </form>
         <div class="links">
             <a href="{{ url_for('login') }}" class="link">Already have an account? Login</a>
