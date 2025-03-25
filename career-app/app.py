@@ -779,28 +779,18 @@ def interest_test():
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
 def submit_assessment():
-    # Ensure the request contains JSON data
     data = request.get_json()
     if not data:
-        return jsonify({'error': 'No data provided in request'}), 400
-
+        return jsonify({'error': 'No data provided'}), 400
+    
     test_type = data.get('type')
-    responses = data.get('responses', [])
-    duration = data.get('duration', 0)
+    responses = data.get('responses')
+    duration = data.get('duration')
 
-    # Validate test type
-    if test_type != 'personality':
-        return jsonify({'error': 'Invalid test type. Only "personality" is supported.'}), 400
+    if test_type != 'personality' or not responses:
+        return jsonify({'error': 'Invalid test type or responses'}), 400
 
-    # Retrieve questions from session (set in /test route)
-    questions = session.get('personality_questions')
-    if not questions:
-        # Regenerate questions if session is lost (fallback)
-        questions = generate_questions('personality')
-        session['personality_questions'] = questions
-        print("Warning: Personality questions were regenerated due to missing session data.")
-
-    # Initialize scores for personality traits
+    # Initialize scores for Big Five traits
     scores = {
         'Openness': 0,
         'Conscientiousness': 0,
@@ -808,8 +798,8 @@ def submit_assessment():
         ' Agreeableness': 0,
         'Neuroticism': 0
     }
-    question_traits = {str(q['id']): (q['trait'], q['direction']) for q in questions}
-
+    question_counts = {trait: 0 for trait in scores}
+    
     # Process responses
     responded_questions = set()
     for response in responses:
@@ -839,12 +829,15 @@ def submit_assessment():
 
     # Calculate percentage scores for each trait
     for trait in scores:
-        count = sum(1 for q in questions if q['trait'] == trait)
-        scores[trait] = (scores[trait] / (count * 5)) * 100 if count > 0 else 0
+        if question_counts[trait] > 0:
+            max_score = question_counts[trait] * 4  # Max possible score for this trait
+            scores[trait] = (scores[trait] / max_score) * 100  # Convert to percentage
+        else:
+            scores[trait] = 0  # Default to 0 if no questions for this trait
 
     # Determine dominant trait
-    dominant_trait = max(scores, key=scores.get) if scores else 'Openness'  # Fallback if scores are empty
-
+    dominant_trait = max(scores, key=scores.get)
+    
     # Save result to database
     result = TestResult(
         user_id=current_user.id,
@@ -897,10 +890,10 @@ def submit_assessment():
     # Return redirect URL as JSON
     return jsonify({
         'redirect': url_for('personality_results',
-                           scores=json.dumps(scores),
+                           scores=json.dumps(scores),  # Pass as JSON string
                            dominant_trait=dominant_trait,
-                           trait_names=json.dumps(trait_names))
-    }), 200
+                           trait_names=json.dumps(trait_names))  # Pass as JSON string
+    })
     
 @app.route('/submit_interests', methods=['POST'])
 @login_required
@@ -962,28 +955,13 @@ def submit_interests():
 @app.route('/personality_results')
 @login_required
 def personality_results():
-    scores = request.args.get('scores', '{}')
-    dominant_trait = request.args.get('dominant_trait', 'N/A')
-    trait_names = request.args.get('trait_names', '{}')
-
-    # Convert stringified JSON to dictionary
-    import json
-    try:
-        scores = json.loads(scores.replace("'", "\"")) if isinstance(scores, str) else scores
-        trait_names = json.loads(trait_names.replace("'", "\"")) if isinstance(trait_names, str) else trait_names
-    except json.JSONDecodeError:
-        scores = {'Openness': 50, 'Conscientiousness': 50, 'Extraversion': 50, ' Agreeableness': 50, 'Neuroticism': 50}
-        trait_names = {
-            'Openness': 'Openness',
-            'Conscientiousness': 'Conscientiousness',
-            'Extraversion': 'Extraversion',
-            ' Agreeableness': ' Agreeableness',
-            'Neuroticism': 'Neuroticism'
-        }
-        dominant_trait = 'Openness'
-
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('personality_results.html.jinja2', scores=scores, dominant_trait=dominant_trait, trait_names=trait_names, active_page='test', test_type='personality', notifications=notifications)
+    scores = request.args.get('scores', type=json.loads)
+    dominant_trait = request.args.get('dominant_trait')
+    trait_names = request.args.get('trait_names', type=json.loads)
+    return render_template('personality_results.html', 
+                         scores=scores, 
+                         dominant_trait=dominant_trait, 
+                         trait_names=trait_names)
 
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required

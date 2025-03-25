@@ -117,32 +117,32 @@
 
     <!-- Questions Wrapper -->
     <div class="questions-wrapper">
-        {% for question in questions %}
-            <div class="question-card {% if loop.index0 != current_question_index %}d-none{% endif %}" data-index="{{ loop.index0 }}">
-                <h2 class="question-text">{{ question.text }}</h2>
-                <div class="options-grid">
-                    {% if question.likert_scale %}
-                        {% for option in question.likert_scale %}
-                            <div class="option-card"
-                                 data-question-id="{{ question.id }}"
-                                 data-option-value="{{ loop.index0 }}">
-                                <span class="option-text">{{ option }}</span>
-                                {% if question.direction == false %}
-                                    <div class="direction-indicator">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
-                                        </svg>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <p>No likert scale found for this question.</p>
-                    {% endif %}
-                </div>
+    {% for question in questions %}
+        <div class="question-card" style="display: {% if loop.index0 == current_question_index %}block{% else %}none{% endif %}" data-index="{{ loop.index0 }}">
+            <h2 class="question-text">{{ question.text }}</h2>
+            <div class="options-grid">
+                {% if question.likert_scale %}
+                    {% for option in question.likert_scale %}
+                        <div class="option-card"
+                             data-question-id="{{ question.id }}"
+                             data-option-value="{{ loop.index0 }}">
+                            <span class="option-text">{{ option }}</span>
+                            {% if question.direction == false %}
+                                <div class="direction-indicator">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
+                                    </svg>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No likert scale found for this question.</p>
+                {% endif %}
             </div>
-        {% endfor %}
-    </div>
+        </div>
+    {% endfor %}
+</div>
 
     <!-- Navigation Controls -->
     <div class="assessment-controls">
@@ -160,7 +160,7 @@
     const progressBar = document.getElementById('progress-bar');
     const totalQuestions = {{ questions|length }};
 
-    // Update timer
+    // Update timer (unchanged)
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
@@ -173,22 +173,22 @@
         card.addEventListener('click', function() {
             const questionId = this.dataset.questionId;
             const value = parseInt(this.dataset.optionValue);
-            document.querySelectorAll(`[data-question-id="${questionId}"]`)
-                .forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll(`[data-question-id="${questionId}"]`).forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             responses[questionId] = value;
+            console.log(`Selected: ${questionId} = ${value}`); // Debug log
         });
     });
 
-    // Client-side navigation
+    // Navigation functions (unchanged except display style)
     function navigate(direction) {
-        questions[currentIndex].classList.add('d-none');
+        questions[currentIndex].style.display = 'none';
         currentIndex += direction;
-        questions[currentIndex].classList.remove('d-none');
+        questions[currentIndex].style.display = 'block';
         progressBar.style.width = `${((currentIndex + 1) / totalQuestions) * 100}%`;
         updateButtons();
     }
-
+    
     function updateButtons() {
         document.getElementById('prev-btn').style.display = currentIndex > 0 ? 'inline-block' : 'none';
         document.getElementById('next-btn').style.display = currentIndex < questions.length - 1 ? 'inline-block' : 'none';
