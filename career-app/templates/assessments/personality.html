@@ -96,7 +96,6 @@
 </style>
 
 <div class="assessment-container">
-    <!-- Instructions -->
     <div class="instructions">
         <h3>Instructions</h3>
         <p><strong>Time Limit:</strong> {{ instructions.time_limit }}</p>
@@ -104,63 +103,56 @@
         <p><strong>Scientific Accuracy:</strong> {{ instructions.scientific_accuracy }}</p>
     </div>
 
-    <!-- Progress Bar -->
     <div class="progress-container">
-        <div class="progress-bar" id="progress-bar" style="width: {{ (current_question_index / (questions|length)) * 100 }}%"></div>
+        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
     </div>
 
-    <!-- Timer -->
     <div class="timer-alert" id="timer">
         <i class="bi bi-clock"></i>
         Time Spent: <span id="time-display">00:00</span>
     </div>
 
-    <!-- Questions Wrapper -->
-    <div class="questions-wrapper">
-    {% for question in questions %}
-        <div class="question-card" style="display: {% if loop.index0 == current_question_index %}block{% else %}none{% endif %}" data-index="{{ loop.index0 }}">
-            <h2 class="question-text">{{ question.text }}</h2>
-            <div class="options-grid">
-                {% if question.likert_scale %}
-                    {% for option in question.likert_scale %}
-                        <div class="option-card"
-                             data-question-id="{{ question.id }}"
-                             data-option-value="{{ loop.index0 }}">
-                            <span class="option-text">{{ option }}</span>
-                            {% if question.direction == false %}
-                                <div class="direction-indicator">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M7 15v2h10v-2H7zm-4 6h18v-2H3v2zm0-8h18v-2H3v2zm4-6v2h10V7H7zM3 3v2h18V3H3z"/>
-                                    </svg>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No likert scale found for this question.</p>
-                {% endif %}
-            </div>
-        </div>
-    {% endfor %}
-</div>
+    <form id="personality-form" method="POST" action="{{ url_for('submit_assessment') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="time_spent" id="time-spent" value="0">
 
-    <!-- Navigation Controls -->
-    <div class="assessment-controls">
-        <button class="nav-btn prev-btn" id="prev-btn" style="display: {% if current_question_index > 0 %}inline-block{% else %}none{% endif %}" onclick="navigate(-1)">Previous</button>
-        <button class="nav-btn next-btn" id="next-btn" style="display: {% if current_question_index < (questions|length - 1) %}inline-block{% else %}none{% endif %}" onclick="navigate(1)">Next</button>
-        <button class="submit-btn" id="submit-btn" style="display: {% if current_question_index == (questions|length - 1) %}inline-block{% else %}none{% endif %}" onclick="submitAssessment()">Complete Assessment</button>
-    </div>
+        <div class="questions-wrapper">
+            {% for question in questions %}
+            <div class="question-card">
+                <h2 class="question-text">{{ question.text }}</h2>  <!-- Changed from question.question to question.text -->
+                <div class="options-grid">
+                    {% for i in range(5) %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" 
+                               name="{{ question.id }}" 
+                               value="{{ i }}" 
+                               id="{{ question.id }}-{{ i }}"
+                               required>
+                        <label class="form-check-label" for="{{ question.id }}-{{ i }}">
+                            {{ ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'][i] }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="assessment-controls">
+            <button type="submit" class="submit-btn">Submit Assessment</button>
+        </div>
+    </form>
 </div>
 
 <script>
-    let responses = {};
-    let startTime = Date.now();
-    let currentIndex = {{ current_question_index }};
-    const questions = document.querySelectorAll('.question-card');
+document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progress-bar');
+    const form = document.getElementById('personality-form');
+    const timeSpentInput = document.getElementById('time-spent');
+    let startTime = Date.now();
     const totalQuestions = {{ questions|length }};
+    let answeredCount = 0;
 
-    // Update timer (unchanged)
     setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
@@ -168,68 +160,26 @@
         document.getElementById('time-display').textContent = `${minutes}:${seconds}`;
     }, 1000);
 
-    // Capture user's selection
-    document.querySelectorAll('.option-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const questionId = this.dataset.questionId;
-            const value = parseInt(this.dataset.optionValue);
-            document.querySelectorAll(`[data-question-id="${questionId}"]`).forEach(opt => opt.classList.remove('selected'));
-            this.classList.add('selected');
-            responses[questionId] = value;
-            console.log(`Selected: ${questionId} = ${value}`); // Debug log
+    document.querySelectorAll('.form-check-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const questionId = this.name;
+            const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
+            if (!alreadyAnswered) {
+                answeredCount++;
+                progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+            }
         });
     });
 
-    // Navigation functions (unchanged except display style)
-    function navigate(direction) {
-        questions[currentIndex].style.display = 'none';
-        currentIndex += direction;
-        questions[currentIndex].style.display = 'block';
-        progressBar.style.width = `${((currentIndex + 1) / totalQuestions) * 100}%`;
-        updateButtons();
-    }
-    
-    function updateButtons() {
-        document.getElementById('prev-btn').style.display = currentIndex > 0 ? 'inline-block' : 'none';
-        document.getElementById('next-btn').style.display = currentIndex < questions.length - 1 ? 'inline-block' : 'none';
-        document.getElementById('submit-btn').style.display = currentIndex === questions.length - 1 ? 'inline-block' : 'none';
-    }
-
-    // Submit assessment
-    function submitAssessment() {
-    let allAnswered = true;
-    questions.forEach((question) => {
-        const questionId = question.querySelector('.option-card').dataset.questionId;
-        if (!responses[questionId]) allAnswered = false;
+    form.addEventListener('submit', (e) => {
+        const unanswered = {{ questions|length }} > document.querySelectorAll('.form-check-input:checked').length;
+        if (unanswered) {
+            e.preventDefault();
+            alert('Please answer all questions before submitting.');
+            return;
+        }
+        timeSpentInput.value = Math.floor((Date.now() - startTime) / 1000);
     });
-    if (!allAnswered) {
-        alert('Please answer all questions before submitting.');
-        return;
-    }
-
-    const csrfToken = "{{ csrf_token() }}";
-    fetch("{{ url_for('submit_assessment') }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken  // Changed from X-CSRF-Token
-        },
-            body: JSON.stringify({
-                type: 'personality',
-                responses: Object.keys(responses).map(id => ({
-                    questionId: id,
-                    answer: responses[id]
-                })),
-                duration: Math.floor((Date.now() - startTime) / 1000)
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.redirect) {
-                window.location.href = data.redirect;
-            }
-        })
-        .catch(err => console.error('Error submitting assessment:', err));
-    }
+});
 </script>
 {% endblock %}

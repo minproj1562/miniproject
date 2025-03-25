@@ -15,12 +15,19 @@ from wtforms.validators import DataRequired, Length, EqualTo, Email
 from flask_mail import Mail, Message
 from flask_migrate import Migrate
 from datetime import datetime
+from collections import defaultdict
 import requests
 import random
 import copy
 from collections import defaultdict
 import json
 from PIL import Image  # Added for image resizing
+# After the existing imports and before the Flask app initialization
+from questions import (
+    APTITUDE_QUESTIONS, ADAPTIVE_TEST_SETTINGS, PERSONALITY_QUESTIONS,
+    SCORING_KEY, TRAIT_WEIGHTS, TRAIT_DEFINITIONS, CAREER_MAPPING,
+    SKILL_GAP_QUESTIONS, LEARNING_RESOURCES
+)
 
 # Import ProfileForm from forms.py
 from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
@@ -123,94 +130,6 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
-# Placeholder for questions.py imports (since the file wasn't provided)
-APTITUDE_QUESTIONS = {
-    "Mathematics": {
-        "easy": [
-            {"id": "M1-E", "type": "numerical", "text": "Solve: 15 + 8 × 3 ÷ 4", "options": ["21", "18.5", "19.5", "20.25"], "correct": 2, "time_limit": 60},
-        ],
-        "moderate": [
-            {"id": "M2-M", "type": "algebra", "text": "If x + y = 15 and 2x - y = 6, what is the value of x?", "options": ["7", "8", "9", "10"], "correct": 0, "time_limit": 90},
-        ],
-        "hard": [
-            {"id": "M3-H", "type": "calculus", "text": "What is the derivative of f(x) = 3x² + 2eˣ - ln(x)?", "options": ["6x + 2eˣ - 1/x", "6x + 2eˣ + 1/x", "3x + 2eˣ - 1/x²", "6x + eˣ - 1/x"], "correct": 0, "time_limit": 120},
-        ]
-    },
-    "Logical Reasoning": {
-        "easy": [
-            {"id": "LR1-E", "type": "pattern", "text": "Complete the sequence: A, C, E, G, ___", "options": ["H", "I", "J", "K"], "correct": 1, "time_limit": 45},
-        ],
-        "moderate": [
-            {"id": "LR2-M", "type": "deductive", "text": "All managers are leaders. Some leaders are visionary. Therefore:", "options": ["All managers are visionary", "Some managers may be visionary", "No managers are visionary", "Visionary people cannot be managers"], "correct": 1, "time_limit": 75},
-        ],
-        "hard": [
-            {"id": "LR3-H", "type": "analytical", "text": "If 3★5 = 16, 4★7 = 30, then 5★9 = ___", "options": ["44", "46", "48", "50"], "correct": 1, "time_limit": 150},
-        ]
-    },
-    "Verbal Ability": {
-        "easy": [
-            {"id": "VA1-E", "type": "vocabulary", "text": "Select the antonym of EPHEMERAL:", "options": ["Transient", "Enduring", "Fleeting", "Momentary"], "correct": 1, "time_limit": 45},
-        ],
-        "moderate": [
-            {"id": "VA2-M", "type": "comprehension", "text": "'The company’s pecuniary situation was precarious.' What does 'pecuniary' mean?", "options": ["Legal", "Financial", "Ethical", "Structural"], "correct": 1, "time_limit": 60},
-        ],
-        "hard": [
-            {"id": "VA3-H", "type": "critical_reasoning", "text": "Which weakens: 'Remote work increases productivity because employees save commute time'?", "options": ["Commute time averages 45 minutes daily", "Home distractions reduce focused work hours", "Companies report higher profits with remote teams", "Video conferencing tools improve collaboration"], "correct": 1, "time_limit": 120},
-        ]
-    }
-}
-
-PERSONALITY_QUESTIONS = [
-    {"id": 1, "trait": "Openness", "text": "I enjoy hearing new ideas", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 11, "trait": "Conscientiousness", "text": "I pay attention to details", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 21, "trait": "Extraversion", "text": "I feel comfortable around people", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 31, "trait": " Agreeableness", "text": "I sympathize with others' feelings", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-    {"id": 41, "trait": "Neuroticism", "text": "I often feel tense or anxious", "direction": True, "likert_scale": ["Strongly Disagree", "Disagree", "Neutral", " Agree", "Strongly Agree"]},
-]
-
-SKILL_GAP_QUESTIONS = {
-    "Software Development": [
-        {"id": "SD1", "text": "What does API stand for?", "options": ["Application Programming Interface", "Automated Process Integration", "Application Process Interface", "Automated Programming Interface"], "correct": 0},
-    ],
-    "Data Science": [
-        {"id": "DS1", "text": "What is a common Python library for data analysis?", "options": ["Pandas", "Django", "Flask", "Tkinter"], "correct": 0},
-    ],
-    "Graphic Design": [
-        {"id": "GD1", "text": "What is the primary color model for digital screens?", "options": ["CMYK", "RGB", "Pantone", "HSL"], "correct": 1},
-    ],
-    "Business Management": [
-        {"id": "BM1", "text": "What does SWOT stand for?", "options": ["Strengths, Weaknesses, Opportunities, Threats", "Systems, Workflows, Operations, Targets", "Strengths, Workflows, Opportunities, Trends", "Systems, Weaknesses, Operations, Threats"], "correct": 0},
-    ],
-    "Scientific": [
-        {"id": "SC1", "text": "What is the primary source of energy for Earth's climate system?", "options": ["Geothermal heat", "Solar radiation", "Ocean currents", "Wind energy"], "correct": 1},
-    ]
-}
-
-LEARNING_RESOURCES = {
-    "Software Development": [
-        {"name": "Learn Python", "link": "https://www.codecademy.com/learn/learn-python-3"},
-        {"name": "Git Tutorial", "link": "https://www.atlassian.com/git/tutorials"}
-    ],
-    "Data Science": [
-        {"name": "Machine Learning by Andrew Ng", "link": "https://www.coursera.org/learn/machine-learning"},
-        {"name": "SQL for Data Science", "link": "https://www.coursera.org/learn/sql-for-data-science"}
-    ],
-    "Graphic Design": [
-        {"name": "Photoshop Tutorials", "link": "https://www.adobe.com/products/photoshop/tutorials.html"},
-        {"name": "UI/UX Design", "link": "https://www.coursera.org/specializations/ui-ux-design"}
-    ],
-    "Business Management": [
-        {"name": "Leadership Skills", "link": "https://www.udemy.com/topic/leadership/"},
-        {"name": "Strategic Management", "link": "https://www.coursera.org/learn/strategic-management"}
-    ],
-    "Scientific": [
-        {"name": "Research Methods", "link": "https://www.coursera.org/learn/research-methods"},
-        {"name": "Statistics with Python", "link": "https://www.coursera.org/learn/statistics-with-python"}
-    ]
-}
-
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -235,7 +154,7 @@ def get_onet_api():
 CAREER_MAPPING = {
     "Software Developer": {
         "aptitude": {"Mathematics": 70, "Logical Reasoning": 80, "Verbal Ability": 60},
-        "personality": {"Openness": 60, "Conscientiousness": 70, "Extraversion": 50, " Agreeableness": 50, "Neuroticism": 40},
+        "personality": {"Openness": 60, "Conscientiousness": 70, "Extraversion": 50, "Agreeableness": 50, "Neuroticism": 40},
         "skills": {"Software Development": 70},
         "interests": ["Software Development"],
         "description": "Designs and builds software applications.",
@@ -246,7 +165,7 @@ CAREER_MAPPING = {
     },
     "Data Scientist": {
         "aptitude": {"Mathematics": 80, "Logical Reasoning": 75, "Verbal Ability": 60},
-        "personality": {"Openness": 70, "Conscientiousness": 65, "Extraversion": 40, " Agreeableness": 50, "Neuroticism": 40},
+        "personality": {"Openness": 70, "Conscientiousness": 65, "Extraversion": 40, "Agreeableness": 50, "Neuroticism": 40},
         "skills": {"Data Science": 75},
         "interests": ["Data Science"],
         "description": "Analyzes data to derive actionable insights.",
@@ -257,7 +176,7 @@ CAREER_MAPPING = {
     },
     "Graphic Designer": {
         "aptitude": {"Mathematics": 50, "Logical Reasoning": 60, "Verbal Ability": 70},
-        "personality": {"Openness": 80, "Conscientiousness": 60, "Extraversion": 50, " Agreeableness": 60, "Neuroticism": 40},
+        "personality": {"Openness": 80, "Conscientiousness": 60, "Extraversion": 50, "Agreeableness": 60, "Neuroticism": 40},
         "skills": {"Graphic Design": 70},
         "interests": ["Graphic Design"],
         "description": "Creates visual designs for branding and media.",
@@ -268,7 +187,7 @@ CAREER_MAPPING = {
     },
     "Business Manager": {
         "aptitude": {"Mathematics": 60, "Logical Reasoning": 70, "Verbal Ability": 80},
-        "personality": {"Openness": 50, "Conscientiousness": 80, "Extraversion": 70, " Agreeableness": 70, "Neuroticism": 30},
+        "personality": {"Openness": 50, "Conscientiousness": 80, "Extraversion": 70, "Agreeableness": 70, "Neuroticism": 30},
         "skills": {"Business Management": 70},
         "interests": ["Business Management"],
         "description": "Leads teams and manages business operations.",
@@ -279,7 +198,7 @@ CAREER_MAPPING = {
     },
     "Research Scientist": {
         "aptitude": {"Mathematics": 85, "Logical Reasoning": 80, "Verbal Ability": 65},
-        "personality": {"Openness": 75, "Conscientiousness": 70, "Extraversion": 40, " Agreeableness": 50, "Neuroticism": 35},
+        "personality": {"Openness": 75, "Conscientiousness": 70, "Extraversion": 40, "Agreeableness": 50, "Neuroticism": 35},
         "skills": {"Data Science": 60},
         "interests": ["Scientific"],
         "description": "Conducts research in scientific fields.",
@@ -330,6 +249,7 @@ with app.app_context():
     populate_universities()
     
 # Generate dynamic test questions
+# Replace the existing generate_questions function
 def generate_questions(test_type):
     if test_type == 'sample':
         return [
@@ -345,24 +265,44 @@ def generate_questions(test_type):
             {"id": "q10", "question": "How do you ensure your work maintains high quality under pressure?", "options": ["Double-check everything", "Stick to a proven process", "Focus on speed over perfection", "Ask for feedback before submission"]}
         ]
     elif test_type == 'aptitude':
-        questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        for category in questions:
-            for difficulty in questions[category]:
-                q_list = questions[category][difficulty]
-                if q_list:
-                    questions[category][difficulty] = [random.choice(q_list)]
+        # Start with initial difficulty from settings
+        current_difficulty = ADAPTIVE_TEST_SETTINGS['initial_difficulty']
+        questions = []
+        available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
         
-        category_mapping = {"Mathematics": 19, "Logical Reasoning": 25, "Verbal Ability": 10}
-        for category, cat_id in category_mapping.items():
-            opentdb_qs = fetch_opentdb_questions(cat_id, 2)
-            if opentdb_qs:
-                questions[category]["easy"].extend(opentdb_qs[:2])
+        # Select 10 questions, adapting difficulty based on simulated performance
+        for i in range(10):
+            category = random.choice(list(available_questions.keys()))
+            difficulty_questions = available_questions[category][current_difficulty]
+            if not difficulty_questions:
+                # Fallback to another difficulty if empty
+                for diff in ['easy', 'moderate', 'hard']:
+                    if available_questions[category][diff]:
+                        difficulty_questions = available_questions[category][diff]
+                        current_difficulty = diff
+                        break
+            if difficulty_questions:
+                question = random.choice(difficulty_questions)
+                question['time_limit'] = question.get('time_limit', 60)  # Default 60 seconds
+                questions.append(question)
+                questions.append(question)
+                # Remove used question to avoid repetition
+                available_questions[category][current_difficulty].remove(question)
+                
+                # Simulate performance adjustment (actual adjustment happens in /submit_aptitude)
+                if i >= 2:  # After a few questions, adjust difficulty
+                    prev_correct = session.get('aptitude_correct', 0)
+                    prev_total = session.get('aptitude_total', 0)
+                    if prev_total > 0 and (prev_correct / prev_total) >= 0.75:
+                        current_difficulty = 'hard' if current_difficulty == 'moderate' else 'moderate'
+                    elif prev_total > 0 and (prev_correct / prev_total) <= 0.25:
+                        current_difficulty = 'easy' if current_difficulty == 'moderate' else 'moderate'
         
-        flat_questions = [q for cat in questions.values() for lvl in cat.values() for q in lvl]
-        random.shuffle(flat_questions)
-        return flat_questions[:10]
+        random.shuffle(questions)
+        session['aptitude_questions'] = questions  # Store for validation
+        return questions[:10]
     elif test_type == 'personality':
-        traits = {'Openness': [], 'Conscientiousness': [], 'Extraversion': [], ' Agreeableness': [], 'Neuroticism': []}
+        traits = {'O': [], 'C': [], 'E': [], 'A': [], 'N': []}
         for q in PERSONALITY_QUESTIONS:
             if q['trait'] in traits:
                 traits[q['trait']].append(q)
@@ -372,12 +312,22 @@ def generate_questions(test_type):
             trait_qs = traits[trait]
             selected_questions.extend(random.sample(trait_qs, min(2, len(trait_qs))))
         
+        for question in selected_questions:
+            question['time_limit'] = question.get('time_limit', 60)
         random.shuffle(selected_questions)
+        session['personality_questions'] = selected_questions  # Store for validation
         return selected_questions
     elif test_type == 'skill_gap':
         field = session.get('selected_field', 'Software Development')
-        questions = SKILL_GAP_QUESTIONS.get(field, [])
-        return questions[:10]
+        available_questions = copy.deepcopy(SKILL_GAP_QUESTIONS.get(field, []))
+        if not available_questions:
+            return []
+        questions = random.sample(available_questions, min(10, len(available_questions)))
+        # Assign time_limit to each question
+        for question in questions:
+            question['time_limit'] = question.get('time_limit', 60)  # Default 60 seconds
+        session['skill_gap_questions'] = questions  # Store for validation
+        return questions
     return []
 
 # Routes
@@ -553,26 +503,13 @@ def test():
                         score=score
                     )
                     db.session.add(result)
-                    # Award "First Test" Badge if not already earned
                     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
-                        badge = Badge(
-                            user_id=current_user.id,
-                            name="First Test Completed",
-                            description="Completed your first test!",
-                            icon="fas fa-trophy"
-                        )
+                        badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
                         db.session.add(badge)
-                    # Award "High Scorer" Badge if score is high
                     if score >= 0.8 * max_score:
                         if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
-                            badge = Badge(
-                                user_id=current_user.id,
-                                name="High Scorer",
-                                description="Scored 80% or higher on a test!",
-                                icon="fas fa-star"
-                            )
+                            badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
                             db.session.add(badge)
-                    # Add Notification
                     notification = Notification(
                         user_id=current_user.id,
                         message=f"You completed the Sample Test with a score of {score}/{max_score}!",
@@ -589,87 +526,138 @@ def test():
         if not current_user.is_authenticated:
             flash('Please log in to access the Aptitude Test.', 'warning')
             return redirect(url_for('login', next=request.url))
-        questions = generate_questions('aptitude')
-        session['aptitude_questions'] = questions  # Store questions in session for validation
-        if request.method == 'POST':
-            if not request.form:
-                flash('No form data received. Please try again.', 'danger')
-                return redirect(url_for('test', type='aptitude'))
-            time_spent = int(request.form.get('time_spent', 0))
-            correct = 0
-            total = len(questions)
-            category_scores = defaultdict(int)
-            category_counts = defaultdict(int)
-            for question in questions:
-                answer = request.form.get(str(question['id']))
-                category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
-                category_counts[category] += 1
-                if answer is not None:  # Handle missing answers gracefully
-                    if int(answer) == question['correct']:
-                        correct += 1
-                        category_scores[category] += 1
-                else:
-                    print(f"Missing answer for question {question['id']}")
-            detailed_scores = {cat: (category_scores[cat] / category_counts[cat]) * 100 for cat in category_scores if category_counts[cat] > 0}
-            score = (correct / total) * 100 if total > 0 else 0
-            result = TestResult(
-                user_id=current_user.id,
-                test_type='aptitude',
-                score=score,
-                time_spent=time_spent,
-                details=json.dumps(detailed_scores)
-            )
-            db.session.add(result)
-            # Award "First Test" Badge if not already earned
-            if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
-                badge = Badge(
-                    user_id=current_user.id,
-                    name="First Test Completed",
-                    description="Completed your first test!",
-                    icon="fas fa-trophy"
-                )
-                db.session.add(badge)
-            # Award "High Scorer" Badge if score is high
-            if score >= 80:
-                if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
-                    badge = Badge(
+        questions = session.get('aptitude_questions')
+        if not questions or request.method == 'GET':
+            questions = generate_questions('aptitude')
+            session['aptitude_questions'] = questions
+            session['aptitude_correct'] = 0
+            session['aptitude_total'] = 0
+            session['aptitude_category_scores'] = defaultdict(int)
+            session['aptitude_category_counts'] = defaultdict(int)
+        current_question_index = int(request.args.get('q', 0))
+        if current_question_index >= len(questions):
+            return redirect(url_for('results'))
+        question = questions[current_question_index]
+        category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
+        if request.method == 'POST' and request.form:
+            answer = request.form.get(question['id'])
+            if answer is not None:
+                session['aptitude_total'] += 1
+                session['aptitude_category_counts'][category] += 1
+                if int(answer) == question['correct']:
+                    session['aptitude_correct'] += 1
+                    session['aptitude_category_scores'][category] += 1
+                # Move to next question or finish
+                next_index = current_question_index + 1
+                if next_index >= len(questions):
+                    score = (session['aptitude_correct'] / session['aptitude_total']) * 100 if session['aptitude_total'] > 0 else 0
+                    detailed_scores = {cat: (session['aptitude_category_scores'][cat] / session['aptitude_category_counts'][cat]) * 100 for cat in session['aptitude_category_scores'] if session['aptitude_category_counts'][cat] > 0}
+                    result = TestResult(
                         user_id=current_user.id,
-                        name="High Scorer",
-                        description="Scored 80% or higher on a test!",
-                        icon="fas fa-star"
+                        test_type='aptitude',
+                        score=score,
+                        time_spent=request.form.get('time_spent', 0),
+                        details=json.dumps(detailed_scores)
                     )
-                    db.session.add(badge)
-            # Add Notification
-            notification = Notification(
-                user_id=current_user.id,
-                message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
-                type="test_result"
-            )
-            db.session.add(notification)
-            db.session.commit()
-            notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-            return render_template('results.html', score_data={
-                'score': score,
-                'correct': correct,
-                'total': total,
-                'time_spent': time_spent,
-                'details': detailed_scores
-            }, active_page='test', test_type='aptitude', notifications=notifications)
-        total_questions = len(questions)
+                    db.session.add(result)
+                    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                        badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
+                        db.session.add(badge)
+                    if score >= 80:
+                        if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                            badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
+                            db.session.add(badge)
+                    notification = Notification(
+                        user_id=current_user.id,
+                        message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
+                        type="test_result"
+                    )
+                    db.session.add(notification)
+                    db.session.commit()
+                    session.pop('aptitude_questions', None)
+                    session.pop('aptitude_correct', None)
+                    session.pop('aptitude_total', None)
+                    session.pop('aptitude_category_scores', None)
+                    session.pop('aptitude_category_counts', None)
+                    flash(f'Aptitude Test completed! Score: {score:.1f}%', 'success')
+                    return redirect(url_for('results'))
+                return redirect(url_for('test', type='aptitude', q=next_index))
+            else:
+                flash('Please select an answer before submitting.', 'danger')
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('assessments/aptitude.html', questions=questions, instructions=instructions,
-                              current_category='Mathematics', total_questions=total_questions,
-                              initial_time=600, completed_questions=0, active_page='test', test_type='aptitude', notifications=notifications)
+        return render_template('assessments/aptitude.html',
+                              questions=[question],
+                              instructions=instructions,
+                              current_category=category,
+                              total_questions=len(questions),
+                              completed_questions=current_question_index,
+                              current_question_index=current_question_index,
+                              initial_time=question['time_limit'],
+                              completed_questions=current_question_index,
+                              active_page='test',
+                              test_type='aptitude',
+                              notifications=notifications)
 
     elif test_type == 'personality':
         if not current_user.is_authenticated:
             flash('Please log in to access the Personality Test.', 'warning')
             return redirect(url_for('login', next=request.url))
-        questions = generate_questions('personality')
-        session['personality_questions'] = questions  # Store for /submit_assessment
+        questions = session.get('personality_questions')
+        if not questions or request.method == 'GET':
+            questions = generate_questions('personality')
+            session['personality_questions'] = questions
         if request.method == 'POST':
-            flash('Personality test submission should use the /submit_assessment endpoint.', 'warning')
-            return redirect(url_for('test', type='personality'))
+            if request.form:
+                answers = {}
+                for q in questions:
+                    answer = request.form.get(q['id'])
+                    if answer is not None:
+                        answers[q['id']] = int(answer)
+                    else:
+                        flash('Please answer all questions before submitting.', 'danger')
+                        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+                        return render_template('assessments/personality.html',
+                                              questions=questions,
+                                              instructions=instructions,
+                                              current_question_index=0,
+                                              question=questions[0],
+                                              active_page='test',
+                                              test_type='personality',
+                                              notifications=notifications)
+                trait_scores = defaultdict(float)
+                for q in questions:
+                    score = SCORING_KEY[q['trait']][answers[q['id']]]
+                    trait_scores[q['trait']] += score
+                for trait in trait_scores:
+                    trait_scores[trait] /= len([q for q in questions if q['trait'] == trait]) * max(SCORING_KEY[trait].values())
+                    trait_scores[trait] *= 100
+                detailed_scores = dict(trait_scores)
+                score = sum(trait_scores.values()) / len(trait_scores) if trait_scores else 0
+                result = TestResult(
+                    user_id=current_user.id,
+                    test_type='personality',
+                    score=score,
+                    time_spent=request.form.get('time_spent', 0),
+                    details=json.dumps(detailed_scores)
+                )
+                db.session.add(result)
+                if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                    badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
+                    db.session.add(badge)
+                if score >= 80:
+                    if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                        badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
+                        db.session.add(badge)
+                notification = Notification(
+                    user_id=current_user.id,
+                    message=f"You completed the Personality Test with an overall score of {score:.1f}%!",
+                    type="test_result"
+                )
+                db.session.add(notification)
+                db.session.commit()
+                session.pop('personality_questions', None)
+                flash(f'Personality Test completed! Overall score: {score:.1f}%', 'success')
+                return redirect(url_for('results'))
         current_question_index = int(request.args.get('q', 0))
         if current_question_index < 0 or current_question_index >= len(questions):
             current_question_index = 0
@@ -686,69 +674,72 @@ def test():
 
     elif test_type == 'skill_gap':
         if not current_user.is_authenticated:
-            flash('Please log in to access the Skill Gap Test.', 'warning')
-            return redirect(url_for('login', next=request.url))
-        selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
-        session['selected_field'] = selected_field  # Store the field in session
+            flash('Please log in to access the Skill Gap Assessment.', 'warning')
+        return redirect(url_for('login', next=request.url))
+    selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
+    session['selected_field'] = selected_field
+    questions = session.get('skill_gap_questions')
+    if not questions or request.method == 'GET':
         questions = generate_questions('skill_gap')
+        session['skill_gap_questions'] = questions
+        session['skill_gap_correct'] = 0
+        session['skill_gap_total'] = 0
         if not questions:
-            flash('No questions available for the selected field. Please select a different field.', 'warning')
+            flash('No questions available for the selected field.', 'warning')
             return redirect(url_for('interest_test'))
-        if request.method == 'POST':
-            if not request.form:
-                flash('No form data received. Please try again.', 'danger')
-                return redirect(url_for('test', type='skill_gap', field=selected_field))
-            correct = 0
-            total = len(questions)
-            for question in questions:
-                answer = request.form.get(str(question['id']))
-                if answer is not None and int(answer) == question['correct']:
-                    correct += 1
-            skill_score = (correct / total) * 100 if total > 0 else 0
-            detailed_scores = {selected_field: skill_score}
-            result = TestResult(
-                user_id=current_user.id,
-                test_type='skill_gap',
-                score=skill_score,
-                details=json.dumps(detailed_scores)
-            )
-            db.session.add(result)
-            # Award "First Test" Badge if not already earned
-            if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
-                badge = Badge(
-                    user_id=current_user.id,
-                    name="First Test Completed",
-                    description="Completed your first test!",
-                    icon="fas fa-trophy"
-                )
-                db.session.add(badge)
-            # Award "High Scorer" Badge if score is high
-            if skill_score >= 80:
-                if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
-                    badge = Badge(
+        current_question_index = int(request.args.get('q', 0))
+        if current_question_index >= len(questions):
+            return redirect(url_for('results'))
+        question = questions[current_question_index]
+        if request.method == 'POST' and request.form:
+            answer = request.form.get(question['id'])
+            if answer is not None:
+                session['skill_gap_total'] += 1
+                if int(answer) == question['correct']:
+                    session['skill_gap_correct'] += 1
+                next_index = current_question_index + 1
+                if next_index >= len(questions):
+                    skill_score = (session['skill_gap_correct'] / session['skill_gap_total']) * 100 if session['skill_gap_total'] > 0 else 0
+                    detailed_scores = {selected_field: skill_score}
+                    result = TestResult(
                         user_id=current_user.id,
-                        name="High Scorer",
-                        description="Scored 80% or higher on a test!",
-                        icon="fas fa-star"
+                        test_type='skill_gap',
+                        score=skill_score,
+                        time_spent=request.form.get('time_spent', 0),
+                        details=json.dumps(detailed_scores)
                     )
-                    db.session.add(badge)
-            # Add Notification
-            notification = Notification(
-                user_id=current_user.id,
-                message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
-                type="test_result"
-            )
-            db.session.add(notification)
-            db.session.commit()
-            return redirect(url_for('career_match'))
+                    db.session.add(result)
+                    if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+                        badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
+                        db.session.add(badge)
+                    if skill_score >= 80:
+                        if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                            badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
+                            db.session.add(badge)
+                    notification = Notification(
+                        user_id=current_user.id,
+                        message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
+                        type="test_result"
+                    )
+                    db.session.add(notification)
+                    db.session.commit()
+                    session.pop('skill_gap_questions', None)
+                    session.pop('skill_gap_correct', None)
+                    session.pop('skill_gap_total', None)
+                    flash(f'Skill Gap Test completed! Score: {skill_score:.1f}%', 'success')
+                    return redirect(url_for('career_match'))
+                return redirect(url_for('test', type='skill_gap', q=next_index, field=selected_field))
+            else:
+                flash('Please select an answer before submitting.', 'danger')
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/interest_test.html',
                               selected_field=selected_field,
-                              questions=questions,
+                              questions=[question],
                               instructions=instructions,
                               total_questions=len(questions),
-                              initial_time=600,
-                              completed_questions=0,
+                              current_question_index=current_question_index,
+                              initial_time=question['time_limit'],
+                              completed_questions=current_question_index,
                               active_page='test',
                               test_type='skill_gap',
                               notifications=notifications)
@@ -769,13 +760,25 @@ def interest_test():
     if selected_field:
         session['selected_field'] = selected_field
     questions = generate_questions('skill_gap') if selected_field else []
+    
+    current_question_index = int(request.args.get('q', 0))
+    total_questions = len(questions)
+    completed_questions = min(current_question_index, total_questions)  # Cap at total_questions
+    
+    if questions and current_question_index >= len(questions):
+        return redirect(url_for('results'))
+    
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('assessments/interest_test.html', 
-                          selected_field=selected_field, 
-                          questions=questions, 
+    return render_template('assessments/interest_test.html',
+                          selected_field=selected_field,
+                          questions=questions,
+                          total_questions=total_questions,
+                          completed_questions=completed_questions,
+                          current_question_index=current_question_index,
+                          initial_time=questions[0]['time_limit'] if questions else 60,
                           active_page='interest_test',
                           notifications=notifications)
-
+    
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
 def submit_assessment():
@@ -787,23 +790,23 @@ def submit_assessment():
     responses = data.get('responses')
     duration = data.get('duration')
 
-    if test_type != 'personality' or not responses:
+    if test_type != 'personality' or not responses or not isinstance(responses, list):
         return jsonify({'error': 'Invalid test type or responses'}), 400
+
+    # Map question IDs to traits from PERSONALITY_QUESTIONS
+    question_traits = {str(q['id']): (q['trait'], q['direction']) for q in PERSONALITY_QUESTIONS}
+    questions = PERSONALITY_QUESTIONS  # Reference the global question set for completeness check
 
     # Initialize scores for Big Five traits
     scores = {
-        'Openness': 0,
-        'Conscientiousness': 0,
-        'Extraversion': 0,
-        ' Agreeableness': 0,
-        'Neuroticism': 0
+        'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0
     }
     question_counts = {trait: 0 for trait in scores}
-    
+
     # Process responses
     responded_questions = set()
     for response in responses:
-        question_id = response.get('questionId')
+        question_id = str(response.get('questionId'))  # Ensure string comparison
         value = response.get('answer')
         if question_id not in question_traits or value is None:
             print(f"Invalid or missing response for question ID: {question_id}")
@@ -815,9 +818,8 @@ def submit_assessment():
                 continue
             trait, direction = question_traits[question_id]
             responded_questions.add(question_id)
-            if not direction:  # Reverse scoring if direction is False
-                value = 4 - value
-            scores[trait] += value + 1  # Add 1 to shift 0-4 to 1-5
+            question_counts[trait] += 1  # Increment count for this trait
+            scores[trait] += (4 - value) if not direction else value  # Reverse scoring if needed
         except ValueError:
             print(f"Non-integer answer provided for question {question_id}: {value}")
             continue
@@ -830,7 +832,7 @@ def submit_assessment():
     # Calculate percentage scores for each trait
     for trait in scores:
         if question_counts[trait] > 0:
-            max_score = question_counts[trait] * 4  # Max possible score for this trait
+            max_score = question_counts[trait] * 4  # Max possible score (0-4 per question)
             scores[trait] = (scores[trait] / max_score) * 100  # Convert to percentage
         else:
             scores[trait] = 0  # Default to 0 if no questions for this trait
@@ -876,11 +878,13 @@ def submit_assessment():
         type="test_result"
     )
     db.session.add(notification)
+    
+    # Commit all changes to the database
     db.session.commit()
 
     # Prepare trait names for results page
     trait_names = {
-        'Openness': 'Openness',
+        'Openness': 'Openness to Experience',
         'Conscientiousness': 'Conscientiousness',
         'Extraversion': 'Extraversion',
         ' Agreeableness': ' Agreeableness',
@@ -893,6 +897,187 @@ def submit_assessment():
                            scores=json.dumps(scores),  # Pass as JSON string
                            dominant_trait=dominant_trait,
                            trait_names=json.dumps(trait_names))  # Pass as JSON string
+    })
+    
+@app.route('/submit_aptitude', methods=['POST'])
+@login_required
+def submit_aptitude():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    responses = data.get('responses', [])
+    time_spent = data.get('time_spent', 0)
+    current_question_index = data.get('current_question_index', 0)
+    questions = session.get('aptitude_questions', [])
+    
+    if not questions or current_question_index >= len(questions):
+        return jsonify({'error': 'Invalid question index or no questions in session'}), 400
+    
+    # Process current response
+    correct = session.get('aptitude_correct', 0)
+    total = session.get('aptitude_total', 0)
+    category_scores = session.get('aptitude_category_scores', defaultdict(int))
+    category_counts = session.get('aptitude_category_counts', defaultdict(int))
+    
+    current_response = responses[-1] if responses else None
+    if current_response:
+        question_id = str(current_response.get('questionId'))
+        answer = current_response.get('answer')
+        question = next((q for q in questions if q['id'] == question_id), None)
+        if question and answer is not None:
+            category = next((cat for cat, levels in APTITUDE_QUESTIONS.items() if any(question['id'] in [q['id'] for q in level] for level in levels.values())), "Unknown")
+            category_counts[category] += 1
+            total += 1
+            if int(answer) == question['correct']:
+                correct += 1
+                category_scores[category] += 1
+    
+    session['aptitude_correct'] = correct
+    session['aptitude_total'] = total
+    session['aptitude_category_scores'] = dict(category_scores)
+    session['aptitude_category_counts'] = dict(category_counts)
+    
+    # Adjust difficulty for next question
+    performance = correct / total if total > 0 else 0
+    current_difficulty = 'easy'
+    if total >= 3:  # Adjust after a few questions
+        if performance >= 0.75 and current_question_index < len(questions) - 1:
+            current_difficulty = 'hard'
+        elif performance >= 0.5:
+            current_difficulty = 'moderate'
+        else:
+            current_difficulty = 'easy'
+    
+    # If last question, save results
+    if current_question_index == len(questions) - 1:
+        score = (correct / total) * 100 if total > 0 else 0
+        detailed_scores = {cat: (category_scores[cat] / category_counts[cat]) * 100 for cat in category_scores if category_counts[cat] > 0}
+        result = TestResult(
+            user_id=current_user.id,
+            test_type='aptitude',
+            score=score,
+            time_spent=time_spent,
+            details=json.dumps(detailed_scores)
+        )
+        db.session.add(result)
+        if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+            badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
+            db.session.add(badge)
+        if score >= 80:
+            if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
+                db.session.add(badge)
+        notification = Notification(
+            user_id=current_user.id,
+            message=f"You completed the Aptitude Test with a score of {score:.1f}%!",
+            type="test_result"
+        )
+        db.session.add(notification)
+        db.session.commit()
+        session.pop('aptitude_questions', None)
+        session.pop('aptitude_correct', None)
+        session.pop('aptitude_total', None)
+        session.pop('aptitude_category_scores', None)
+        session.pop('aptitude_category_counts', None)
+        return jsonify({'redirect': url_for('results')})
+    
+    # Get next question based on adjusted difficulty
+    next_index = current_question_index + 1
+    available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
+    for q in questions[:next_index]:
+        for cat in available_questions:
+            for diff in available_questions[cat]:
+                available_questions[cat][diff] = [aq for aq in available_questions[cat][diff] if aq['id'] != q['id']]
+    
+    category = random.choice(list(available_questions.keys()))
+    next_questions = available_questions[category][current_difficulty]
+    if not next_questions:
+        for diff in ['easy', 'moderate', 'hard']:
+            if available_questions[category][diff]:
+                next_questions = available_questions[category][diff]
+                break
+    next_question = random.choice(next_questions) if next_questions else questions[next_index]
+    
+    questions[next_index] = next_question
+    session['aptitude_questions'] = questions
+    
+    return jsonify({
+        'question': next_question,
+        'current_question_index': next_index,
+        'total_questions': len(questions)
+    })
+    
+@app.route('/submit_skill_gap', methods=['POST'])
+@login_required
+def submit_skill_gap():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    responses = data.get('responses', [])
+    time_spent = data.get('time_spent', 0)
+    current_question_index = data.get('current_question_index', 0)
+    questions = session.get('skill_gap_questions', [])
+    
+    if not questions or current_question_index >= len(questions):
+        return jsonify({'error': 'Invalid question index or no questions in session'}), 400
+    
+    # Process current response
+    correct = session.get('skill_gap_correct', 0)
+    total = session.get('skill_gap_total', 0)
+    current_response = responses[-1] if responses else None
+    if current_response:
+        question_id = str(current_response.get('questionId'))
+        answer = current_response.get('answer')
+        question = next((q for q in questions if q['id'] == question_id), None)
+        if question and answer is not None:
+            total += 1
+            if int(answer) == question['correct']:
+                correct += 1
+    
+    session['skill_gap_correct'] = correct
+    session['skill_gap_total'] = total
+    
+    # If last question, save results and map to careers
+    if current_question_index == len(questions) - 1:
+        skill_score = (correct / total) * 100 if total > 0 else 0
+        selected_field = session.get('selected_field', 'Software Development')
+        detailed_scores = {selected_field: skill_score}
+        result = TestResult(
+            user_id=current_user.id,
+            test_type='skill_gap',
+            score=skill_score,
+            time_spent=time_spent,
+            details=json.dumps(detailed_scores)
+        )
+        db.session.add(result)
+        if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+            badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
+            db.session.add(badge)
+        if skill_score >= 80:
+            if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
+                badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher on a test!", icon="fas fa-star")
+                db.session.add(badge)
+        notification = Notification(
+            user_id=current_user.id,
+            message=f"You completed the Skill Gap Test for {selected_field} with a score of {skill_score:.1f}%!",
+            type="test_result"
+        )
+        db.session.add(notification)
+        db.session.commit()
+        session.pop('skill_gap_questions', None)
+        session.pop('skill_gap_correct', None)
+        session.pop('skill_gap_total', None)
+        return jsonify({'redirect': url_for('career_match')})
+    
+    # Return next question
+    next_index = current_question_index + 1
+    next_question = questions[next_index]
+    return jsonify({
+        'question': next_question,
+        'current_question_index': next_index,
+        'total_questions': len(questions)
     })
     
 @app.route('/submit_interests', methods=['POST'])
@@ -955,19 +1140,32 @@ def submit_interests():
 @app.route('/personality_results')
 @login_required
 def personality_results():
-    scores = request.args.get('scores', type=json.loads)
+    scores_json = request.args.get('scores')
     dominant_trait = request.args.get('dominant_trait')
-    trait_names = request.args.get('trait_names', type=json.loads)
-    return render_template('personality_results.html', 
-                         scores=scores, 
-                         dominant_trait=dominant_trait, 
-                         trait_names=trait_names)
+    trait_names_json = request.args.get('trait_names')
+    
+    if not scores_json or not dominant_trait or not trait_names_json:
+        flash('Invalid results data.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    scores = json.loads(scores_json)
+    trait_names = json.loads(trait_names_json)
+    
+    return render_template(
+        'personality_results.html',
+        scores=scores,
+        dominant_trait=dominant_trait,
+        trait_names=trait_names,
+        active_page='personality_results'
+    )
 
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required
 def submit_career_assessment():
     if not request.form.get('csrf_token'):
         return "CSRF token missing", 400
+    
+    # Collect responses from the form
     responses = {
         'q1': request.form.get('q1'),
         'q2': request.form.get('q2'),
@@ -980,33 +1178,34 @@ def submit_career_assessment():
         'q9': request.form.get('q9'),
         'q10': request.form.get('q10')
     }
-    # Process responses (e.g., save to TestResult model)
-    rresult = TestResult(
-        user_id=current_user.id,
-        test_type='career_interest',
-        score=sum(1 for v in responses.values() if v not in ['Other', 'Independent']),
-        details=json.dumps(responses),
-    )
-    db.session.add(result)
-    db.session.commit()
-    return redirect(url_for('interest_results', result_id=result.id))
 
-    # Calculate interest scores
+    # Check if all questions are answered
+    if None in responses.values():
+        flash('Please answer all questions before submitting.', 'danger')
+        return redirect(url_for('career_assessment'))
+
+    # Calculate interest scores based on responses
     interest_scores = defaultdict(int)
     fields = ['Software Development', 'Data Science', 'Graphic Design', 'Business Management', 'Scientific']
     for field in fields:
         for q in ['q1', 'q2', 'q3', 'q4', 'q5']:
-            if answers[q] == field:
-                interest_scores[field] += 20  # 20 points per match (total 100)
+            if responses[q] == field:
+                interest_scores[field] += 20  # 20 points per match (max 100)
 
+    # Calculate a simple score (e.g., number of specific career interests)
+    score = sum(1 for v in responses.values() if v in fields)
+
+    # Save result to database
     result = TestResult(
         user_id=current_user.id,
-        test_type='interest',
-        score=max(interest_scores.values(), default=0),
-        details=json.dumps(dict(interest_scores))
+        test_type='career_interest',
+        score=score,
+        details=json.dumps({**responses, 'interest_scores': dict(interest_scores)}),
+        time_spent=0  # Add timing logic if desired
     )
     db.session.add(result)
-    # Award "First Test" Badge if not already earned
+    
+    # Award badges and notifications
     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
         badge = Badge(
             user_id=current_user.id,
@@ -1015,7 +1214,7 @@ def submit_career_assessment():
             icon="fas fa-trophy"
         )
         db.session.add(badge)
-    # Add Notification
+    
     top_field = max(interest_scores, key=interest_scores.get, default="None")
     notification = Notification(
         user_id=current_user.id,
@@ -1025,7 +1224,40 @@ def submit_career_assessment():
     db.session.add(notification)
     db.session.commit()
 
-    return redirect(url_for('career_match'))
+    return redirect(url_for('interest_results', result_id=result.id))
+
+@app.route('/interest_results/<int:result_id>')
+@login_required
+def interest_results(result_id):
+    result = TestResult.query.get_or_404(result_id)
+    if result.user_id != current_user.id:
+        flash('You do not have permission to view this result.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    details = json.loads(result.details)
+    interest_scores = details.get('interest_scores', {})
+    categories = [(field, score) for field, score in interest_scores.items()]
+    categories.sort(key=lambda x: x[1], reverse=True)
+    
+    recommendations = []
+    soc_codes = {
+        "Software Development": "15-1132.00",
+        "Data Science": "15-2051.00",
+        "Graphic Design": "27-1024.00",
+        "Business Management": "11-1021.00",
+        "Scientific": "19-1042.00"
+    }
+    for career, score in categories[:3]:  # Top 3 careers
+        recommendations.append({
+            'career': career,
+            'link': f"https://www.onetonline.org/link/summary/{soc_codes.get(career, '15-1132.00')}"
+        })
+    
+    return render_template(
+        'interest_results.html',
+        categories=categories,
+        recommendations=recommendations
+    )
 
 @app.route('/career_match', methods=['GET', 'POST'])
 @login_required
@@ -1047,8 +1279,7 @@ def career_match():
     aptitude_scores = {}
     personality_scores = {}
     skill_scores = {}
-    only_skill_gap = has_skill_gap and not (has_aptitude or has_personality)
-    alignment_message = None
+    onet_api = get_onet_api()
 
     for result in results:
         details = json.loads(result.details) if result.details else {}
@@ -1061,7 +1292,7 @@ def career_match():
         elif result.test_type == 'personality':
             personality_scores = details
             for career, weights in CAREER_MAPPING.items():
-                score = sum(personality_scores.get(trait, 0) * weight / 100 
+                score = sum(personality_scores.get(trait.strip(), 0) * weight / 100 
                            for trait, weight in weights['personality'].items())
                 career_scores[career] += score * 0.3
         elif result.test_type == 'skill_gap':
@@ -1071,34 +1302,30 @@ def career_match():
                     if skill in skill_scores:
                         career_scores[career] += (skill_scores[skill] * weight / 100) * 0.3
 
-    if only_skill_gap:
-        career_scores = defaultdict(float)
-        for career, weights in CAREER_MAPPING.items():
-            for skill in weights['skills']:
-                if skill in skill_scores:
-                    career_scores[career] = skill_scores[skill]
-        alignment_message = "Your matches are based solely on your skill gap test. For more accurate results, consider taking the aptitude and personality tests."
-
-    career_matches = [
-        {
+    career_matches = []
+    for career, data in CAREER_MAPPING.items():
+        soc_code = data.get('soc_code', '15-1252.00')  # Default to Software Developer SOC if missing
+        career_data = onet_api.get_career_details(soc_code)
+        career_matches.append({
             'career': career,
-            'match_score': round(career_scores.get(career, 0), 2),
+            'match_score': career_scores.get(career, 0),
             'description': data['description'],
             'resources': data['resources'],
             'requirements': {
                 'aptitude': data['aptitude'],
                 'personality': data['personality'],
-                'skills': list(data['skills'].keys())
-            }
-        } for career, data in CAREER_MAPPING.items()
-    ]
+                'skills': list(data['skills'].keys()),
+                'education': career_data.get('education', {}).get('typical', 'Not specified'),
+                'experience': career_data.get('experience', {}).get('typical', 'Not specified')
+            },
+            'salary': career_data.get('wages', {}).get('median', 0) or 0,
+            'scope': career_data.get('job_outlook', {}).get('growth_rate', 0) or 0
+        })
     career_matches.sort(key=lambda x: x['match_score'], reverse=True)
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template(
         'career_match.html',
         career_matches=career_matches[:5],
-        alignment_message=alignment_message,
-        only_skill_gap_completed=only_skill_gap,
         has_aptitude=has_aptitude,
         has_personality=has_personality,
         has_skill_gap=has_skill_gap,

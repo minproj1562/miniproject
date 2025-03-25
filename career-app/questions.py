@@ -324,9 +324,44 @@ CAREER_MAPPING = {
             {"name": "Learn Python", "link": "https://www.codecademy.com/learn/learn-python-3"},
             {"name": "Git Tutorial", "link": "https://www.atlassian.com/git/tutorials"}
         ],
-        "soc_code": "15-1252.00"  # Added SOC code
+        "soc_code": "15-1252.00"
     },
-    # ... (other careers with SOC codes)
+    "Data Scientist": {
+        "aptitude": {"Mathematics": 85, "Logical Reasoning": 75, "Verbal Ability": 50},
+        "personality": {"Openness": 70, "Conscientiousness": 65, "Extraversion": 40, " Agreeableness": 45, "Neuroticism": 35},
+        "skills": {"Data Science": 80},
+        "interests": ["Data Science"],
+        "description": "Analyzes complex data to uncover insights and trends.",
+        "resources": [
+            {"name": "Data Science Course", "link": "https://www.coursera.org/learn/data-science"},
+            {"name": "Pandas Tutorial", "link": "https://pandas.pydata.org/docs/getting_started/"}
+        ],
+        "soc_code": "15-2051.00"
+    },
+    "Graphic Designer": {
+        "aptitude": {"Mathematics": 40, "Logical Reasoning": 50, "Verbal Ability": 70},
+        "personality": {"Openness": 80, "Conscientiousness": 60, "Extraversion": 60, " Agreeableness": 55, "Neuroticism": 45},
+        "skills": {"Graphic Design": 75},
+        "interests": ["Graphic Design"],
+        "description": "Creates visual content to communicate messages.",
+        "resources": [
+            {"name": "Adobe Photoshop Basics", "link": "https://www.adobe.com/products/photoshop.html"},
+            {"name": "Design Principles", "link": "https://www.canva.com/learn/design-principles/"}
+        ],
+        "soc_code": "27-1024.00"
+    },
+    "Business Manager": {
+        "aptitude": {"Mathematics": 60, "Logical Reasoning": 70, "Verbal Ability": 80},
+        "personality": {"Openness": 50, "Conscientiousness": 75, "Extraversion": 70, " Agreeableness": 60, "Neuroticism": 30},
+        "skills": {"Business Management": 70},
+        "interests": ["Business Management"],
+        "description": "Oversees operations and strategic planning for organizations.",
+        "resources": [
+            {"name": "MBA Essentials", "link": "https://www.coursera.org/learn/mba-essentials"},
+            {"name": "Leadership Skills", "link": "https://www.mindtools.com/pages/main/leadership.htm"}
+        ],
+        "soc_code": "11-1021.00"
+    }
 }
 
 SKILL_GAP_QUESTIONS = {

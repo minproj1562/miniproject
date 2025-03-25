@@ -1,90 +1,234 @@
 {% extends "base.html" %}
 {% block title %}Interest Assessment Results{% endblock %}
 {% block extra_head %}
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-  /* Page-specific styles for Interest Assessment Results */
+  :root {
+    --primary-color: #6366f1;
+    --secondary-color: #4f46e5;
+    --gradient-start: #7c3aed;
+    --gradient-end: #4f46e5;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    min-height: 100vh;
+  }
+
   .results-container {
-      background-color: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-top: 50px;
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
-  .category-score {
-      margin: 10px 0;
-      padding: 15px;
-      background-color: #f9f9f9;
-      border-radius: 4px;
+
+  @keyframes slideUp {
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
+
+  .category-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: none;
+  }
+
+  .category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .score-bar-container {
+    height: 12px;
+    background: #e0e7ff;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
   .score-bar {
-      background-color: #007bff;
-      height: 20px;
-      border-radius: 10px;
-      margin-top: 5px;
-      transition: width 0.5s ease-in-out;
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width 1s ease-in-out;
   }
-  .recommendations {
-      margin-top: 20px;
-      padding: 20px;
-      background-color: #e9f5ff;
-      border-radius: 4px;
+
+  .recommendation-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
   }
-  .recommendation-item {
-      padding: 10px;
-      margin: 5px 0;
-      background-color: white;
-      border-radius: 4px;
+
+  .recommendation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1));
+    transition: 0.4s;
   }
-  .nav-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 2rem;
+
+  .recommendation-card:hover::before {
+    left: 100%;
   }
-  .btn {
-      background-color: #007bff;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-      cursor: pointer;
+
+  .sparkle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
   }
-  .btn:hover {
-      background-color: #0056b3;
+
+  .celebrate-heading {
+    background: linear-gradient(45deg, #4f46e5, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-buttons .btn {
+    border-radius: 8px;
+    padding: 12px 30px;
+    font-weight: 600;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nav-buttons .btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    transition: 0.4s;
+  }
+
+  .nav-buttons .btn:hover::after {
+    left: 50%;
   }
 </style>
 {% endblock %}
+
 {% block content %}
-<div class="results-container">
-    <div class="header text-center mb-4">
-        <h1>Your Career Interest Assessment Results</h1>
-    </div>
-    
-    <h2>Category Scores</h2>
-    {% for category in categories %}
-    <div class="category-score">
-        <strong>{{ category[0] }}:</strong> {{ category[1] }} points
-        <div class="score-bar" style="width: {{ (category[1] / 15) * 100 }}%;"></div>
-    </div>
-    {% endfor %}
-    
-    <div class="recommendations">
-        <h2>Recommended Career Paths</h2>
-        <ul style="list-style: none; padding: 0;">
-            {% for recommendation in recommendations %}
-            <li class="recommendation-item">
-                <a href="{{ recommendation['link'] }}" style="text-decoration: none; color: #007bff;">
-                    {{ recommendation['career'] }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+<div class="container py-5">
+  <div class="results-container" data-aos="zoom-in">
+    <div class="text-center mb-5">
+      <h1 class="celebrate-heading display-4 fw-bold mb-3">🎉 Your Career Matches! 🎉</h1>
+      <p class="text-muted">Based on your assessment results, here are your personalized recommendations</p>
     </div>
 
-    <div class="nav-buttons">
-        <a href="/interest_test" class="btn">Retake Test</a>
-        <a href="/" class="btn">Return Home</a>
+    <section class="mb-5">
+      <h2 class="h4 fw-bold mb-4">Your Superpowers</h2>
+      <div class="row">
+        {% for category in categories %}
+        <div class="col-md-6 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+          <div class="category-card">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="fw-semibold">{{ category[0] }}</span>
+              <span class="text-primary">{{ category[1] }}%</span>
+            </div>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: {{ category[1] }}%"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="mb-5">
+      <h2 class="h4 fw-bold mb-4">Recommended Career Paths</h2>
+      <div class="row">
+        {% for recommendation in recommendations %}
+        <div class="col-md-6" data-aos="flip-up" data-aos-delay="{{ loop.index * 50 }}">
+          <div class="recommendation-card">
+            <a href="{{ recommendation['link'] }}" class="stretched-link text-decoration-none">
+              <div class="d-flex align-items-center">
+                <div class="bg-primary text-white rounded-circle p-2 me-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+                  </svg>
+                </div>
+                <h3 class="h6 mb-0 text-dark">{{ recommendation['career'] }}</h3>
+              </div>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <div class="nav-buttons mt-5" data-aos="fade-up" data-aos-delay="300">
+      <a href="/interest_test" class="btn btn-primary">Retake Test 🔄</a>
+      <a href="/" class="btn btn-outline-primary">Return Home 🏠</a>
     </div>
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script>
+  AOS.init({
+    duration: 800,
+    once: true,
+    easing: 'ease-out-quad'
+  });
+
+  // Trigger confetti
+  function triggerConfetti() {
+    const count = 200;
+    const defaults = {
+      origin: { y: 0.7 },
+      colors: ['#6366f1', '#4f46e5', '#7c3aed']
+    };
+
+    function fire(particleRatio, opts) {
+      confetti(Object.assign({}, defaults, opts, {
+        particleCount: Math.floor(count * particleRatio)
+      }));
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 });
+    fire(0.2, { spread: 60 });
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+    fire(0.1, { spread: 120, startVelocity: 45 });
+  }
+
+  window.addEventListener('load', triggerConfetti);
+
+  // Add sparkle effect
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('mousemove', function(e) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'sparkle';
+      sparkle.style.left = e.pageX + 'px';
+      sparkle.style.top = e.pageY + 'px';
+      document.body.appendChild(sparkle);
+      
+      setTimeout(() => sparkle.remove(), 1000);
+    });
+  });
+</script>
 {% endblock %}

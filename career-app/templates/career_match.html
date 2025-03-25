@@ -211,10 +211,10 @@
                 <h3><i class="bi bi-briefcase"></i> Career Analysis</h3>
                 <ul>
                     <li><strong>Skills Required:</strong> {{ match.requirements.skills|join(', ') }}</li>
-                    <li><strong>Education:</strong> {{ match.requirements.education }}</li>
-                    <li><strong>Experience:</strong> {{ match.requirements.experience }}</li>
-                    <li><strong>Median Salary:</strong> ${{ match.salary|round(2)|int }}</li>
-                    <li><strong>Job Growth:</strong> {{ match.scope|round(2) }}%</li>
+                    <li><strong>Education:</strong> {{ match.requirements.education|default('Not specified') }}</li>
+                    <li><strong>Experience:</strong> {{ match.requirements.experience|default('Not specified') }}</li>
+                    <li><strong>Median Salary:</strong> ${{ match.salary|default(0)|round(2)|int }}</li>
+                    <li><strong>Job Growth:</strong> {{ match.scope|default(0)|round(2) }}%</li>
                 </ul>
             </div>
 

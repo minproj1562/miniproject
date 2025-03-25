@@ -24,7 +24,7 @@
 
     {% if selected_field %}
     <div class="progress-container">
-        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+        <div class="progress-bar" id="progress-bar" style="width: {{ total_questions > 0 ? (completed_questions / total_questions * 100) : 0 }}%"></div>
     </div>
 
     <div class="timer-alert" id="timer">
@@ -33,102 +33,84 @@
     </div>
 
     <div class="question-counter" id="question-counter">
-        Questions Answered: <span id="answered-count">0</span> / {{ total_questions }}
+        Questions Answered: <span id="answered-count">{{ completed_questions }}</span> / {{ total_questions }}
     </div>
 
-    <form id="skill-gap-form" method="POST" action="{{ url_for('submit_interests') }}">
+    <form id="skill-gap-form" method="POST" action="{{ url_for('test', type='skill_gap', q=current_question_index + 1, field=selected_field) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="time_spent" id="time-spent" value="0">
-        <input type="hidden" name="field" value="{{ selected_field }}">
 
         <div class="questions-wrapper">
-            {% for question in questions %}
+            {% if questions and current_question_index < total_questions %}
             <div class="question-card">
                 <div class="question-header">
                     <span class="category-badge">{{ selected_field }}</span>
-                    <span class="time-limit">⏱ {{ question.time_limit }}s</span>
+                    <span class="time-limit">⏱ {{ questions[current_question_index].time_limit }}s</span>
                 </div>
                 
-                <h3 class="question-text">{{ question.text | safe }}</h3>
+                <h3 class="question-text">{{ questions[current_question_index].text | safe }}</h3>
                 
                 <div class="options-grid">
-                    {% for option in question.options %}
+                    {% for option in questions[current_question_index].options %}
                     <div class="form-check">
                         <input class="form-check-input" type="radio" 
-                               name="{{ question.id }}" 
+                               name="{{ questions[current_question_index].id }}" 
                                value="{{ loop.index0 }}" 
-                               id="{{ question.id }}-{{ loop.index0 }}"
-                               data-correct="{% if loop.index0 == question.correct %}true{% else %}false{% endif %}" 
+                               id="{{ questions[current_question_index].id }}-{{ loop.index0 }}"
                                required>
-                        <label class="form-check-label" for="{{ question.id }}-{{ loop.index0 }}">
+                        <label class="form-check-label" for="{{ questions[current_question_index].id }}-{{ loop.index0 }}">
                             {{ option }}
                         </label>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
 
         <div class="assessment-controls">
-            <button type="submit" class="submit-btn">Submit Assessment</button>
+            <button type="submit" class="submit-btn">Next</button>
         </div>
     </form>
     {% endif %}
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const timerElement = document.getElementById('time-left');
-        const answeredCountElement = document.getElementById('answered-count');
-        const progressBar = document.getElementById('progress-bar');
-        const form = document.getElementById('skill-gap-form');
-        const timeSpentInput = document.getElementById('time-spent');
-        let timeLeft = {{ initial_time|default(600) }};
-        let answeredCount = {{ completed_questions|default(0) }};
-        const totalQuestions = {{ total_questions|default(0) }};
+document.addEventListener('DOMContentLoaded', () => {
+    const timerElement = document.getElementById('time-left');
+    const answeredCountElement = document.getElementById('answered-count');
+    const progressBar = document.getElementById('progress-bar');
+    const form = document.getElementById('skill-gap-form');
+    const timeSpentInput = document.getElementById('time-spent');
+    let timeLeft = {{ initial_time|default(60) }};
+    let answeredCount = {{ completed_questions|default(0) }};
+    const totalQuestions = {{ total_questions|default(1) }};
 
-        if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
-            const timerInterval = setInterval(() => {
-                timeLeft--;
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    form.submit();
-                }
-            }, 1000);
+    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && form) {
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                form.submit();
+            }
+        }, 1000);
 
-            document.querySelectorAll('.form-check-input').forEach(input => {
-                input.addEventListener('change', function() {
-                    const questionCard = this.closest('.question-card');
-                    const isCorrect = this.getAttribute('data-correct') === 'true';
-                    const questionId = this.name;
-
-                    // Update answered count only if it's the first answer for this question
-                    const alreadyAnswered = document.querySelectorAll(`input[name="${questionId}"]:checked`).length > 1;
-                    if (!alreadyAnswered) {
-                        answeredCount++;
-                        answeredCountElement.textContent = answeredCount;
-                        progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-                    },
-                    form.addEventListener('submit', (e) => {
-                        const unanswered = document.querySelectorAll('.form-check-input:not(:checked)').length === totalQuestions;
-                        if (unanswered) {
-                            e.preventDefault();
-                            alert('Please answer all questions before submitting.');
-                            return;
-                        }
-                        timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
-                    });
-                });
-            });
-
-            form.addEventListener('submit', (e) => {
-                timeSpentInput.value = {{ initial_time|default(600) }} - timeLeft;
-            });
-        }
-    });
+        form.addEventListener('submit', (e) => {
+            const selected = document.querySelector(`input[name="${questions[current_question_index].id}"]:checked`);
+            if (!selected) {
+                e.preventDefault();
+                alert('Please select an answer before proceeding.');
+                return;
+            }
+            timeSpentInput.value = {{ initial_time|default(60) }} - timeLeft;
+            answeredCount++;
+            answeredCountElement.textContent = answeredCount;
+            progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+        });
+    }
+});
 </script>
 {% endblock %}
