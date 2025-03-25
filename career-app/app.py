@@ -25,10 +25,104 @@ from PIL import Image  # Added for image resizing
 # Import ProfileForm from forms.py
 from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
 from flask_caching import Cache
+app = Flask(__name__)
 app.config['CACHE_TYPE'] = 'SimpleCache'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 3600
 cache = Cache(app)
 
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
+print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
+
+
+# Initialize Flask app
+app.config['SECRET_KEY'] = '033dc7a2f8382c4dd7bd18a473e24db20b088146eb846900'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'abc@gmail.com'
+app.config['MAIL_PASSWORD'] = 'your-app-password-here'
+app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit uploads to 16MB
+
+# Ensure the upload folder exists
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
+# Initialize extensions
+db = SQLAlchemy(app)
+with app.app_context():
+    db.create_all()
+
+csrf = CSRFProtect(app)
+app.config['WTF_CSRF_HEADERS'] = ['X-CSRF-Token']
+mail = Mail(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+migrate = Migrate(app, db)
+
+# Custom Jinja filter
+def datetimeformat(value, format='%Y'):
+    if value == 'now':
+        return datetime.now().strftime(format)
+    return value
+app.jinja_env.filters['datetimeformat'] = datetimeformat
+
+# Models
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=True)
+    mobile_number = db.Column(db.String(15), nullable=True)
+    pin_code = db.Column(db.String(10), nullable=True)
+    dob = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    tests = db.relationship('TestResult', backref='user', lazy=True)
+    theme = db.Column(db.String(20), default='dark')
+    animations_enabled = db.Column(db.Boolean, default=True)
+    profile_image = db.Column(db.String(150), nullable=True, default='images/default_profile.jpg')
+    bio = db.Column(db.Text, nullable=True)  # Added bio field to User model
+    badges = db.relationship('Badge', backref='user', lazy=True)
+    notifications = db.relationship('Notification', backref='user', lazy=True)
+
+class TestResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    test_type = db.Column(db.String(50), nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    time_spent = db.Column(db.Integer, nullable=True)
+    details = db.Column(db.Text, nullable=True)  # Store JSON string of detailed results
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class University(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), unique=True, nullable=False)
+    country = db.Column(db.String(100), nullable=False)
+
+class Badge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
+    date_earned = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message = db.Column(db.String(200), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # e.g., 'test_result', 'badge_earned'
+    is_read = db.Column(db.Boolean, default=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
 # Placeholder for questions.py imports (since the file wasn't provided)
 APTITUDE_QUESTIONS = {
     "Mathematics": {
@@ -115,98 +209,7 @@ LEARNING_RESOURCES = {
     ]
 }
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-print(f"Loaded ONET_USER: {os.getenv('ONET_USER')}")
-print(f"Loaded ONET_PWD: {os.getenv('ONET_PWD')}")
 
-# Initialize Flask app
-app = Flask(__name__)
-app.config['SECRET_KEY'] = '033dc7a2f8382c4dd7bd18a473e24db20b088146eb846900'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'abc@gmail.com'
-app.config['MAIL_PASSWORD'] = 'your-app-password-here'
-app.config['MAIL_DEFAULT_SENDER'] = 'abc@gmail.com'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit uploads to 16MB
-
-# Ensure the upload folder exists
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
-
-# Initialize extensions
-db = SQLAlchemy(app)
-with app.app_context():
-    db.create_all()
-
-csrf = CSRFProtect(app)
-app.config['WTF_CSRF_HEADERS'] = ['X-CSRF-Token']
-mail = Mail(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-migrate = Migrate(app, db)
-
-# Custom Jinja filter
-def datetimeformat(value, format='%Y'):
-    if value == 'now':
-        return datetime.now().strftime(format)
-    return value
-app.jinja_env.filters['datetimeformat'] = datetimeformat
-
-# Models
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=True)
-    mobile_number = db.Column(db.String(15), nullable=True)
-    pin_code = db.Column(db.String(10), nullable=True)
-    dob = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    tests = db.relationship('TestResult', backref='user', lazy=True)
-    theme = db.Column(db.String(20), default='dark')
-    animations_enabled = db.Column(db.Boolean, default=True)
-    profile_image = db.Column(db.String(150), nullable=True, default='images/default_profile.jpg')
-    bio = db.Column(db.Text, nullable=True)  # Added bio field to User model
-    badges = db.relationship('Badge', backref='user', lazy=True)
-    notifications = db.relationship('Notification', backref='user', lazy=True)
-
-class TestResult(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    test_type = db.Column(db.String(50), nullable=False)
-    score = db.Column(db.Integer, nullable=False)
-    time_spent = db.Column(db.Integer, nullable=True)
-    details = db.Column(db.Text, nullable=True)  # Store JSON string of detailed results
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class University(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), unique=True, nullable=False)
-    country = db.Column(db.String(100), nullable=False)
-
-class Badge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(200), nullable=False)
-    icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
-    date_earned = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-
-class Notification(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    message = db.Column(db.String(200), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # e.g., 'test_result', 'badge_earned'
-    is_read = db.Column(db.Boolean, default=False)
-    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -773,7 +776,7 @@ def interest_test():
                           active_page='interest_test',
                           notifications=notifications)
 
-@ap@app.route('/submit_assessment', methods=['POST'])
+@app.route('/submit_assessment', methods=['POST'])
 @login_required
 def submit_assessment():
     # Ensure the request contains JSON data
@@ -985,11 +988,9 @@ def personality_results():
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required
 def submit_career_assessment():
-    if not request.form:
-        flash('Please complete the assessment.', 'danger')
-        return redirect(url_for('career_assessment'))
-
-    answers = {
+    if not request.form.get('csrf_token'):
+        return "CSRF token missing", 400
+    responses = {
         'q1': request.form.get('q1'),
         'q2': request.form.get('q2'),
         'q3': request.form.get('q3'),
@@ -1001,6 +1002,16 @@ def submit_career_assessment():
         'q9': request.form.get('q9'),
         'q10': request.form.get('q10')
     }
+    # Process responses (e.g., save to TestResult model)
+    rresult = TestResult(
+        user_id=current_user.id,
+        test_type='career_interest',
+        score=sum(1 for v in responses.values() if v not in ['Other', 'Independent']),
+        details=json.dumps(responses),
+    )
+    db.session.add(result)
+    db.session.commit()
+    return redirect(url_for('interest_results', result_id=result.id))
 
     # Calculate interest scores
     interest_scores = defaultdict(int)

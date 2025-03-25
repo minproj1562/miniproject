@@ -2,39 +2,18 @@
 {% block title %}Career Interest Assessment{% endblock %}
 {% block extra_head %}
 <style>
-  h1 {
-    color: #1e3c72;
-    margin-bottom: 1.5rem;
-  }
-  .question {
-    margin-bottom: 20px;
-  }
-  .question p {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  .question label {
-    display: block;
-    margin-bottom: 5px;
-  }
-  button {
-    padding: 10px 20px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background-color: #2980b9;
-  }
+  h1 { color: #1e3c72; margin-bottom: 1.5rem; }
+  .question { margin-bottom: 20px; }
+  .question p { font-size: 1.1rem; margin-bottom: 10px; }
+  .question label { display: block; margin-bottom: 5px; }
+  button { padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; }
+  button:hover { background-color: #2980b9; }
 </style>
 {% endblock %}
 {% block content %}
 <h1>Career Interest Assessment</h1>
 <form id="interest-form" method="POST" action="{{ url_for('submit_career_assessment') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <!-- Questions 1 to 10 -->
     <div class="question">
         <p>1. Are you interested in solving technical problems (e.g., coding, system design)?</p>
