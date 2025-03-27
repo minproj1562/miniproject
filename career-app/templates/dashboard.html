@@ -19,14 +19,14 @@
         background: linear-gradient(135deg, #4b134f 0%, #1e3c72 100%) !important;
         color: #ecf0f1;
     }
-    .container {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 20px;
-        padding: 30px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        animation: fadeIn 1s ease-in-out;
-    }
+    .container:not(.navbar .container) {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 1s ease-in-out;
+}
     @keyframes fadeIn {
         0% { opacity: 0; transform: translateY(20px); }
         100% { opacity: 1; transform: translateY(0); }
@@ -403,7 +403,7 @@
         </div>
         <div class="summary-item">
             <i class="fas fa-file-alt"></i>
-            <span><strong>Total Tests Taken:</strong> {{ recent_tests|length }}</span>
+            <span><strong>Total Tests Taken:</strong> {{ tests|length }}</span>
         </div>
         <div class="summary-item">
             <i class="fas fa-trophy"></i>
@@ -428,7 +428,7 @@
                 <div class="col-md-4 mb-3">
                     <div class="quick-link-card">
                         <i class="fas fa-briefcase"></i>
-                        <div><a href="{{ url_for('test',type='interest_test') }}">Skill Gap Test</a></div>
+                        <div><a href="{{ url_for('career_match') }}">Career Matching</a></div>
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -471,31 +471,31 @@
             <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Take tests to track your progress!">
                 <div class="card-header">Recent Tests 📝</div>
                 <div class="card-body">
-                    {% if recent_tests %}
+                    {% if tests %}
                         <ul class="list-group list-group-flush">
-                            {% for test in recent_tests %}
+                            {% for test in tests %}
                                 <li class="list-group-item">
                                     <div>
                                         <strong>{{ test.test_type | capitalize }}</strong> 🎯<br>
-                                        <small>Score: {{ test.score }} / {{ 9 if test.test_type == 'sample' else 8 }}</small><br>
+                                        <small>Score: {{ test.score|round(2) }}%</small><br>
                                         <small>Completed: {{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</small>
                                     </div>
-                                    <span class="badge score-badge bg-{{ 'success' if test.score >= 6 else 'warning' }} rounded-pill">
-                                        {{ 'Excellent' if test.score >= 6 else 'Needs Improvement' }}
+                                    <span class="badge score-badge bg-{{ 'success' if test.score >= 80 else 'warning' }} rounded-pill">
+                                        {{ 'Excellent' if test.score >= 80 else 'Needs Improvement' }}
                                     </span>
                                 </li>
                             {% endfor %}
                         </ul>
                     {% else %}
                         <p>No tests taken yet. Start your journey now! 🚀</p>
-                        <a href="{{ url_for('test', type='sample') }}" class="btn btn-take-test">Take a Test</a>
+                        <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-take-test">Take a Test</a>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-       <!-- Badges -->
-       <div class="col-md-6 mb-4">
+        <!-- Badges -->
+        <div class="col-md-6 mb-4">
             <div class="card" data-bs-toggle="tooltip" data-bs-placement="top" title="Earn badges by completing tests and achieving milestones!">
                 <div class="card-header">Your Badges 🏆</div>
                 <div class="card-body">
@@ -517,7 +517,30 @@
                 </div>
             </div>
         </div>
-    </div> 
+    </div>
+
+    <!-- Available Tests and Next Steps -->
+    <div class="card mb-4">
+        <div class="card-header">Your Test Progress 🌟</div>
+        <div class="card-body">
+            <h5>Available Tests</h5>
+            <div class="mb-3">
+                {% if available_tests.aptitude %}
+                    <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-take-test m-2">Take Aptitude Test</a>
+                {% endif %}
+                {% if available_tests.personality %}
+                    <a href="{{ url_for('test', type='personality') }}" class="btn btn-take-test m-2">Take Personality Test</a>
+                {% endif %}
+                {% if available_tests.skill_gap %}
+                    <a href="{{ url_for('interest_test') }}" class="btn btn-take-test m-2">Take Skill Gap Test</a>
+                {% endif %}
+            </div>
+            {% if can_proceed %}
+                <h5>Next Steps</h5>
+                <a href="{{ url_for('career_match') }}" class="btn btn-take-test">Proceed to Career Matching</a>
+            {% endif %}
+        </div>
+    </div>
 
     <!-- Progress Overview -->
     <div class="row mb-4">
@@ -527,11 +550,11 @@
                 <div class="progress-circle">
                     <svg>
                         <circle class="bg" cx="50" cy="50" r="45"></circle>
-                        <circle class="fg" cx="50" cy="50" r="45" style="--progress: {{ (recent_tests|length * 10)|round|int }}"></circle>
+                        <circle class="fg" cx="50" cy="50" r="45" style="--progress: {{ (tests|length * 33.33)|round|int }}"></circle>
                     </svg>
-                    <span>{{ (recent_tests|length * 10)|round|int }}%</span>
+                    <span>{{ (tests|length * 33.33)|round|int }}%</span>
                 </div>
-                <p class="mt-3">Goal: Take 10 tests to unlock a special badge!</p>
+                <p class="mt-3">Goal: Complete all 3 tests for full career analysis!</p>
             </div>
         </div>
         <div class="col-md-8">
@@ -539,10 +562,10 @@
                 <div class="card-header">Recent Activity ⏳</div>
                 <div class="card-body">
                     <div class="timeline">
-                        {% if recent_tests or badges or notifications %}
-                            {% for test in recent_tests[:3] %}
+                        {% if tests or badges or notifications %}
+                            {% for test in tests[:3] %}
                                 <div class="timeline-item">
-                                    <p>Completed <strong>{{ test.test_type | capitalize }}</strong> test with a score of {{ test.score }}.</p>
+                                    <p>Completed <strong>{{ test.test_type | capitalize }}</strong> test with a score of {{ test.score|round(2) }}%.</p>
                                     <small>{{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</small>
                                 </div>
                             {% endfor %}
@@ -571,7 +594,7 @@
     <div class="card mb-4">
         <div class="card-header">Test Performance 📊</div>
         <div class="card-body">
-            {% if test_data.labels %}
+            {% if tests %}
                 <canvas id="testChart" height="100"></canvas>
             {% else %}
                 <p class="text-muted">No test data available to display. Take a test to see your performance! 📈</p>
@@ -585,17 +608,17 @@
         <div class="card-body">
             <div class="progress-stat">
                 <span>Average Score: </span>
-                {% if recent_tests|length > 0 %}
-                    {% set avg_score = (recent_tests|map(attribute='score')|sum / recent_tests|length) %}
-                    <span>{{ "%.1f" % avg_score }} / {{ max_score }}</span>
+                {% if tests|length > 0 %}
+                    {% set avg_score = (tests|map(attribute='score')|sum / tests|length) %}
+                    <span>{{ "%.1f" % avg_score }}%</span>
                     <div class="progress mt-2 w-50">
-                        <div class="progress-bar" role="progressbar" style="width: {{ (avg_score / max_score * 100)|round|int }}%;" 
-                             aria-valuenow="{{ (avg_score / max_score * 100)|round|int }}" aria-valuemin="0" aria-valuemax="100">
-                            {{ (avg_score / max_score * 100)|round|int }}%
+                        <div class="progress-bar" role="progressbar" style="width: {{ avg_score|round|int }}%;" 
+                             aria-valuenow="{{ avg_score|round|int }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ avg_score|round|int }}%
                         </div>
                     </div>
                 {% else %}
-                    <span>0.0 / {{ max_score }}</span>
+                    <span>0.0%</span>
                     <div class="progress mt-2 w-50">
                         <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
                             0%
@@ -603,8 +626,8 @@
                     </div>
                 {% endif %}
             </div>
-            <div class="progress-stat">Total Tests Taken: {{ recent_tests|length }} 📋</div>
-            <div class="progress-stat recommendation">Recommendation: {{ recommendation }} 💡</div>
+            <div class="progress-stat">Total Tests Taken: {{ tests|length }} 📋</div>
+            <div class="progress-stat recommendation">Recommendation: {{ 'Complete more tests for better career insights!' if tests|length < 3 else 'Proceed to career matching for personalized results!' }} 💡</div>
         </div>
     </div>
 </div>
@@ -632,15 +655,15 @@
     setGreeting();
 
     // Chart.js for Test Performance
-    {% if test_data.labels %}
+    {% if tests %}
         const ctx = document.getElementById('testChart').getContext('2d');
         const testChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: {{ test_data.labels|tojson }},
+                labels: {{ [test.completed_at.strftime('%Y-%m-%d') for test in tests]|tojson }},
                 datasets: [{
                     label: 'Test Scores (%)',
-                    data: {{ test_data.scores|tojson }},
+                    data: {{ [test.score for test in tests]|tojson }},
                     borderColor: '#ff6f61',
                     backgroundColor: 'rgba(255, 111, 97, 0.3)',
                     fill: true,

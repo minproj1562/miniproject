@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Skill Gap Test Results{% endblock %}
+
+{% block extra_head %}
+<style>
+    .results-container {
+        max-width: 700px;
+        margin: 4rem auto;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    .btn-option {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.2rem;
+        background-color: #2a5298;
+        border: none;
+        border-radius: 50px;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin: 0.5rem;
+    }
+    .btn-option:hover {
+        background-color: #1e3c72;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <h1>Skill Gap Test Results</h1>
+    <p>Your skill level in <strong>{{ field }}</strong>: {{ score|round(2) }}%</p>
+    {% if not (has_aptitude and has_personality) %}
+    <p class="text-muted">For a more accurate career match, we recommend completing the Aptitude and Personality tests.</p>
+    <div>
+        {% if not has_aptitude %}
+        <a href="{{ url_for('test', type='aptitude') }}" class="btn-option">Take Aptitude Test</a>
+        {% endif %}
+        {% if not has_personality %}
+        <a href="{{ url_for('test', type='personality') }}" class="btn-option">Take Personality Test</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    <div>
+        <a href="{{ url_for('career_match') }}" class="btn-option">Proceed to Career Match</a>
+        <a href="{{ url_for('dashboard') }}" class="btn-option">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

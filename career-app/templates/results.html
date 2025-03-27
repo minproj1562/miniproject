@@ -52,10 +52,17 @@
     </style>
 
     <div class="results-container">
-        <h1>Aptitude Test Results</h1>
+        {% if score_data %}
+        <h1>{{ score_data.test_type|capitalize }} Test Results</h1>
         <p>Your Score: {{ score_data.score|round(2) }}%</p>
+        {% if score_data.correct is not none and score_data.total is not none %}
         <p>Correct Answers: {{ score_data.correct }} out of {{ score_data.total }}</p>
+        {% endif %}
         <p>Time Spent: {{ score_data.time_spent }} seconds</p>
-        <a href="{{ url_for('test') }}" class="btn-back">Back to Tests</a>
+        {% else %}
+        <h1>Test Results</h1>
+        <p>No results available yet. Take a test to see your scores!</p>
+        {% endif %}
+        <a href="{{ url_for('test', type='aptitude') }}" class="btn-back">Back to Tests</a>
     </div>
 {% endblock %}
