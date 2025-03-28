@@ -10,7 +10,7 @@
     <h1 class="text-3xl font-bold mb-8 text-center">Skill Gap Assessment</h1>
 
     <div class="field-selection text-center mb-6">
-        <form id="field-form" method="GET" action="{{ url_for('interest_test') }}">
+        <form id="field-form" method="GET" action="{{ url_for('test', type='skill_gap') }}">
             <label for="field" class="text-lg font-semibold">Select Field:</label>
             <select name="field" id="field" onchange="this.form.submit()" class="p-2 rounded border" required>
                 <option value="" disabled {% if not selected_field %}selected{% endif %}>-- Select a Field --</option>
@@ -29,7 +29,7 @@
 
     <div class="timer-alert" id="timer">
         <i class="bi bi-clock"></i>
-        Time Left: <span id="time-left">{{ initial_time }}</span>
+        Time Left: <span id="time-left">{{ (initial_time // 60) }}:{{ (initial_time % 60)|string.zfill(2) }}</span>
     </div>
 
     <div class="question-counter" id="question-counter">
@@ -59,6 +59,8 @@
                 {% endfor %}
             </div>
         </div>
+        {% else %}
+        <p>No questions available.</p>
         {% endif %}
     </div>
 
@@ -78,9 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let timeLeft = {{ initial_time|default(60) }};
     let answeredCount = {{ completed_questions|default(0) }};
     const totalQuestions = {{ total_questions|default(1) }};
+    let timerInterval;
 
-    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && submitBtn) {
-        const timerInterval = setInterval(() => {
+    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && submitBtn && questionWrapper) {
+        timerInterval = setInterval(() => {
             timeLeft--;
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
@@ -97,7 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         async function submitAnswer() {
-            const questionId = questionWrapper.querySelector('.question-card').dataset.questionId;
+            const questionId = questionWrapper.querySelector('.question-card')?.dataset.questionId;
+            if (!questionId) {
+                alert('No question available.');
+                return;
+            }
             const selected = document.querySelector(`input[name="${questionId}"]:checked`);
             if (!selected) {
                 alert('Please select an answer before proceeding.');
@@ -105,10 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const timeSpent = {{ initial_time|default(60) }} - timeLeft;
-            const response = {
-                questionId: questionId,
-                answer: selected.value
-            };
+            const response = { questionId: questionId, answer: selected.value };
 
             try {
                 const res = await fetch('{{ url_for("submit_skill_gap") }}', {
@@ -123,19 +127,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         current_question_index: {{ current_question_index }}
                     })
                 });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    let errorData;
+                    try { errorData = JSON.parse(text); } catch { throw new Error('Server error: ' + text); }
+                    throw new Error(errorData.error || 'Server error');
+                }
+
                 const data = await res.json();
+                console.log('Response:', data);
+
                 if (data.redirect) {
                     window.location.href = data.redirect;
                 } else if (data.question) {
                     updateQuestion(data.question, data.current_question_index);
                     timeLeft = data.question.time_limit || 60;
+                    timerElement.textContent = `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`;
+                    clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        const minutes = Math.floor(timeLeft / 60);
+                        const seconds = timeLeft % 60;
+                        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        if (timeLeft <= 0) {
+                            clearInterval(timerInterval);
+                            submitAnswer();
+                        }
+                    }, 1000);
                     answeredCount++;
                     answeredCountElement.textContent = answeredCount;
                     progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
+                } else {
+                    throw new Error('Unexpected response format');
                 }
             } catch (error) {
                 console.error('Error submitting answer:', error);
-                alert('An error occurred. Please try again.');
+                alert(`Error: ${error.message}. Please try again.`);
             }
         }
 
@@ -164,6 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
+    } else {
+        console.error('Required DOM elements are missing or totalQuestions is invalid.');
     }
 });
 </script>

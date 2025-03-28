@@ -342,7 +342,7 @@
                             <circle class="bg" cx="50" cy="50" r="45"></circle>
                             <circle class="fg" cx="50" cy="50" r="45" 
                                     stroke-dasharray="283" 
-                                    stroke-dashoffset="{{ 283 - (283 * (tests|length * 33.33)|round|int / 100 }}">
+                                   stroke-dashoffset="{{ 283 - (283 * ((tests|length * 33.33)|round|int) / 100) }}">
                             </circle>
                         </svg>
                         <span>{{ (tests|length * 33.33)|round|int }}%</span>
@@ -385,23 +385,24 @@
 
     <!-- Test Performance -->
     <div class="card mb-4">
-        <div class="card-header">Test Performance</div>
-        <div class="card-body">
-            {% if tests %}
-                <canvas id="testChart" height="300" aria-label="Test performance chart" role="img"></canvas>
-                <noscript>
-                    <p>Test Scores:</p>
-                    <ul>
-                        {% for test in tests %}
-                            <li>{{ test.test_type | capitalize }}: {{ test.score|round(2) }}% on {{ test.completed_at.strftime('%Y-%m-%d') }}</li>
-                        {% endfor %}
-                    </ul>
-                </noscript>
-            {% else %}
-                <p class="text-muted">No test data available to display.</p>
-            {% endif %}
-        </div>
+    <div class="card-header">Test Performance</div>
+    <div class="card-body">
+        {% if tests %}
+            <canvas id="testChart" height="300" aria-label="Test performance chart" role="img"></canvas>
+            <noscript>
+                <p>Test Scores:</p>
+                <ul>
+                    {% for test in tests %}
+                        <li>{{ test.test_type | capitalize }}: {{ test.score|round(2) }}% on {{ test.completed_at.strftime('%Y-%m-%d') }}</li>
+                    {% endfor %}
+                </ul>
+            </noscript>
+        {% else %}
+            <p class="text-muted">No test data available to display.</p>
+        {% endif %}
     </div>
+</div>
+
 
     <!-- Progress Stats -->
     <div class="card">
@@ -430,6 +431,9 @@
 {% block scripts %}
 {{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Personalized Greeting
     function setGreeting() {
@@ -439,7 +443,6 @@
         else if (hour >= 12 && hour < 17) greetingText = "Good Afternoon";
         else if (hour >= 17 && hour < 22) greetingText = "Good Evening";
         else greetingText = "Good Night";
-        
         document.getElementById('greeting').textContent = `${greetingText}, {{ user.username }}!`;
     }
     setGreeting();
@@ -453,10 +456,10 @@
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: {{ tests | map(attribute='completed_at') | map('datetimeformat', '%Y-%m-%d') | list | tojson }},
+                        labels: {{ tests | map(attribute='completed_at') | map('strftime', '%Y-%m-%d') | list | tojson }},
                         datasets: [{
                             label: 'Test Scores (%)',
-                            data: {{ [test.score for test in tests] | tojson }},
+                            data: {{ test_scores | tojson }},
                             borderColor: '#ff6f61',
                             backgroundColor: 'rgba(255, 111, 97, 0.1)',
                             fill: true,
@@ -467,10 +470,7 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100
-                            }
+                            y: { beginAtZero: true, max: 100 }
                         }
                     }
                 });
@@ -486,10 +486,8 @@
         button.addEventListener('click', function() {
             const notificationId = this.getAttribute('data-id');
             const notificationItem = this.closest('[data-notification-id]');
-            
             this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
             this.disabled = true;
-            
             fetch(`/mark_notification_read/${notificationId}`, {
                 method: 'POST',
                 headers: {
@@ -500,15 +498,11 @@
             .then(response => {
                 if (response.ok) {
                     notificationItem.remove();
-                    // Update notification count badge if exists
                     const badge = document.querySelector('.notification-badge');
                     if (badge) {
                         const count = parseInt(badge.textContent);
-                        if (count > 1) {
-                            badge.textContent = count - 1;
-                        } else {
-                            badge.remove();
-                        }
+                        if (count > 1) badge.textContent = count - 1;
+                        else badge.remove();
                     }
                 }
             })

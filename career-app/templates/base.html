@@ -414,9 +414,6 @@
                             </ul>
                         </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link quick-test" href="{{ url_for('career_assessment') }}"><i class="fas fa-rocket"></i> Quick Test</a>
-                    </li>
                     {% if current_user.is_authenticated %}
                         <li class="nav-item user-greeting">
                             <span class="nav-link">Hi, {{ current_user.username }}!</span>

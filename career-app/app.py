@@ -327,7 +327,8 @@ def dashboard():
     
     for test in tests:
         test.details_dict = json.loads(test.details) if test.details else {}
-    
+        
+    test_scores = [test.score for test in tests]
     return render_template('dashboard.html', user=current_user, tests=tests, badges=badges, notifications=notifications,
                           available_tests=available_tests, can_proceed=can_proceed, active_page='dashboard')
 
@@ -583,6 +584,22 @@ def submit_skill_gap():
     data = request.get_json()
     if not data or 'responses' not in data:
         return jsonify({'error': 'No data provided'}), 400
+    session.setdefault('skill_gap_total', 0)
+    session.setdefault('skill_gap_correct', 0)
+    
+    current_response = responses[-1]
+    question_id = current_response['questionId']
+    answer = int(current_response['answer'])
+    question = next((q for q in questions if q['id'] == question_id), None)
+    if not question:
+        return jsonify({'error': 'Question not found'}), 400
+    
+    session['skill_gap_total'] += 1
+    if answer == question['correct']:
+        session['skill_gap_correct'] += 1
+    
+    # Mark session as modified
+    session.modified = True
     
     responses = data['responses']
     time_spent = data.get('time_spent', 0)
