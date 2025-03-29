@@ -11,7 +11,12 @@
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
+            padding: 0 max(5vw, 20px);;
         }
+        .container {
+    max-width: 1600px; /* Prevents over-stretching on ultrawide screens */
+    margin: 0 auto;
+}
         .parallax-bg {
             position: fixed;
             top: 0;
@@ -66,15 +71,15 @@
             position: relative;
             z-index: 2;
             text-align: center;
-            padding: 200px 20px;
+            padding: 15vh 5vw;
             color: #ffffff;
             text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
         .hero-section h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 6rem;
+            font-size: 5vw;
             font-weight: 900;
-            margin-bottom: 30px;
+            margin-bottom: 3vh;
             display: inline-block;
             position: relative;
             transform: perspective(500px) rotateX(5deg);
@@ -91,11 +96,15 @@
             text-shadow: 0 0 3px rgba(0, 247, 255, 0.8), 0 0 6px rgba(0, 247, 255, 0.6);
         }
         .hero-section .typewriter-line.first {
-            animation: typing 1.5s steps(22, end) forwards, borderGlow 2s infinite alternate, blinkCaret 0.5s step-end 1.5s;
+            animation: typing 1.5s steps(22, end) forwards, borderGlow 2s infinite alternate;
+            border-right: none;
         }
         .hero-section .typewriter-line.second {
             display: none;
-            animation: borderGlow 2s infinite alternate;
+            border-right: 4px solid #00f7ff; /* Ensure this stays */
+            animation: typing 1s steps(15, end) forwards, 
+               borderGlow 2s infinite alternate, 
+               blinkCaret 0.5s step-end infinite;
         }
         .hero-section .typewriter-line::after {
             content: '';
@@ -106,7 +115,8 @@
             height: 8px;
             background: #00f7ff;
             border-radius: 50%;
-            animation: spark 0.5s infinite;
+            animation: pulseGlow 1.5s ease-in-out 1.5s forwards,
+                       cosmicPulse 2s infinite 3s;
             opacity: 0;
         }
         .hero-section .typewriter-line.first::after {
@@ -123,7 +133,7 @@
             animation: glowLine 2s infinite;
         }
         .hero-section p {
-            font-size: 2.4rem;
+            font-size: 2vw;
             font-weight: 500;
             margin-bottom: 60px;
             color: #e0e0e0;
@@ -137,9 +147,10 @@
         .hero-section .btn-primary {
             background: linear-gradient(45deg, #ff00ff, #00f7ff);
             border: none;
-            padding: 15px 60px;
+            padding: 1.5vh 4vw;
             font-size: 1.5rem;
-            font-weight: bold;
+            font-size: 1.5vw;
+            min-width: 200px;
             border-radius: 50px;
             box-shadow: 0 5px 20px rgba(255, 0, 255, 0.7);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -187,10 +198,10 @@
         }
         .lens-flare {
             position: absolute;
-            top: 20%;
-            left: 10%;
-            width: 200px;
-            height: 200px;
+            top: 15vh;
+            left: 10vw;
+            width: 15vw;
+            height: 15vw;
             background: radial-gradient(circle, rgba(0, 247, 255, 0.3), transparent 70%);
             animation: lensFlare 5s infinite;
         }
@@ -213,17 +224,21 @@
         }
         .stats-grid {
             display: flex;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3vw;
+            padding: 0 5vw;
             justify-content: center;
-            gap: 70px;
-            flex-wrap: wrap;
-        }
+            gap: 2vw; /* Responsive spacing */
+            flex-wrap: nowrap; /* Prevent wrapping to new line */
+            overflow-x: auto; /* Allows horizontal scrolling if needed */
+            padding: 20px 0;
+        }   
         .stat-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             padding: 50px;
             border-radius: 25px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 300px;
             text-align: center;
             transition: transform 0.5s ease, box-shadow 0.5s ease;
             border: 2px solid transparent;
@@ -231,7 +246,11 @@
             animation: slideIn 1.2s ease-out, borderGlowAnimation 5s infinite;
             position: relative;
             overflow: hidden;
-        }
+            flex: 0 0 auto; /* Prevent growing/shrinking */
+            width: 22vw; /* Responsive width */
+            min-width: 250px; /* Minimum width */
+            margin: 0 1vw; /* Spacing between cards */
+            }
         .stat-card::before {
             content: '';
             position: absolute;
@@ -260,7 +279,7 @@
             transform: scale(1.2);
         }
         .stat-card h3 {
-            font-size: 3.2rem;
+            font-size: 3vw;
             font-weight: 700;
             color: #ffffff;
             margin-bottom: 10px;
@@ -271,6 +290,9 @@
             font-weight: 500;
             color: #e0e0e0;
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+        }
+        .stats-grid::-webkit-scrollbar {
+        display: none;
         }
 
         /* Tips Section */
@@ -297,18 +319,21 @@
             text-shadow: 0 0 3px rgba(0, 247, 255, 0.8), 0 0 6px rgba(0, 247, 255, 0.6);
         }
         .tips-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             display: flex;
             justify-content: center;
-            gap: 70px;
-            flex-wrap: wrap;
+            gap: 2vw; /* Responsive spacing */
+            flex-wrap: nowrap; /* Prevent wrapping to new line */
+            overflow-x: auto; /* Allows horizontal scrolling if needed */
+            padding: 20px 0;
         }
+
         .tip-card {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             padding: 50px;
             border-radius: 25px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 380px;
             text-align: left;
             transition: transform 0.5s ease, box-shadow 0.5s ease;
             border: 2px solid transparent;
@@ -316,6 +341,10 @@
             animation: borderGlowAnimation 5s infinite;
             position: relative;
             overflow: hidden;
+            flex: 0 0 auto; /* Prevent growing/shrinking */
+            width: 22vw; /* Responsive width */
+            min-width: 250px; /* Minimum width */
+            margin: 0 1vw; /* Spacing between cards */
         }
         .tip-card::before {
             content: '';
@@ -356,6 +385,9 @@
             font-weight: 500;
             color: #e0e0e0;
             text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+        }
+        .tip-grid::-webkit-scrollbar {
+            display: none;
         }
 
         /* Animations */
@@ -436,6 +468,28 @@
             50% { border-image: linear-gradient(45deg, #00f7ff, #cc00ff, #ff00ff) 1; }
             100% { border-image: linear-gradient(45deg, #ff00ff, #00f7ff, #cc00ff) 1; }
         }
+        @keyframes pulseGlow {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+@keyframes cosmicPulse {
+    0%, 100% { box-shadow: 0 0 5px #00f7ff; }
+    50% { box-shadow: 0 0 20px #00f7ff; }
+}
+        @media (max-width: 1200px) {
+        .stat-card h3 {
+        font-size: 2.5rem; /* Fallback */
+        } }
+        @media (min-width: 1600px) {
+        .stats-grid {
+        justify-content: space-evenly;
+        gap: 5vw;
+        }
+        .stat-card {
+        width: 18vw;
+        }
+    }
+        
     </style>
 
     <!-- Parallax Background -->
@@ -454,7 +508,7 @@
             <span class="typewriter-line second">Career Analytics</span>
         </h1>
         <p>Unleash your potential with cutting-edge tools and cosmic insights.</p>
-        <a href="{{ url_for('test',type='sample') }}" class="btn btn-primary"><span>Sample Test</span></a>
+        <a href="{{ url_for('career_assessment') }}" class="btn btn-primary"><span>Sample Test</span></a>
     </section>
 
     <!-- Stats Section -->
@@ -506,7 +560,8 @@
     <script>
         particlesJS("particles-js", {
             "particles": {
-                "number": { "value": 200, "density": { "enable": true, "value_area": 800 } },
+                "number":{value: Math.min(200, window.innerWidth / 5), 
+                         density: { enable: true, value_area: 800 } },
                 "color": { "value": ["#ff00ff", "#00f7ff", "#cc00ff"] },
                 "shape": { "type": ["circle", "star", "edge"], "stroke": { "width": 1, "color": "#00f7ff" } },
                 "opacity": { "value": 0.8, "random": true, "anim": { "enable": true, "speed": 1, "opacity_min": 0.3, "sync": false } },
@@ -565,17 +620,26 @@
             if (sectionPosition < screenPosition) {
                 tipsSection.classList.add('visible');
             }
-        });d
+        });
 
         // Two-Line Typing Animation with JavaScript
-        const firstLine = document.querySelector('.typewriter-line.first');
-        const secondLine = document.querySelector('.typewriter-line.second');
-        
-        // After the first line's typing animation (1.5 seconds), show the second line
-        setTimeout(() => {
-            secondLine.style.display = 'block';
-            secondLine.style.animation = 'typing 1s steps(15, end) forwards, borderGlow 2s infinite alternate, blinkCaret 0.5s step-end infinite';
-            secondLine.classList.add('second');
-        }, 1500);
+        // Dynamic typing speed based on width
+const typingSpeed = Math.max(1, window.innerWidth / 1000);
+
+document.querySelector('.typewriter-line.first').style.animation = 
+    `typing ${typingSpeed}s steps(22, end) forwards, borderGlow 2s infinite alternate, blinkCaret 0.5s step-end 1.5s`;
+    const firstLine = document.querySelector('.typewriter-line.first');
+    const secondLine = document.querySelector('.typewriter-line.second');
+
+// First line types without caret
+firstLine.style.animation = `typing 1.5s steps(22, end) forwards, borderGlow 2s infinite alternate`;
+
+// Second line appears with caret after delay
+setTimeout(() => {
+    secondLine.style.display = 'block';
+    secondLine.style.animation = `typing 1s steps(15, end) forwards, 
+                                borderGlow 2s infinite alternate, 
+                                blinkCaret 0.5s step-end infinite`;
+}, 1500);
     </script>
 {% endblock %}
