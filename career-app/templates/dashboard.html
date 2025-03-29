@@ -615,6 +615,42 @@
             <div class="progress-stat recommendation">Recommendation: {{ recommendation }} 💡</div>
         </div>
     </div>
+    {# Add this section after the existing tests list #}
+<div class="test-sequence">
+    <div class="sequence-step {% if 'aptitude' in completed_tests %}completed{% endif %}">
+        <div class="step-icon">1</div>
+        <h4>Aptitude Assessment</h4>
+        {% if 'aptitude' not in completed_tests %}
+            <a href="{{ url_for('test', type='aptitude') }}" class="btn-start">Start Test</a>
+        {% else %}
+            <div class="score-badge">{{ test_results.aptitude.score }}%</div>
+        {% endif %}
+    </div>
+    
+    <div class="sequence-step {% if 'personality' in completed_tests %}completed{% endif %}">
+        <div class="step-icon">2</div>
+        <h4>Personality Evaluation</h4>
+        {% if 'personality' not in completed_tests and 'aptitude' in completed_tests %}
+            <a href="{{ url_for('test', type='personality') }}" class="btn-start">Continue</a>
+        {% elif 'personality' in completed_tests %}
+            <div class="score-badge">{{ test_results.personality.score }}%</div>
+        {% else %}
+            <div class="locked-message">Complete Aptitude First</div>
+        {% endif %}
+    </div>
+
+    <div class="sequence-step {% if 'skill_gap' in completed_tests %}completed{% endif %}">
+        <div class="step-icon">3</div>
+        <h4>Skill Gap Analysis</h4>
+        {% if 'skill_gap' not in completed_tests and 'personality' in completed_tests %}
+            <a href="{{ url_for('interest_test') }}" class="btn-start">Start Test</a>
+        {% elif 'skill_gap' in completed_tests %}
+            <div class="score-badge">{{ test_results.skill_gap.score }}%</div>
+        {% else %}
+            <div class="locked-message">Complete Previous Tests</div>
+        {% endif %}
+    </div>
+</div>
 </div>
 {% endblock %}
 

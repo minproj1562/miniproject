@@ -825,3 +825,28 @@ LEARNING_RESOURCES = {
         {"skill": "Stakeholder management", "resource": "Stakeholder Management on Coursera", "link": "https://www.coursera.org/learn/stakeholder-management"}
     ]
 }
+SCORING_WEIGHTS = {
+    'base_weights': {
+        'aptitude': 0.6,
+        'personality': 0.4
+    },
+    'enhanced_weights': {
+        'aptitude': 0.4,
+        'personality': 0.3,
+        'skill_gap': 0.3
+    },
+    'category_weights': {
+        'aptitude': {
+            'verbal': 0.25,
+            'numerical': 0.35,
+            'logical': 0.4
+        },
+        'personality': {
+            'Openness': 0.2,
+            'Conscientiousness': 0.25,
+            'Extraversion': 0.15,
+            'Agreeableness': 0.2,
+            'Neuroticism': 0.2
+        }
+    }
+}

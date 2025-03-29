@@ -2,67 +2,151 @@
 {% block title %}Test Results{% endblock %}
 
 {% block content %}
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-        }
-        .results-container {
-            max-width: 700px;
-            margin: 4rem auto;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        .results-container h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1e3c72;
-            margin-bottom: 2rem;
-        }
-        .results-container p {
-            font-size: 1.2rem;
-            color: #333;
-            margin-bottom: 1rem;
-        }
-        .btn-back {
-            padding: 0.75rem 1.5rem;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background-color: #2a5298;
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            display: inline-block;
-            margin-top: 1rem;
-            text-decoration: none;
-        }
-        .btn-back:hover {
-            background-color: #1e3c72;
-            transform: translateY(-3px);
-        }
-    </style>
-
-    <div class="results-container">
-        {% if score_data %}
-        <h1>{{ score_data.test_type|capitalize }} Test Results</h1>
-        <p>Your Score: {{ score_data.score|round(2) }}%</p>
-        {% if score_data.correct is not none and score_data.total is not none %}
-        <p>Correct Answers: {{ score_data.correct }} out of {{ score_data.total }}</p>
-        {% endif %}
-        <p>Time Spent: {{ score_data.time_spent }} seconds</p>
-        {% else %}
-        <h1>Test Results</h1>
-        <p>No results available yet. Take a test to see your scores!</p>
-        {% endif %}
-        <a href="{{ url_for('test', type='aptitude') }}" class="btn-back">Back to Tests</a>
+<div class="results-container">
+    <h1>Test Results</h1>
+    
+    {% if score_data %}
+    <div class="result-card">
+        <h2>{{ score_data.test_type|capitalize }} Test</h2>
+        <div class="score-display">
+            <div class="score-circle">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#6366f1" 
+                            stroke-width="10" stroke-dasharray="{{ score_data.score * 2.8274 }} 282.74"
+                            transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="score-value">{{ score_data.score|round(1) }}%</div>
+            </div>
+        </div>
+        
+        <div class="result-details">
+            <div class="detail-item">
+                <span class="detail-label">Correct Answers:</span>
+                <span class="detail-value">{{ score_data.correct }}/{{ score_data.total }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Time Spent:</span>
+                <span class="detail-value">{{ score_data.time_spent }} seconds</span>
+            </div>
+        </div>
     </div>
+    {% else %}
+    <div class="no-results">
+        <p>No results available yet. Please complete a test to see your scores.</p>
+    </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        <a href="{{ url_for('test') }}" class="btn btn-secondary">Take Another Test</a>
+    </div>
+</div>
+
+<style>
+.results-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.result-card {
+    margin: 2rem 0;
+}
+
+.score-display {
+    margin: 2rem 0;
+}
+
+.score-circle {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+.score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #6366f1;
+}
+
+.result-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.detail-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.detail-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #6366f1;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #4f46e5;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: white;
+    color: #6366f1;
+    border: 1px solid #6366f1;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+    .result-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>
 {% endblock %}

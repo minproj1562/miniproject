@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Resources{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Resources for {{ career_path }}</h2>
+    <p>Explore these tutorials, courses, and articles to help you on your career journey!</p>
+    {% if resources %}
+        <ul>
+        {% for resource in resources %}
+            <li><a href="{{ resource.link }}" target="_blank">{{ resource.name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No resources available for this career path at the moment.</p>
+    {% endif %}
+    <a href="{{ url_for('roadmap') }}" class="btn btn-primary mt-3">Back to Roadmap</a>
+</div>
+{% endblock %}

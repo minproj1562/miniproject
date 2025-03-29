@@ -1,0 +1,39 @@
+{% if notifications %}
+    <div class="notifications-container">
+        {% for notification in notifications %}
+            <div class="notification {{ 'unread' if not notification.is_read else 'read' }}">
+                <p>{{ notification.message }}</p>
+                <small>{{ notification.date.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<style>
+    .notifications-container {
+        max-width: 800px;
+        margin: 20px auto;
+    }
+    .notification {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    .notification.unread {
+        border-left: 5px solid #4fc3f7;
+    }
+    .notification.read {
+        border-left: 5px solid #b0bec5;
+    }
+    .notification p {
+        margin: 0;
+        color: #2c3e50;
+    }
+    .notification small {
+        color: #1976d2;
+        font-size: 0.9rem;
+    }
+</style>
