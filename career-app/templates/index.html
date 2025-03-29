@@ -102,9 +102,11 @@
         .hero-section .typewriter-line.second {
             display: none;
             border-right: 4px solid #00f7ff; /* Ensure this stays */
-            animation: typing 1s steps(15, end) forwards, 
-               borderGlow 2s infinite alternate, 
-               blinkCaret 0.5s step-end infinite;
+            animation: 
+        typing 1s steps(15, end) forwards,
+        borderGlow 2s infinite alternate,
+        blinkCaret 0.5s step-end 1s 3 forwards; /* Blinks 3 times, then stops */
+
         }
         .hero-section .typewriter-line::after {
             content: '';
