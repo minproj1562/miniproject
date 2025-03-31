@@ -1,1 +1,269 @@
-ii
+{% extends "base.html" %}
+{% block title %}Career Match Results - Career Analytics{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+    --primary: #6366f1;
+    --secondary: #4f46e5;
+    --accent: #f59e0b;
+    --dark: #1e293b;
+    --light: #f8fafc;
+}
+
+.results-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.header p {
+    color: var(--dark);
+    font-size: 1.1rem;
+}
+
+.accuracy-warning {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.accuracy-warning.high {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.accuracy-warning.medium {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.accuracy-warning.low {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.career-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.career-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.career-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.match-score {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 1rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.career-title {
+    font-size: 1.5rem;
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+}
+
+.career-details p {
+    margin: 0.5rem 0;
+    color: #64748b;
+}
+
+.skill-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.skill-pill {
+    background: #e0e7ff;
+    color: var(--primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+}
+
+.resources {
+    margin-top: 1.5rem;
+}
+
+.resource-item {
+    display: block;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: var(--light);
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+}
+
+.resource-item:hover {
+    background: #e0e7ff;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--secondary);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.btn-secondary:hover {
+    background: var(--light);
+}
+
+@media (max-width: 768px) {
+    .results-container {
+        padding: 1rem;
+    }
+    
+    .career-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <div class="header">
+        <h1>Your Career Matches</h1>
+        <p>Based on your test results, here are careers that match your skills and personality</p>
+        
+        <div class="accuracy-warning {% if completed.aptitude and completed.personality and completed.skill_gap %}high{% elif completed.aptitude and completed.personality %}medium{% else %}low{% endif %}">
+            {% if completed.aptitude and completed.personality and completed.skill_gap %}
+                <p>High accuracy assessment ({{ accuracy|round }}%)</p>
+            {% elif completed.aptitude and completed.personality %}
+                <p>Medium accuracy assessment ({{ accuracy|round }}%)</p>
+                <p>Take the Skill Gap Test for a more accurate result.</p>
+                <a href="{{ url_for('test', type='skill_gap') }}" class="btn btn-secondary" style="margin-top: 0.5rem;">
+                    Take Skill Gap Test
+                </a>
+            {% else %}
+                <p>Low accuracy assessment ({{ accuracy|round }}%)</p>
+                <p>Complete the following tests for a more accurate career match:</p>
+                <div style="margin-top: 0.5rem;">
+                    {% if not completed.aptitude %}
+                    <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-secondary" style="margin: 0.2rem;">Take Aptitude Test</a>
+                    {% endif %}
+                    {% if not completed.personality %}
+                    <a href="{{ url_for('test', type='personality') }}" class="btn btn-secondary" style="margin: 0.2rem;">Take Personality Test</a>
+                    {% endif %}
+                    {% if not completed.skill_gap %}
+                    <a href="{{ url_for('test', type='skill_gap') }}" class="btn btn-secondary" style="margin: 0.2rem;">Take Skill Gap Test</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if matches %}
+    <div class="career-grid">
+        {% for match in matches %}
+        <div class="career-card">
+    <div class="match-score">{{ match.score|round(1) }}% Match</div>
+    <h3 class="career-title">{{ match.name }}</h3>
+    <div class="career-details">
+        <p><strong>O*NET Title:</strong> {{ match.onet_details.title }}</p>
+        <p><strong>Median Wage:</strong> ${{ match.onet_details.median_wage | default('N/A') }}</p>
+        <p><strong>Job Growth:</strong> {{ match.onet_details.growth_rate | default('N/A') }}%</p>
+        <p><strong>Typical Education:</strong> {{ match.onet_details.education }}</p>
+    </div>
+    <div class="skill-list">
+        {% for skill in match.onet_details.skills %}
+        <span class="skill-pill">{{ skill }}</span>
+        {% endfor %}
+    </div>
+    <div class="resources">
+        <h4>Recommended Resources</h4>
+        {% for resource in match.resources %}
+        <a href="{{ resource.link }}" class="resource-item" target="_blank">
+            {{ resource.name }}
+        </a>
+        {% endfor %}
+    </div>
+    <a href="{{ url_for('career_details', career_name=match.name) }}" class="btn btn-secondary" style="margin-top: 1rem;">
+        View Details
+    </a>
+</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p>No career matches found. Please complete more tests to get personalized recommendations.</p>
+    </div>
+    {% endif %}
+
+    <div class="cta-buttons">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+            Back to Dashboard
+        </a>
+        <a href="{{ url_for('test') }}" class="btn btn-secondary">
+            Take More Tests
+        </a>
+    </div>
+</div>
+{% endblock %}
