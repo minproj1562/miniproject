@@ -17,6 +17,7 @@ import json
 from PIL import Image
 from datetime import datetime, timezone
 import numpy as np
+import logging
 
 # Import question data
 from questions import (
@@ -49,6 +50,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 migrate = Migrate(app, db)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 def cosine_similarity(a, b):
     """Calculate the cosine similarity between two vectors."""
@@ -67,6 +70,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=True)
+    animations_enabled = db.Column(db.Boolean, default=True, nullable=False)
     tests = db.relationship('TestResult', backref='user', lazy=True)
     badges = db.relationship('Badge', backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
@@ -147,14 +151,6 @@ class ONetAPI:
             'outlook': {'growth_rate': 22}
         }
 
-class ONetAPI:
-    def get_career_details(self, soc_code):
-        return {
-            'title': 'Software Developer' if soc_code == '15-1132.00' else 'Business Manager',
-            'wages': {'median': 105000},
-            'outlook': {'growth_rate': 22}
-        }
-
     def get_skills_for_occupation(self, soc_code):
         # Mock skills data
         return [
@@ -171,6 +167,37 @@ class ONetAPI:
             'typical_level': 'Bachelor’s Degree'
         }
         
+def get_onet_api():
+    """Return instances of ONetAPI and EdxAPI."""
+    return ONetAPI(), EdxAPI()
+
+def get_indian_courses(field_of_study=None, degree_level=None, limit=5):
+    """
+    Fetch mock course data for India.
+    
+    Args:
+        field_of_study (str, optional): The field of study to filter courses.
+        degree_level (str, optional): The degree level to filter courses.
+        limit (int): The maximum number of courses to return.
+        
+    Returns:
+        list: A list of mock courses.
+    """
+    indian_courses = [
+        {"title": "Bachelor of Technology in Computer Science", "university": "IIT Delhi", "duration": "4 years", "description": "Comprehensive program in computer science and engineering.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "country": "India"},
+        {"title": "Master of Business Administration", "university": "IIM Ahmedabad", "duration": "2 years", "description": "Premier MBA program for business leaders.", "degree_level": "Master", "field_of_study": "Business", "country": "India"},
+        {"title": "Bachelor of Science in Data Science", "university": "Christ University, Bangalore", "duration": "3 years", "description": "Focuses on data analysis and machine learning.", "degree_level": "Bachelor", "field_of_study": "Data Science", "country": "India"},
+        {"title": "Master of Arts in Psychology", "university": "University of Mumbai", "duration": "2 years", "description": "Advanced study of human behavior and mental processes.", "degree_level": "Master", "field_of_study": "Psychology", "country": "India"},
+        {"title": "Bachelor of Design in Graphic Design", "university": "NID Ahmedabad", "duration": "4 years", "description": "Specialization in visual communication and design.", "degree_level": "Bachelor", "field_of_study": "Graphic Design", "country": "India"}
+    ]
+    
+    filtered_courses = indian_courses
+    if field_of_study:
+        filtered_courses = [course for course in filtered_courses if course['field_of_study'] == field_of_study]
+    if degree_level:
+        filtered_courses = [course for course in filtered_courses if course['degree_level'] == degree_level]
+    return filtered_courses[:limit]
+
 # Custom Jinja2 filter for datetime formatting
 @app.template_filter('datetimeformat')
 def datetimeformat(value, format='%Y-%m-%d %H:%M'):
@@ -301,39 +328,59 @@ def student():
 @app.route('/degree', methods=['GET'])
 @login_required
 def degree():
-    onet_api = get_onet_api()
-    print(f"ONET_USER: {os.getenv('ONET_USER')}")
-    print(f"ONET_PWD: {os.getenv('ONET_PWD')}")
+    onet_api, edx_api = get_onet_api()
 
-    degrees = [
-        {"title": "Bachelor of Science in Computer Science", "university": "University of Technology", "duration": "4 years", "description": "Focuses on programming and systems.", "degree_level": "Bachelor", "field_of_study": "Computer Science", "soc_code": "15-1132.00"},
-        {"title": "Master of Business Administration", "university": "Global Business School", "duration": "2 years", "description": "Prepares for leadership roles.", "degree_level": "Master", "field_of_study": "Business", "soc_code": "11-1021.00"},
-        {"title": "Bachelor of Arts in Psychology", "university": "Riverside University", "duration": "3 years", "description": "Explores human behavior.", "degree_level": "Bachelor", "field_of_study": "Psychology", "soc_code": "19-3031.00"},
-        {"title": "Master of Science in Data Science", "university": "Tech Institute", "duration": "1.5 years", "description": "Analyzes big data.", "degree_level": "Master", "field_of_study": "Data Science", "soc_code": "15-2051.00"}
-    ]
-
-    mock_career_data = {
-        "Bachelor of Science in Computer Science": {'job_title': 'Software Developer', 'salary': 105000, 'job_growth': 22},
-        "Master of Business Administration": {'job_title': 'Business Manager', 'salary': 120000, 'job_growth': 8},
-        "Bachelor of Arts in Psychology": {'job_title': 'Clinical Psychologist', 'salary': 82000, 'job_growth': 14},
-        "Master of Science in Data Science": {'job_title': 'Data Scientist', 'salary': 115000, 'job_growth': 31}
-    }
-
+    # Get filter parameters
     degree_level = request.args.get('degree_level', '').strip()
     field_of_study = request.args.get('field_of_study', '').strip()
     duration = request.args.get('duration', '').strip()
+    country = request.args.get('country', '').strip()
+    university = request.args.get('university', '').strip()
     keyword = request.args.get('keyword', '').strip().lower()
     sort_by = request.args.get('sort_by', '').strip()
 
-    filtered_degrees = degrees
-    if degree_level: filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
-    if field_of_study: filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
-    if duration: filtered_degrees = [d for d in filtered_degrees if d['duration'] == duration]
-    if keyword: filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
-    if sort_by == 'title': filtered_degrees.sort(key=lambda x: x['title'])
-    elif sort_by == 'duration': filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]))
-    elif sort_by == 'university': filtered_degrees.sort(key=lambda x: x['university'])
+    # Fetch international courses from Edx API
+    edx_courses = edx_api.search_courses(subject=field_of_study if field_of_study else None, limit=5)
 
+    # Fetch Indian courses (mock data)
+    indian_courses = get_indian_courses(field_of_study=field_of_study, degree_level=degree_level, limit=5)
+
+    # Combine all courses
+    degrees = edx_courses + indian_courses
+
+    # Add SOC codes for O*NET lookup (mock mapping for now)
+    soc_mapping = {
+        "Computer Science": "15-1132.00",
+        "Business": "11-1021.00",
+        "Psychology": "19-3031.00",
+        "Data Science": "15-2051.00",
+        "Graphic Design": "27-1024.00"
+    }
+    for degree in degrees:
+        degree['soc_code'] = soc_mapping.get(degree['field_of_study'], "15-1132.00")
+
+    # Apply filters
+    filtered_degrees = degrees
+    if degree_level:
+        filtered_degrees = [d for d in filtered_degrees if d['degree_level'] == degree_level]
+    if field_of_study:
+        filtered_degrees = [d for d in filtered_degrees if d['field_of_study'] == field_of_study]
+    if duration:
+        filtered_degrees = [d for d in filtered_degrees if d.get('duration') == duration]
+    if country:
+        filtered_degrees = [d for d in filtered_degrees if d.get('country') == country]
+    if university:
+        filtered_degrees = [d for d in filtered_degrees if d['university'] == university]
+    if keyword:
+        filtered_degrees = [d for d in filtered_degrees if keyword in d['university'].lower() or keyword in d['title'].lower()]
+    if sort_by == 'title':
+        filtered_degrees.sort(key=lambda x: x['title'])
+    elif sort_by == 'duration':
+        filtered_degrees.sort(key=lambda x: float(x['duration'].split()[0]) if x['duration'] != 'Self-paced' else float('inf'))
+    elif sort_by == 'university':
+        filtered_degrees.sort(key=lambda x: x['university'])
+
+    # Fetch career data from O*NET
     for degree in filtered_degrees:
         try:
             career_data = onet_api.get_career_details(degree['soc_code'])
@@ -342,17 +389,44 @@ def degree():
                 'salary': career_data.get('wages', {}).get('median', 'N/A'),
                 'job_growth': career_data.get('outlook', {}).get('growth_rate', 'N/A')
             }
+            # Fetch skills and education
+            degree['skills'] = [skill.get('name', 'N/A') for skill in onet_api.get_skills_for_occupation(degree['soc_code'])[:5]]
+            degree['education'] = onet_api.get_education_for_occupation(degree['soc_code'])
         except Exception as e:
             print(f"Error fetching career data for {degree['title']}: {e}")
-            degree['career_data'] = mock_career_data.get(degree['title'], {
+            degree['career_data'] = {
                 'job_title': 'N/A',
                 'salary': 'N/A',
                 'job_growth': 'N/A'
-            })
-            flash(f"Failed to fetch career data for {degree['title']}. Using mock data.", 'warning')
+            }
+            degree['skills'] = []
+            degree['education'] = {}
+            flash(f"Failed to fetch career data for {degree['title']}.", 'warning')
 
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('degree.html', user=current_user, degrees=filtered_degrees, active_page='degree', notifications=notifications)
+    # Get unique countries and universities for dropdowns
+    countries = sorted(set(d['country'] for d in degrees if d.get('country')))
+    universities = sorted(set(d['university'] for d in degrees))
+    degree_levels = sorted(set(d['degree_level'] for d in degrees))
+    fields_of_study = sorted(set(d['field_of_study'] for d in degrees))
+    durations = sorted(set(d['duration'] for d in degrees if d.get('duration')))
+
+    # Render the template with filtered degrees and dropdown options
+    return render_template(
+        'degree.html',
+        degrees=filtered_degrees,
+        countries=countries,
+        universities=universities,
+        degree_levels=degree_levels,
+        fields_of_study=fields_of_study,
+        durations=durations,
+        selected_degree_level=degree_level,
+        selected_field_of_study=field_of_study,
+        selected_duration=duration,
+        selected_country=country,
+        selected_university=university,
+        keyword=keyword,
+        sort_by=sort_by
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -595,6 +669,7 @@ def career_assessment():
 @login_required
 def submit_aptitude():
     data = request.get_json()
+    logger.debug(f"Received data: {data}")
     if not data or 'responses' not in data:
         return jsonify({'error': 'No data provided'}), 400
 
@@ -614,7 +689,16 @@ def submit_aptitude():
     # Process the current response
     current_response = responses[-1]
     question_id = current_response['questionId']
-    user_answer = int(current_response['answer'])
+    
+    # Validate the answer
+    if 'answer' not in current_response or current_response['answer'] is None:
+        return jsonify({'error': 'Answer is missing or invalid'}), 400
+    
+    try:
+        user_answer = int(current_response['answer'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Answer must be a valid integer'}), 400
+
     current_question = next((q for q in questions if q['id'] == question_id), None)
     if not current_question:
         return jsonify({'error': 'Question not found'}), 400
@@ -635,7 +719,7 @@ def submit_aptitude():
     if is_correct:
         session['aptitude_category_scores'][category] = session['aptitude_category_scores'].get(category, 0) + 1
 
-    # Bayesian ability estimation (as previously implemented)
+    # Bayesian ability estimation
     scaling_factors = ADAPTIVE_TEST_SETTINGS['scaling_factors']
     irt_params = current_question['irt_params']
     difficulty = irt_params['difficulty']
@@ -722,15 +806,14 @@ def submit_aptitude():
             'total': session['aptitude_total'],
             'time_spent': sum(r['time_spent'] for r in user_responses),
             'detailed_scores': detailed_scores,
-            'responses': user_responses,  # Store responses for results page
-            'questions': questions  # Store questions for results page
+            'responses': user_responses,
+            'questions': questions
         }
         session['test_results'] = test_results
 
         return jsonify({'redirect': url_for('aptitude_results')})
 
     # Select the next question based on ability estimate and category performance
-    # Calculate category-specific performance
     category_performance = {
         cat: (session['aptitude_category_scores'].get(cat, 0) / session['aptitude_category_counts'][cat]) * 100
         for cat in session['aptitude_category_counts'] if session['aptitude_category_counts'][cat] > 0
@@ -752,7 +835,6 @@ def submit_aptitude():
         if q['id'] not in [r['question_id'] for r in user_responses]
     ]
     if not remaining_questions:
-        # Fallback: Select a new question based on ability estimate
         available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
         next_questions = []
         for cat in available_questions:
@@ -761,7 +843,6 @@ def submit_aptitude():
                 if q['id'] not in used_questions
             ])
         if not next_questions:
-            # Try other difficulties
             for diff in ['easy', 'moderate', 'hard']:
                 if diff != next_difficulty:
                     for cat in available_questions:
@@ -772,7 +853,6 @@ def submit_aptitude():
                     if next_questions:
                         break
         if not next_questions:
-            # Use any available question
             for cat in available_questions:
                 next_questions.extend([
                     q for q in (
@@ -914,7 +994,13 @@ def submit_skill_gap():
 
     current_response = responses[-1]
     question_id = current_response['questionId']
-    answer = int(current_response['answer'])
+    
+    # Validate and convert the answer
+    try:
+        answer = int(current_response['answer'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid answer format. Answer must be an integer.'}), 400
+
     question = next((q for q in questions if q['id'] == question_id), None)
     if not question:
         return jsonify({'error': 'Question not found'}), 400
