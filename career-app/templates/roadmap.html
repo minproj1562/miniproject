@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+roadmap.html {% extends 'base.html' %}
 
 {% block meta %}
 <meta property="og:title" content="My Career Roadmap">
@@ -27,11 +27,14 @@
         --card-completed-bg-end: #0d2e3e;
         --highlight-color: #ff4d97;
         --secondary-highlight: #4dffc6;
+        --timeline-base-start: #4b4b6f; /* Added: Base color for unfilled timeline */
+        --timeline-base-end: #2a2a4e;   /* Added: Base color for unfilled timeline */
+        transition: all 0.5s ease;
     }
 
     [data-theme="light"] {
         --background-start: #e0e7ff;
-        --background-end: #c7d2fe;
+        --background-end: #d7e7f0; /* Updated: Added subtle teal tint */
         --gradient-start: #ff6f91;
         --gradient-end: #a3e4d7;
         --text-color: #1f2937;
@@ -40,7 +43,10 @@
         --card-completed-bg-start: #d1fae5;
         --card-completed-bg-end: #a7f3d0;
         --highlight-color: #ff6f91;
-        --secondary-highlight: #a3e4d7;
+        --secondary-highlight: #2dd4bf;
+        --timeline-base-start: #b0b0c0; /* Added: Lighter base for light theme */
+        --timeline-base-end: #9090a0;   /* Added: Lighter base for light theme */
+        transition: all 0.5s ease;
     }
 
     /* Scoped styles with roadmap- prefix to avoid overriding */
@@ -119,6 +125,11 @@
         animation: roadmap-neon-glow 4s infinite ease-in-out;
     }
 
+    [data-theme="light"] .roadmap-container {
+        background: linear-gradient(135deg, rgba(240, 242, 255, 1), rgba(220, 225, 245, 1)); /* Updated: Increased opacity */
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.1);
+    }
+
     @keyframes roadmap-neon-glow {
         0% { border-color: var(--highlight-color); box-shadow: 0 0 20px var(--highlight-color), 0 0 40px rgba(255, 77, 151, 0.6); }
         50% { border-color: var(--secondary-highlight); box-shadow: 0 0 20px var(--secondary-highlight), 0 0 40px rgba(77, 255, 182, 0.6); }
@@ -178,7 +189,6 @@
 
     .progress-ring-circle.progress {
         stroke-dasharray: 314;
-        stroke-dashoffset: calc(314 - (314 * {{ ((milestones | selectattr('completed') | list | length) / milestones | length * 100) | round(0) }}) / 100);
     }
 
     .progress-percentage {
@@ -349,17 +359,40 @@
         padding: 8px 12px;
         font-family: 'Poppins', sans-serif;
         font-size: 1rem;
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
+        background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+        color: #1a1a2e;
         border: 2px solid var(--highlight-color);
         border-radius: 8px;
-        transition: border-color 0.3s ease;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="%231a1a2e" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 10px center;
     }
 
     .roadmap-filter-bar select:hover,
     .roadmap-filter-bar select:focus {
         border-color: var(--secondary-highlight);
+        box-shadow: 0 0 10px var(--secondary-highlight);
         outline: none;
+    }
+
+    .roadmap-filter-bar select option {
+        background: #2a2a4e;
+        color: #fff;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    [data-theme="light"] .roadmap-filter-bar select {
+        color: #1f2937;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="%231f2937" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>');
+    }
+
+    [data-theme="light"] .roadmap-filter-bar select option {
+        background: #e5e7eb;
+        color: #1f2937;
     }
 
     /* Timeline with Animated Path and Progress Fill */
@@ -367,6 +400,7 @@
         position: relative;
         padding: 50px 0;
         min-height: 400px;
+        --timeline-fill: 0%; /* Initialize fill at 0% */
     }
 
     .roadmap-timeline::before {
@@ -375,19 +409,31 @@
         top: 0;
         bottom: 0;
         width: 10px;
-        background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 100" preserveAspectRatio="none"%3E%3Cpath d="M5,0 C5,25 7,50 5,75 C3,100 5,125 5,150" fill="none" stroke="url(%23pathGradient)" stroke-width="10"/%3E%3Cdefs%3E%3ClinearGradient id="pathGradient" x1="0" y1="0" x2="0" y2="1"%3E%3Cstop offset="0%" stop-color="%23ff4d97"/%3E%3Cstop offset="100%" stop-color="%234dffc6"/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E');
-        background-size: 100% 100%;
+        background: linear-gradient(to bottom, var(--timeline-base-start), var(--timeline-base-end)); /* Base path always visible */
         left: 50%;
-        margin-left: -5px;
-        box-shadow: 0 0 20px rgba(255, 77, 151, 0.6);
-        animation: roadmap-path-pulse 3s infinite;
-        clip-path: inset(var(--timeline-fill) 0 0 0);
-        transition: clip-path 0.1s linear;
+        transform: translateX(-50%);
+        z-index: 1;
     }
 
-    @keyframes roadmap-path-pulse {
-        0%, 100% { box-shadow: 0 0 20px rgba(255, 77, 151, 0.6); }
-        50% { box-shadow: 0 0 30px rgba(77, 255, 182, 0.8); }
+    .roadmap-timeline::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 10px;
+        background: linear-gradient(to bottom, var(--gradient-start), var(--gradient-end)); /* Filled path */
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 0 30px rgba(77, 255, 182, 0.8), 0 0 50px rgba(255, 77, 151, 0.5);
+        clip-path: inset(0 0 calc(100% - var(--timeline-fill)) 0); /* Fill from top down */
+        transition: clip-path 0.5s ease;
+        animation: roadmap-glow-pulse 2s infinite;
+        z-index: 2;
+    }
+
+    @keyframes roadmap-glow-pulse {
+        0%, 100% { box-shadow: 0 0 30px rgba(77, 255, 182, 0.8), 0 0 50px rgba(255, 77, 151, 0.5); }
+        50% { box-shadow: 0 0 40px rgba(77, 255, 182, 1), 0 0 60px rgba(255, 77, 151, 0.7); }
     }
 
     .roadmap-timeline-item {
@@ -422,7 +468,7 @@
         border: 5px solid var(--highlight-color);
         border-radius: 50%;
         top: 30px;
-        z-index: 1;
+        z-index: 3;
         transition: transform 0.4s ease, border-color 0.4s ease;
     }
 
@@ -590,12 +636,18 @@
         background: var(--secondary-highlight);
         border-radius: 4px;
         box-shadow: 0 0 8px var(--secondary-highlight);
-        transition: width 1.5s ease;
+        width: 0;
+        animation: fillProgress 1.5s ease forwards;
+    }
+
+    @keyframes fillProgress {
+        to { width: var(--progress-width); }
     }
 
     .roadmap-progress-bar.pending {
         background: transparent;
         box-shadow: none;
+        animation: none;
     }
 
     .roadmap-progress-text {
@@ -713,8 +765,12 @@
 
     /* Responsive Design */
     @media (max-width: 768px) {
-        .roadmap-timeline::before {
+        .roadmap-timeline::before,
+        .roadmap-timeline::after {
             left: 20px;
+            transform: none;
+            width: 8px;
+            z-index: 1;
         }
         .roadmap-timeline-item {
             width: 100%;
@@ -747,6 +803,19 @@
             width: 100%;
             max-width: 300px;
         }
+    }
+
+    /* Custom Tooltip Styling */
+    .roadmap-custom-tooltip .tooltip-inner {
+        background: linear-gradient(135deg, #ff4d97, #4dffc6);
+        color: #fff;
+        font-family: 'Poppins', sans-serif;
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    .roadmap-custom-tooltip .tooltip-arrow::before {
+        border-bottom-color: #ff4d97 !important;
     }
 </style>
 {% endblock %}
@@ -872,7 +941,7 @@
                         {{ 'Completed' if milestone.completed else 'Pending' }}
                     </p>
                     <div class="roadmap-progress-bar-container">
-                        <div class="roadmap-progress-bar {{ 'pending' if not milestone.completed else '' }}" style="width: {{ milestone.progress | default(0) }}%;"></div>
+                        <div class="roadmap-progress-bar {{ 'pending' if not milestone.completed else '' }}" data-width="{{ milestone.progress | default(0) }}%"></div>
                         <span class="roadmap-progress-text">{{ milestone.progress | default(0) }}%</span>
                     </div>
                     <!-- Next Steps Section -->
@@ -994,16 +1063,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Animate progress circle
+    const progressCircle = document.querySelector('.progress-ring-circle.progress');
+    let completedCount = "{{ milestones | selectattr('completed') | list | length }}";
+    let totalCount = "{{ milestones | length or 1 }}";
+    let progressPercentage = (completedCount / totalCount) * 100;
+    let strokeDashOffsetValue = 314 - (314 * progressPercentage) / 100;
+    progressCircle.style.strokeDashoffset = strokeDashOffsetValue;
+
     // Progress Timeline Animation
     const timeline = document.querySelector('.roadmap-timeline');
-    const timelineLine = timeline.querySelector('::before');
-    let progressPercent = {{ ((milestones | selectattr('completed') | list | length) / milestones | length * 100) | round(0) }};
-
-    // For testing: Set a minimum progress to see the animation even if 0% completed
-    progressPercent = Math.max(progressPercent, 20); // Minimum 20% fill for visibility
+    let progressPercent = (completedCount / totalCount) * 100;
+    console.log(Progress: ${completedCount}/${totalCount} = ${progressPercent}%);
 
     window.addEventListener('scroll', () => {
-        const timelineRect = timeline.getBoundingClientRect();
         const windowHeight = window.innerHeight;
 
         // Calculate how much of the timeline is in view (0 to 1)
@@ -1019,11 +1092,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Cap the fill based on the user's progress
         const fillPercent = Math.min(scrollProgress * 100, progressPercent);
-        timeline.style.setProperty('--timeline-fill', ${100 - fillPercent}%);
+        timeline.style.setProperty('--timeline-fill', ${fillPercent}%);
     });
 
-    // Initial fill for testing
-    timeline.style.setProperty('--timeline-fill', '80%'); // Start with 20% visible for testing
+    // Initial fill
+    timeline.style.setProperty('--timeline-fill', ${progressPercent}%);
+
+    // Animate progress bars
+    document.querySelectorAll('.roadmap-progress-bar').forEach(bar => {
+        const finalWidth = bar.getAttribute('data-width') || '0%';
+        bar.style.setProperty('--progress-width', finalWidth);
+    });
 
     // Motivational Quote of the Day
     const quotes = [
@@ -1050,8 +1129,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Share Journey Function with Celebration (No Sound)
 function shareJourney() {
-    const completed = {{ milestones | selectattr('completed') | list | length }};
-    const total = {{ milestones | length }};
+    const completed = "{{ milestones | selectattr('completed') | list | length }}";
+    const total = "{{ (milestones | length or 1) | tojson }}";
     const progress = Math.round((completed / total) * 100);
     const text = I'm on my way to becoming a {{ career_goal }}! 🚀 I've completed ${completed} out of ${total} milestones (${progress}%). Check out my career roadmap! #CareerJourney;
     
@@ -1081,11 +1160,12 @@ function shareJourney() {
 
 // Theme Toggle Function
 function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const root = document.documentElement;
+    const currentTheme = root.getAttribute('data-theme');
     if (currentTheme === 'light') {
-        document.documentElement.setAttribute('data-theme', 'dark');
+        root.setAttribute('data-theme', 'dark');
     } else {
-        document.documentElement.setAttribute('data-theme', 'light');
+        root.setAttribute('data-theme', 'light');
     }
 }
 
@@ -1095,7 +1175,7 @@ function filterMilestones() {
     const items = document.querySelectorAll('.roadmap-timeline-item');
 
     items.forEach(item => {
-        const type = item.querySelector('.roadmap-milestone-card').classList[1]; // e.g., 'test', 'project'
+        const type = item.querySelector('.roadmap-milestone-card').classList[1];
         const status = item.classList.contains('completed') ? 'completed' : 'pending';
 
         if (filter === 'all') {
@@ -1133,11 +1213,8 @@ function sortMilestones() {
         }
     });
 
-    // Clear and re-append sorted items
     timeline.innerHTML = '';
     items.forEach(item => timeline.appendChild(item));
-
-    // Re-apply filter after sorting
     filterMilestones();
 }
 
@@ -1170,27 +1247,4 @@ function downloadRoadmap() {
     html2pdf().set(opt).from(element).save();
 }
 </script>
-<style>
-/* Custom Tooltip Styling */
-.roadmap-custom-tooltip .tooltip-inner {
-    background: linear-gradient(135deg, #ff4d97, #4dffc6);
-    color: #fff;
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.9rem;
-    padding: 8px 12px;
-    border-radius: 8px;
-}
-.roadmap-custom-tooltip .tooltip-arrow::before {
-    border-bottom-color: #ff4d97 !important;
-}
-
-/* Timeline Fill Animation */
-.roadmap-timeline {
-    --timeline-fill: 100%;
-}
-
-.roadmap-timeline::before {
-    clip-path: inset(var(--timeline-fill) 0 0 0);
-}
-</style>
 {% endblock %}

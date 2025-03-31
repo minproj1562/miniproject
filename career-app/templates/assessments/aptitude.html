@@ -3,13 +3,17 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/aptitude.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="assessment-wrapper">
     <div class="assessment-container">
         <div class="question-header">
-            <div class="category-badge">{{ current_category }}</div>
+            <div class="category-badge">
+                <span id="category">{{ current_category }}</span> 
+                <span id="question-type">({{ questions[0].type | capitalize }})</span>
+            </div>
             <div class="timer-display" id="timer">
                 <i class="bi bi-clock"></i>
                 <span id="time-left">{{ initial_time }}</span>
@@ -19,6 +23,11 @@
         <div class="progress-track">
             <div class="progress-bar" id="progress-bar" 
                  style="width: {{ (completed_questions / total_questions) * 100 }}%"></div>
+        </div>
+
+        <div class="progress-indicator">
+            Question {{ completed_questions + 1 }} of {{ total_questions }}
+            <span id="difficulty-indicator" class="difficulty-indicator"></span>
         </div>
 
         <div class="question-card" id="question-card">
@@ -54,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submit-btn');
     const questionCard = document.getElementById('question-card');
     const optionsContainer = document.getElementById('options-container');
+    const categoryElement = document.getElementById('category');
+    const questionTypeElement = document.getElementById('question-type');
+    const difficultyIndicator = document.getElementById('difficulty-indicator');
     const optionItems = document.querySelectorAll('.option-item');
     
     let timeLeft = {{ initial_time }};
@@ -86,6 +98,88 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Update question UI
+    function updateQuestion(question, currentQuestionIndex) {
+        // Update question text
+        const questionText = questionCard.querySelector('.question-text');
+        questionText.innerHTML = question.text;
+
+        // Clear existing options
+        optionsContainer.innerHTML = '';
+
+        // Render new options
+        question.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item';
+            optionDiv.dataset.value = index;
+            optionDiv.setAttribute('role', 'radio');
+            optionDiv.setAttribute('aria-checked', 'false');
+            optionDiv.tabIndex = 0;
+            optionDiv.innerHTML = `
+                <input type="radio" name="answer" id="option-${index}" value="${index}" class="hidden-radio">
+                <label for="option-${index}">${option}</label>
+            `;
+            optionsContainer.appendChild(optionDiv);
+
+            optionDiv.addEventListener('click', () => {
+                optionsContainer.querySelectorAll('.option-item').forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.setAttribute('aria-checked', 'false');
+                });
+                optionDiv.classList.add('selected');
+                optionDiv.setAttribute('aria-checked', 'true');
+                selectedAnswer = optionDiv.dataset.value;
+                submitBtn.disabled = false;
+            });
+
+            optionDiv.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    optionDiv.click();
+                }
+            });
+        });
+
+        // Update category and question type
+        categoryElement.textContent = question.category || 'Unknown';
+        questionTypeElement.textContent = `(${question.type ? question.type.charAt(0).toUpperCase() + question.type.slice(1) : 'Unknown'})`;
+
+        // Update difficulty indicator
+        let difficultyText = 'Unknown';
+        if (question.irt_params && typeof question.irt_params.difficulty === 'number') {
+            if (question.irt_params.difficulty < 0) {
+                difficultyText = 'Easy';
+                difficultyIndicator.className = 'difficulty-indicator easy';
+            } else if (question.irt_params.difficulty <= 1) {
+                difficultyText = 'Moderate';
+                difficultyIndicator.className = 'difficulty-indicator moderate';
+            } else {
+                difficultyText = 'Hard';
+                difficultyIndicator.className = 'difficulty-indicator hard';
+            }
+        }
+        difficultyIndicator.textContent = `Difficulty: ${difficultyText}`;
+
+        // Update progress bar
+        const totalQuestions = {{ total_questions }};
+        progressBar.style.width = `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`;
+
+        // Update progress indicator
+        const progressIndicator = document.querySelector('.progress-indicator');
+        progressIndicator.textContent = `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+
+        // Reset timer for the new question
+        timeLeft = question.time_limit || 60;
+        startTimer();
+
+        // Reset selected answer and button state
+        selectedAnswer = null;
+        submitBtn.disabled = true;
+
+        // Update button text
+        submitBtn.textContent = currentQuestionIndex === totalQuestions - 1 ? 'Submit Test' : 'Next Question';
+    }
+
     // Submit answer
     async function submitAnswer() {
         if (!selectedAnswer && timeLeft > 0) {
@@ -95,7 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         submitBtn.disabled = true;
         document.body.style.cursor = 'wait';
-        
+
+        let loadingOverlay = document.querySelector('.loading-overlay');
+        if (!loadingOverlay) {
+            loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+            document.body.appendChild(loadingOverlay);
+        }
+
         try {
             const response = await fetch('{{ url_for("submit_aptitude") }}', {
                 method: 'POST',
@@ -118,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.redirect) {
                 window.location.href = data.redirect;
             } else if (data.question) {
-                // Update to next question
                 questionCard.style.opacity = 0;
                 setTimeout(() => {
                     updateQuestion(data.question, data.current_question_index);
@@ -130,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('An error occurred. Please try again.');
         } finally {
             document.body.style.cursor = 'default';
+            loadingOverlay.remove();
         }
     }
 

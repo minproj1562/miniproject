@@ -10,17 +10,18 @@
     <h1 class="text-3xl font-bold mb-8 text-center">Skill Gap Assessment</h1>
 
     <div class="field-selection text-center mb-6">
-        <form id="field-form" method="GET" action="{{ url_for('test', type='skill_gap') }}">
-            <label for="field" class="text-lg font-semibold">Select Field:</label>
-            <select name="field" id="field" onchange="this.form.submit()" class="p-2 rounded border" required>
-                <option value="" disabled {% if not selected_field %}selected{% endif %}>-- Select a Field --</option>
-                <option value="Software Development" {% if selected_field == 'Software Development' %}selected{% endif %}>Software Development</option>
-                <option value="Data Science" {% if selected_field == 'Data Science' %}selected{% endif %}>Data Science</option>
-                <option value="Graphic Design" {% if selected_field == 'Graphic Design' %}selected{% endif %}>Graphic Design</option>
-                <option value="Business Management" {% if selected_field == 'Business Management' %}selected{% endif %}>Business Management</option>
-            </select>
-        </form>
-    </div>
+    <form id="field-form" method="GET" action="{{ url_for('test', type='skill_gap') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <!-- Add CSRF token -->
+        <label for="field" class="text-lg font-semibold">Select Field:</label>
+        <select name="field" id="field" onchange="this.form.submit()" class="p-2 rounded border" required>
+            <option value="" disabled {% if not selected_field %}selected{% endif %}>-- Select a Field --</option>
+            <option value="Software Development" {% if selected_field == 'Software Development' %}selected{% endif %}>Software Development</option>
+            <option value="Data Science" {% if selected_field == 'Data Science' %}selected{% endif %}>Data Science</option>
+            <option value="Graphic Design" {% if selected_field == 'Graphic Design' %}selected{% endif %}>Graphic Design</option>
+            <option value="Business Management" {% if selected_field == 'Business Management' %}selected{% endif %}>Business Management</option>
+        </select>
+    </form>
+</div>
 
     {% if selected_field %}
     <div class="progress-container">

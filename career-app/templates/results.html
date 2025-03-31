@@ -30,6 +30,65 @@
                 <span class="detail-value">{{ score_data.time_spent }} seconds</span>
             </div>
         </div>
+
+        <!-- Category-wise Scores -->
+        <div class="category-scores">
+            <h3>Category-wise Performance</h3>
+            <div class="category-grid">
+                {% for category, score in score_data.detailed_scores.items() %}
+                <div class="category-item">
+                    <span class="category-label">{{ category }}</span>
+                    <span class="category-score">{{ score|round(1) }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Performance Feedback -->
+        <div class="performance-feedback">
+            <h3>Performance Feedback</h3>
+            {% for category, score in score_data.detailed_scores.items() %}
+            <p>
+                <strong>{{ category }} ({{ score|round(1) }}%):</strong>
+                {% if score < 40 %}
+                It looks like you might need more practice in {{ category }}. Consider reviewing basic concepts or trying some practice questions!
+                {% elif score < 70 %}
+                Good effort in {{ category }}! With a bit more practice, you can improve your skills further.
+                {% else %}
+                Excellent performance in {{ category }}! Keep up the great work.
+                {% endif %}
+            </p>
+            {% endfor %}
+        </div>
+
+        <!-- Detailed Question Breakdown -->
+        <div class="question-breakdown">
+            <h3>
+                <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown</button>
+            </h3>
+            <div id="breakdown-content" style="display: none;">
+                {% if score_data.responses and score_data.questions %}
+                {% for response in score_data.responses %}
+                {% set question = score_data.questions[loop.index0] %}
+                <div class="question-item {% if response.correct %}correct{% else %}incorrect{% endif %}">
+                    <p><strong>Question {{ loop.index }}:</strong> {{ question.text }}</p>
+                    <p><strong>Your Answer:</strong> <span class="user-answer">{{ question.options[response.answer] }}</span></p>
+                    <p><strong>Correct Answer:</strong> <span class="correct-answer">{{ question.options[question.correct] }}</span></p>
+                    <p><strong>Result:</strong> 
+                        {% if response.correct %}
+                        <span class="correct-text">Correct</span>
+                        {% else %}
+                        <span class="incorrect-text">Incorrect</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Time Spent:</strong> {{ response.time_spent }} seconds</p>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p>No detailed response data available.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {% else %}
     <div class="no-results">
@@ -38,14 +97,24 @@
     {% endif %}
     
     <div class="action-buttons">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
-        <a href="{{ url_for('test') }}" class="btn btn-secondary">Take Another Test</a>
+        {% if not has_personality %}
+        <a href="{{ url_for('test', type='personality') }}" class="btn btn-option">Take Personality Test</a>
+        {% endif %}
+        <a href="{{ url_for('career_match') }}" class="btn btn-primary">Proceed to Career Match</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
 </div>
 
+<script>
+function toggleBreakdown() {
+    const content = document.getElementById('breakdown-content');
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
 <style>
 .results-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 2rem auto;
     padding: 2rem;
     background: white;
@@ -104,6 +173,102 @@
     color: #1e293b;
 }
 
+.category-scores {
+    margin: 2rem 0;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.category-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.category-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.category-score {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.performance-feedback {
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.performance-feedback p {
+    margin: 0.5rem 0;
+    color: #1e293b;
+}
+
+.performance-feedback strong {
+    color: #6366f1;
+}
+
+.question-breakdown {
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.toggle-btn:hover {
+    color: #4f46e5;
+}
+
+.question-item {
+    background: #f8fafc;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    border-left: 5px solid;
+}
+
+.question-item.correct {
+    border-left-color: #10b981;
+}
+
+.question-item.incorrect {
+    border-left-color: #ef4444;
+}
+
+.user-answer {
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.correct-answer {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.correct-text {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.incorrect-text {
+    color: #ef4444;
+    font-weight: bold;
+}
+
 .action-buttons {
     display: flex;
     gap: 1rem;
@@ -111,7 +276,7 @@
     margin-top: 2rem;
 }
 
-.btn {
+.btn, .btn-option {
     padding: 0.75rem 1.5rem;
     border-radius: 0.5rem;
     text-decoration: none;
@@ -137,6 +302,15 @@
 
 .btn-secondary:hover {
     background: #f8fafc;
+}
+
+.btn-option {
+    background-color: #2a5298;
+    color: white;
+}
+
+.btn-option:hover {
+    background-color: #1e3c72;
 }
 
 @media (max-width: 768px) {

@@ -11,10 +11,17 @@
         padding: 1rem;
         border-radius: 5px;
     }
-    .btn-primary, .btn-secondary {
+    .btn-primary, .btn-secondary, .btn-option {
         padding: 0.75rem 1.5rem;
         border-radius: 20px;
         transition: background-color 0.3s ease;
+    }
+    .btn-option {
+        background-color: #2a5298;
+        color: white;
+    }
+    .btn-option:hover {
+        background-color: #1e3c72;
     }
 </style>
 {% endblock %}
@@ -68,8 +75,11 @@
             
             <!-- Navigation Buttons -->
             <div class="text-center mt-4">
-                <a href="{{ url_for('test', type='personality') }}" class="btn btn-primary">Take Another Test</a>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+                {% if not has_aptitude %}
+                <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-option">Take Aptitude Test</a>
+                {% endif %}
+                <a href="{{ url_for('career_match') }}" class="btn btn-primary">Proceed to Career Match</a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
             </div>
         </div>
     </div>
