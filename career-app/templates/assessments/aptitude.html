@@ -55,7 +55,6 @@
         </div>
     </div>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const timerElement = document.getElementById('time-left');
@@ -71,6 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let timeLeft = {{ initial_time }};
     let selectedAnswer = null;
     let timerInterval;
+    // Initialize currentQuestionIndex from the server
+    let currentQuestionIndex = {{ current_question_index }};
+    const totalQuestions = {{ total_questions }};
 
     // Initialize timer
     function startTimer() {
@@ -99,147 +101,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Update question UI
-    function updateQuestion(question, currentQuestionIndex) {
-    // Update question text
-    const questionText = questionCard.querySelector('.question-text');
-    questionText.innerHTML = question.text;
+    function updateQuestion(question, newIndex) {
+        // Update question text
+        const questionText = questionCard.querySelector('.question-text');
+        questionText.innerHTML = question.text;
 
-    // Set the question ID on the question card
-    questionCard.setAttribute('data-question-id', question.id);
+        // Set the question ID
+        questionCard.setAttribute('data-question-id', question.id);
 
-    // Clear existing options
-    optionsContainer.innerHTML = '';
+        // Clear existing options
+        optionsContainer.innerHTML = '';
 
-    // Render new options
-    question.options.forEach((option, index) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'option-item';
-        optionDiv.dataset.value = index;
-        optionDiv.setAttribute('role', 'radio');
-        optionDiv.setAttribute('aria-checked', 'false');
-        optionDiv.tabIndex = 0;
-        optionDiv.innerHTML = `
-            <input type="radio" name="answer" id="option-${index}" value="${index}" class="hidden-radio">
-            <label for="option-${index}">${option}</label>
-        `;
-        optionsContainer.appendChild(optionDiv);
+        // Render new options
+        question.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-item';
+            optionDiv.dataset.value = index;
+            optionDiv.innerHTML = `
+                <input type="radio" name="answer" id="option-${index}" value="${index}" class="hidden-radio">
+                <label for="option-${index}">${option}</label>
+            `;
+            optionsContainer.appendChild(optionDiv);
 
-        optionDiv.addEventListener('click', () => {
-            optionsContainer.querySelectorAll('.option-item').forEach(opt => {
-                opt.classList.remove('selected');
-                opt.setAttribute('aria-checked', 'false');
+            optionDiv.addEventListener('click', () => {
+                optionsContainer.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+                optionDiv.classList.add('selected');
+                selectedAnswer = optionDiv.dataset.value;
+                submitBtn.disabled = false;
             });
-            optionDiv.classList.add('selected');
-            optionDiv.setAttribute('aria-checked', 'true');
-            selectedAnswer = optionDiv.dataset.value;
-            submitBtn.disabled = false;
         });
 
-        optionDiv.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                optionDiv.click();
+        // Update category and question type
+        categoryElement.textContent = question.category || 'Unknown';
+        questionTypeElement.textContent = `(${question.type ? question.type.charAt(0).toUpperCase() + question.type.slice(1) : 'Unknown'})`;
+
+        // Update difficulty indicator
+        let difficultyText = 'Unknown';
+        if (question.irt_params && typeof question.irt_params.difficulty === 'number') {
+            if (question.irt_params.difficulty < 0) {
+                difficultyText = 'Easy';
+                difficultyIndicator.className = 'difficulty-indicator easy';
+            } else if (question.irt_params.difficulty <= 1) {
+                difficultyText = 'Moderate';
+                difficultyIndicator.className = 'difficulty-indicator moderate';
+            } else {
+                difficultyText = 'Hard';
+                difficultyIndicator.className = 'difficulty-indicator hard';
             }
-        });
-    });
-
-    // Update category and question type
-    categoryElement.textContent = question.category || 'Unknown';
-    questionTypeElement.textContent = `(${question.type ? question.type.charAt(0).toUpperCase() + question.type.slice(1) : 'Unknown'})`;
-
-    // Update difficulty indicator
-    let difficultyText = 'Unknown';
-    if (question.irt_params && typeof question.irt_params.difficulty === 'number') {
-        if (question.irt_params.difficulty < 0) {
-            difficultyText = 'Easy';
-            difficultyIndicator.className = 'difficulty-indicator easy';
-        } else if (question.irt_params.difficulty <= 1) {
-            difficultyText = 'Moderate';
-            difficultyIndicator.className = 'difficulty-indicator moderate';
-        } else {
-            difficultyText = 'Hard';
-            difficultyIndicator.className = 'difficulty-indicator hard';
         }
+        difficultyIndicator.textContent = `Difficulty: ${difficultyText}`;
+
+        // Update progress bar
+        progressBar.style.width = `${((newIndex + 1) / totalQuestions) * 100}%`;
+
+        // Update progress indicator
+        const progressIndicator = document.querySelector('.progress-indicator');
+        progressIndicator.innerHTML = `Question ${newIndex + 1} of ${totalQuestions} `;
+        progressIndicator.appendChild(difficultyIndicator);
+
+        // Update currentQuestionIndex
+        currentQuestionIndex = newIndex;
+
+        // Reset timer
+        timeLeft = question.time_limit || 60;
+        startTimer();
+
+        // Reset answer and button
+        selectedAnswer = null;
+        submitBtn.disabled = true;
+        submitBtn.textContent = currentQuestionIndex === totalQuestions - 1 ? 'Submit Test' : 'Next Question';
     }
-    difficultyIndicator.textContent = `Difficulty: ${difficultyText}`;
-
-    // Update progress bar
-    const totalQuestions = {{ total_questions }};
-    progressBar.style.width = `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`;
-
-    // Update progress indicator
-    const progressIndicator = document.querySelector('.progress-indicator');
-    progressIndicator.textContent = `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
-
-    // Reset timer for the new question
-    timeLeft = question.time_limit || 60;
-    startTimer();
-
-    // Reset selected answer and button state
-    selectedAnswer = null;
-    submitBtn.disabled = true;
-
-    // Update button text
-    submitBtn.textContent = currentQuestionIndex === totalQuestions - 1 ? 'Submit Test' : 'Next Question';
-}
 
     // Submit answer
     async function submitAnswer() {
-    if (!selectedAnswer && timeLeft > 0) {
-        alert('Please select an answer before proceeding.');
-        return;
-    }
-
-    submitBtn.disabled = true;
-    document.body.style.cursor = 'wait';
-
-    let loadingOverlay = document.querySelector('.loading-overlay');
-    if (!loadingOverlay) {
-        loadingOverlay = document.createElement('div');
-        loadingOverlay.className = 'loading-overlay';
-        loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
-        document.body.appendChild(loadingOverlay);
-    }
-
-    // Get the current question ID from the question card
-    const questionId = questionCard.getAttribute('data-question-id');
-
-    try {
-        const response = await fetch('{{ url_for("submit_aptitude") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                responses: [{
-                    questionId: questionId,
-                    answer: selectedAnswer
-                }],
-                time_spent: {{ initial_time }} - timeLeft,
-                current_question_index: {{ current_question_index }}
-            })
-        });
-
-        const data = await response.json();
-        
-        if (data.redirect) {
-            window.location.href = data.redirect;
-        } else if (data.question) {
-            questionCard.style.opacity = 0;
-            setTimeout(() => {
-                updateQuestion(data.question, data.current_question_index);
-                questionCard.style.opacity = 1;
-            }, 300);
+        if (!selectedAnswer && timeLeft > 0) {
+            alert('Please select an answer before proceeding.');
+            return;
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    } finally {
-        document.body.style.cursor = 'default';
-        loadingOverlay.remove();
+
+        submitBtn.disabled = true;
+        document.body.style.cursor = 'wait';
+
+        try {
+            const response = await fetch('{{ url_for("submit_aptitude") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    responses: [{
+                        questionId: questionCard.getAttribute('data-question-id'),
+                        answer: selectedAnswer
+                    }],
+                    time_spent: {{ initial_time }} - timeLeft,
+                    current_question_index: currentQuestionIndex
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else if (data.question) {
+                questionCard.style.opacity = 0;
+                setTimeout(() => {
+                    updateQuestion(data.question, data.current_question_index);
+                    questionCard.style.opacity = 1;
+                }, 300);
+            } else if (data.error) {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        } finally {
+            document.body.style.cursor = 'default';
+        }
     }
-}
 
     submitBtn.addEventListener('click', submitAnswer);
     startTimer();

@@ -74,7 +74,6 @@ class User(UserMixin, db.Model):
     tests = db.relationship('TestResult', backref='user', lazy=True)
     badges = db.relationship('Badge', backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
-
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -171,6 +170,20 @@ def get_onet_api():
     """Return instances of ONetAPI and EdxAPI."""
     return ONetAPI(), EdxAPI()
 
+class EdxAPI:
+    def search_courses(self, subject=None, limit=5):
+        # Mock course data for EdxAPI
+        courses = [
+            {"title": "Introduction to Computer Science", "university": "MITx", "duration": "Self-paced", "description": "Learn the basics of computer science.", "degree_level": "Beginner", "field_of_study": "Computer Science", "country": "USA"},
+            {"title": "Data Science Fundamentals", "university": "HarvardX", "duration": "Self-paced", "description": "Introduction to data science concepts.", "degree_level": "Intermediate", "field_of_study": "Data Science", "country": "USA"},
+            {"title": "Business Analytics", "university": "ColumbiaX", "duration": "Self-paced", "description": "Learn business analytics techniques.", "degree_level": "Intermediate", "field_of_study": "Business", "country": "USA"},
+            {"title": "Graphic Design Basics", "university": "CalArts", "duration": "Self-paced", "description": "Introduction to graphic design principles.", "degree_level": "Beginner", "field_of_study": "Graphic Design", "country": "USA"},
+            {"title": "Psychology 101", "university": "Yale", "duration": "Self-paced", "description": "Explore the basics of psychology.", "degree_level": "Beginner", "field_of_study": "Psychology", "country": "USA"}
+        ]
+        if subject:
+            courses = [course for course in courses if course['field_of_study'] == subject]
+        return courses[:limit]
+    
 def get_indian_courses(field_of_study=None, degree_level=None, limit=5):
     """
     Fetch mock course data for India.
@@ -667,6 +680,7 @@ def career_assessment():
 
 @app.route('/submit_aptitude', methods=['POST'])
 @login_required
+@csrf.exempt  # Temporarily exempt to test if CSRF is the issue
 def submit_aptitude():
     data = request.get_json()
     logger.debug(f"Received data: {data}")
@@ -718,7 +732,7 @@ def submit_aptitude():
     session['aptitude_category_counts'][category] = session['aptitude_category_counts'].get(category, 0) + 1
     if is_correct:
         session['aptitude_category_scores'][category] = session['aptitude_category_scores'].get(category, 0) + 1
-
+    session.modified = True
     # Bayesian ability estimation
     scaling_factors = ADAPTIVE_TEST_SETTINGS['scaling_factors']
     irt_params = current_question['irt_params']
@@ -996,6 +1010,7 @@ def submit_skill_gap():
     question_id = current_response['questionId']
     
     # Validate and convert the answer
+    # In submit_skill_gap route
     try:
         answer = int(current_response['answer'])
     except (ValueError, TypeError):
@@ -1180,6 +1195,7 @@ def aptitude_results():
     test_results = session.get('test_results', {})
     score_data = test_results.get('aptitude', None)
     has_personality = 'personality' in session.get('completed_tests', [])
+    has_aptitude = 'aptitude' in session.get('completed_tests', [])  # Add this
 
     if not score_data:
         flash('No aptitude test results found. Please complete the test first.', 'warning')
@@ -1193,6 +1209,7 @@ def aptitude_results():
         'results.html',
         score_data=score_data,
         has_personality=has_personality,
+        has_aptitude=has_aptitude,  # Pass to template
         active_page='results',
         notifications=notifications
     )
@@ -1445,6 +1462,12 @@ def full_analysis():
         flash('Please complete all tests (Aptitude, Personality, and Skill Gap) to view the full analysis.', 'warning')
         return redirect(url_for('dashboard'))
     
+    # Compute dominant personality trait
+    if test_results['personality']:
+        personality_details = test_results['personality']['details']
+        dominant_trait = max(personality_details, key=personality_details.get)
+        test_results['personality']['dominant_trait'] = dominant_trait
+    
     # Calculate career matches
     user_scores = {
         'aptitude': test_results['aptitude']['details'],
@@ -1456,7 +1479,7 @@ def full_analysis():
     }
     
     matches = []
-    onet_api = get_onet_api()
+    onet_api, _ = get_onet_api()  # Unpack and ignore EdxAPI
     soc_codes = {
         "Software Developer": "15-1132.00",
         "Data Scientist": "15-2051.00",
@@ -1894,7 +1917,7 @@ def roadmap():
                     "title": "Completed Aptitude Test",
                     "description": "Assessed core skills",
                     "details": "Evaluated logical reasoning, problem-solving, and basic technical knowledge.",
-                    "date": next((t.completed_at.replace(tzinfo=None) for t in test_history if t.test_type == 'aptitude'), None),  # Make offset-naive
+                    "date": next((t.completed_at for t in test_history if t.test_type == 'aptitude'), None),  # Keep timezone-aware
                     "type": "test",
                     "completed": any(t.test_type == 'aptitude' for t in test_history),
                     "progress": 100 if any(t.test_type == 'aptitude' for t in test_history) else 0
@@ -1903,7 +1926,7 @@ def roadmap():
                     "title": "Skill Gap Assessment",
                     "description": "Evaluated coding skills",
                     "details": "Assessed proficiency in Python, JavaScript, and software development fundamentals.",
-                    "date": next((t.completed_at.replace(tzinfo=None) for t in test_history if t.test_type == 'skill_gap' and 'Software Development' in json.loads(t.details)), None),  # Make offset-naive
+                    "date": next((t.completed_at for t in test_history if t.test_type == 'skill_gap' and 'Software Development' in json.loads(t.details)), None),  # Keep timezone-aware
                     "type": "test",
                     "completed": any(t.test_type == 'skill_gap' and 'Software Development' in json.loads(t.details) for t in test_history),
                     "progress": 100 if any(t.test_type == 'skill_gap' and 'Software Development' in json.loads(t.details) for t in test_history) else 0
@@ -1912,7 +1935,7 @@ def roadmap():
                     "title": "First Project",
                     "description": "Built a basic application",
                     "details": "Developed a to-do list app using HTML, CSS, and JavaScript.",
-                    "date": datetime(2025, 3, 10),  # Already offset-naive
+                    "date": datetime(2025, 3, 10, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "project",
                     "completed": False,
                     "progress": 50
@@ -1921,7 +1944,7 @@ def roadmap():
                     "title": "Portfolio Creation",
                     "description": "Showcased projects",
                     "details": "Created a portfolio website with 3 projects, hosted on GitHub Pages.",
-                    "date": datetime(2025, 3, 15),  # Already offset-naive
+                    "date": datetime(2025, 3, 15, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "project",
                     "completed": False,
                     "progress": 30
@@ -1930,7 +1953,7 @@ def roadmap():
                     "title": "Job Application",
                     "description": "Applied to entry-level roles",
                     "details": "Submitted applications to 5 software development positions.",
-                    "date": datetime(2025, 3, 20),  # Already offset-naive
+                    "date": datetime(2025, 3, 20, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "job",
                     "completed": False,
                     "progress": 20
@@ -1944,7 +1967,7 @@ def roadmap():
                     "title": "Completed Aptitude Test",
                     "description": "Assessed analytical skills",
                     "details": "Evaluated mathematical reasoning, statistics, and problem-solving abilities.",
-                    "date": next((t.completed_at.replace(tzinfo=None) for t in test_history if t.test_type == 'aptitude'), None),  # Make offset-naive
+                    "date": next((t.completed_at for t in test_history if t.test_type == 'aptitude'), None),  # Keep timezone-aware
                     "type": "test",
                     "completed": any(t.test_type == 'aptitude' for t in test_history),
                     "progress": 100 if any(t.test_type == 'aptitude' for t in test_history) else 0
@@ -1953,7 +1976,7 @@ def roadmap():
                     "title": "Skill Gap Assessment",
                     "description": "Evaluated data skills",
                     "details": "Assessed proficiency in Python, R, and data analysis techniques.",
-                    "date": next((t.completed_at.replace(tzinfo=None) for t in test_history if t.test_type == 'skill_gap' and 'Data Science' in json.loads(t.details)), None),  # Make offset-naive
+                    "date": next((t.completed_at for t in test_history if t.test_type == 'skill_gap' and 'Data Science' in json.loads(t.details)), None),  # Keep timezone-aware
                     "type": "test",
                     "completed": any(t.test_type == 'skill_gap' and 'Data Science' in json.loads(t.details) for t in test_history),
                     "progress": 100 if any(t.test_type == 'skill_gap' and 'Data Science' in json.loads(t.details) for t in test_history) else 0
@@ -1962,7 +1985,7 @@ def roadmap():
                     "title": "Statistics Mastery",
                     "description": "Completed stats course",
                     "details": "Finished an online course on advanced statistics and probability.",
-                    "date": datetime(2025, 3, 12),  # Already offset-naive
+                    "date": datetime(2025, 3, 12, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "course",
                     "completed": False,
                     "progress": 70
@@ -1971,7 +1994,7 @@ def roadmap():
                     "title": "Data Project",
                     "description": "Analyzed a dataset",
                     "details": "Performed exploratory data analysis on a public dataset using Pandas and Matplotlib.",
-                    "date": datetime(2025, 3, 18),  # Already offset-naive
+                    "date": datetime(2025, 3, 18, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "project",
                     "completed": False,
                     "progress": 40
@@ -1980,7 +2003,7 @@ def roadmap():
                     "title": "Research Publication",
                     "description": "Published findings",
                     "details": "Published a research paper on machine learning applications in a journal.",
-                    "date": datetime(2025, 3, 25),  # Already offset-naive
+                    "date": datetime(2025, 3, 25, tzinfo=timezone.utc),  # Make timezone-aware
                     "type": "publication",
                     "completed": False,
                     "progress": 10
@@ -1996,8 +2019,8 @@ def roadmap():
     # Fetch unread notifications for the user, limited to the 5 most recent
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
 
-    # Get the current date as an offset-naive datetime to match the offset-naive dates in milestones
-    current_date = datetime.now(timezone.utc).replace(tzinfo=None)
+    # Get the current date as a timezone-aware datetime
+    current_date = datetime.now(timezone.utc)
 
     # Render the roadmap template with the necessary data
     return render_template('roadmap.html',

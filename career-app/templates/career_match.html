@@ -223,31 +223,30 @@
     <div class="career-grid">
         {% for match in matches %}
         <div class="career-card">
-    <div class="match-score">{{ match.score|round(1) }}% Match</div>
-    <h3 class="career-title">{{ match.name }}</h3>
-    <div class="career-details">
-        <p><strong>O*NET Title:</strong> {{ match.onet_details.title }}</p>
-        <p><strong>Median Wage:</strong> ${{ match.onet_details.median_wage | default('N/A') }}</p>
-        <p><strong>Job Growth:</strong> {{ match.onet_details.growth_rate | default('N/A') }}%</p>
-        <p><strong>Typical Education:</strong> {{ match.onet_details.education }}</p>
-    </div>
-    <div class="skill-list">
-        {% for skill in match.onet_details.skills %}
-        <span class="skill-pill">{{ skill }}</span>
-        {% endfor %}
-    </div>
-    <div class="resources">
-        <h4>Recommended Resources</h4>
-        {% for resource in match.resources %}
-        <a href="{{ resource.link }}" class="resource-item" target="_blank">
-            {{ resource.name }}
-        </a>
-        {% endfor %}
-    </div>
-    <a href="{{ url_for('career_details', career_name=match.name) }}" class="btn btn-secondary" style="margin-top: 1rem;">
-        View Details
-    </a>
-</div>
+            <div class="match-score">{{ match.score|round(1) }}% Match</div>
+            <h3 class="career-title">{{ match.name }}</h3>
+            <div class="career-details">
+                <p><strong>O*NET Title:</strong> {{ match.onet_details.title }}</p>
+                <p><strong>Median Wage:</strong> ${{ match.onet_details.median_wage | default('N/A') }}</p>
+                <p><strong>Job Growth:</strong> {{ match.onet_details.growth_rate | default('N/A') }}%</p>
+                <p><strong>Typical Education:</strong> {{ match.onet_details.education }}</p>
+            </div>
+            <div class="skill-list">
+                {% for skill in match.onet_details.skills %}
+                <span class="skill-pill">{{ skill }}</span>
+                {% endfor %}
+            </div>
+            <div class="resources">
+                <h4>Recommended Resources</h4>
+                {% for resource in match.resources %}
+                <a href="{{ resource.link }}" class="resource-item" target="_blank">
+                    {{ resource.name }}
+                </a>
+                {% endfor %}
+            </div>
+            <a href="{{ url_for('career_details', career_name=match.name) }}" class="btn btn-secondary" style="margin-top: 1rem;">
+                View Details
+            </a>
         </div>
         {% endfor %}
     </div>
@@ -263,6 +262,9 @@
         </a>
         <a href="{{ url_for('test') }}" class="btn btn-secondary">
             Take More Tests
+        </a>
+        <a href="{{ url_for('full_analysis') }}" class="btn btn-primary">
+            Detailed Analysis
         </a>
     </div>
 </div>
