@@ -23,71 +23,104 @@
         Time Spent: <span id="time-display">00:00</span>
     </div>
 
-    <div class="questions-wrapper" id="questions-wrapper">
-        {% for question in questions %}
-        <div class="question-card" data-question-id="{{ question.id }}">
-            <h2 class="question-text">{{ question.text | safe }}</h2>
-            <div class="options-grid">
-                {% for i in range(5) %}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" 
-                           name="{{ question.id }}" 
-                           value="{{ i }}" 
-                           id="{{ question.id }}-{{ i }}"
-                           required>
-                    <label class="form-check-label" for="{{ question.id }}-{{ i }}">
-                        {{ ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'][i] }}
-                    </label>
+    <form id="personality-form">
+        <div class="questions-wrapper" id="questions-wrapper">
+            {% for question in questions %}
+            <div class="question-card" data-question-id="{{ question.id }}">
+                <h2 class="question-text">{{ question.text | safe }}</h2>
+                <div class="options-grid">
+                    {% for i in range(5) %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" 
+                               name="answer-{{ question.id }}" 
+                               value="{{ i }}" 
+                               id="option-{{ question.id }}-{{ i }}"
+                               required>
+                        <label class="form-check-label" for="option-{{ question.id }}-{{ i }}">
+                            {{ ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'][i] }}
+                        </label>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
 
-    <div class="assessment-controls">
-        <button id="submit-btn" class="submit-btn">Submit Assessment</button>
-    </div>
+        <div class="assessment-controls">
+            <button type="submit" id="submit-btn" class="submit-btn">Submit Assessment</button>
+        </div>
+    </form>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const progressBar = document.getElementById('progress-bar');
-    const submitBtn = document.getElementById('submit-btn');
-    let startTime = Date.now();
-    const totalQuestions = {{ questions|length }};
-    let responses = [];
+    const form = document.getElementById('personality-form');
+    const timeDisplay = document.getElementById('time-display');
+    let seconds = 0;
 
-    setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-        const seconds = (elapsed % 60).toString().padStart(2, '0');
-        document.getElementById('time-display').textContent = `${minutes}:${seconds}`;
+    // Timer functionality
+    const timer = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }, 1000);
 
-    document.querySelectorAll('.form-check-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const questionId = this.name;
-            const value = parseInt(this.value);
-            const existing = responses.find(r => r.questionId === questionId);
-            if (existing) {
-                existing.answer = value;
-            } else {
-                responses.push({ questionId, answer: value });
-            }
-            progressBar.style.width = `${(responses.length / totalQuestions) * 100}%`;
+    // Progress bar update
+    const questions = document.querySelectorAll('.question-card');
+    const totalQuestions = questions.length;
+    const progressBar = document.getElementById('progress-bar');
+
+    const updateProgress = () => {
+        const answeredQuestions = Array.from(questions).filter(q => 
+            q.querySelector('input[type="radio"]:checked')
+        ).length;
+        const progress = (answeredQuestions / totalQuestions) * 100;
+        progressBar.style.width = `${progress}%`;
+    };
+
+    questions.forEach(question => {
+        const radios = question.querySelectorAll('input[type="radio"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', updateProgress);
         });
     });
 
-    submitBtn.addEventListener('click', async (e) => {
+    // Form submission
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (responses.length !== totalQuestions) {
+        const submitButton = document.getElementById('submit-btn');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        const responses = [];
+        const questions = document.querySelectorAll('.question-card');
+        let allAnswered = true;
+
+        questions.forEach(question => {
+            const questionId = question.getAttribute('data-question-id');
+            const selectedOption = question.querySelector(`input[name="answer-${questionId}"]:checked`);
+            if (!selectedOption) {
+                allAnswered = false;
+                return;
+            }
+            responses.push({
+                questionId: questionId,
+                answer: parseInt(selectedOption.value)
+            });
+        });
+
+        if (!allAnswered) {
             alert('Please answer all questions before submitting.');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Assessment';
             return;
         }
-        const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+
         try {
-            const res = await fetch('{{ url_for("submit_assessment") }}', {
+            const response = await fetch('{{ url_for("submit_assessment") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -96,16 +129,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     type: 'personality',
                     responses: responses,
-                    duration: timeSpent
+                    duration: seconds
                 })
             });
-            const data = await res.json();
+
+            const data = await response.json();
             if (data.redirect) {
                 window.location.href = data.redirect;
+            } else if (data.error) {
+                alert(data.error);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Assessment';
             }
         } catch (error) {
-            console.error('Error submitting assessment:', error);
+            console.error('Error:', error);
             alert('An error occurred. Please try again.');
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Assessment';
         }
     });
 });

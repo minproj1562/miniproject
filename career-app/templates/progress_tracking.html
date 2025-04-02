@@ -1,418 +1,281 @@
 {% extends 'base.html' %}
-
 {% block title %}Career Progress Tracker{% endblock %}
 
 {% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+        --success-gradient: linear-gradient(135deg, #10b981, #34d399);
+        --warning-gradient: linear-gradient(135deg, #f59e0b, #fbbf24);
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+    }
+
     body {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #e3f2fd, #b3e5fc);
-        color: #2c3e50;
-        margin: 0;
-        padding: 70px 20px 20px;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
         min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
+        font-family: 'Inter', sans-serif;
     }
-    #particles-js {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1;
-    }
-    body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900"%3E%3Cpath fill="rgba(255,255,255,0.3)" d="M0,400 Q360,300 720,400 T1440,400 V900 H0 Z"/%3E%3Cpath fill="rgba(255,255,255,0.2)" d="M0,600 Q360,500 720,600 T1440,600 V900 H0 Z"/%3E%3C/svg%3E');
-        background-size: cover;
-        animation: float 15s infinite;
-        z-index: -1;
-    }
-    @keyframes float {
-        0%, 100% { transform: translateY(0); opacity: 0.8; }
-        50% { transform: translateY(-20px); opacity: 1; }
-    }
-    .container {
-        max-width: 1100px;
-        margin: 40px auto;
-        background: rgba(255, 255, 255, 0.95);
+
+    .glass-card {
+        background: var(--glass-bg);
         backdrop-filter: blur(12px);
-        border-radius: 25px;
-        padding: 40px;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        position: relative;
-        border: 3px solid transparent;
-        animation: borderGlow 5s infinite;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: transform 0.3s ease;
     }
-    @keyframes borderGlow {
-        0% { border-color: #4fc3f7; box-shadow: 0 0 15px #4fc3f7; }
-        50% { border-color: #0288d1; box-shadow: 0 0 25px #0288d1; }
-        100% { border-color: #4fc3f7; box-shadow: 0 0 15px #4fc3f7; }
+
+    .progress-bar-custom {
+        height: 1.5rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background: #e2e8f0;
     }
-    h2 {
-        text-align: center;
-        font-size: 2.5rem;
-        color: #2c3e50;
-        margin-bottom: 20px;
-        text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+    .progress-fill {
+        background: var(--primary-gradient);
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    p.subtitle {
-        text-align: center;
-        font-size: 1.2rem;
-        color: #1976d2;
-        margin-bottom: 40px;
-    }
-    h3 {
-        font-size: 1.8rem;
-        color: #1976d2;
-        margin-top: 40px;
-        margin-bottom: 20px;
-    }
-    .progress-container {
-        width: 100%;
-        margin: 30px auto;
-    }
-    .progress-bar {
-        width: 100%;
-        background-color: #e0e0e0;
-        border-radius: 25px;
-        height: 40px;
+
+    .task-card {
+        background: white;
+        border: none;
+        border-radius: 1rem;
+        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
-    .progress {
-        height: 100%;
-        background: linear-gradient(90deg, #4fc3f7, #0288d1);
-        border-radius: 25px;
-        text-align: center;
-        line-height: 40px;
+
+    .task-card.completed::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, 
+            rgba(16, 185, 129, 0.1) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(16, 185, 129, 0.1) 50%,
+            rgba(16, 185, 129, 0.1) 75%,
+            transparent 75%,
+            transparent
+        );
+        background-size: 4px 4px;
+        animation: shine 2s linear infinite;
+    }
+
+    @keyframes shine {
+        to { transform: translate(50%, 50%); }
+    }
+
+    .streak-counter {
+        background: var(--warning-gradient);
         color: white;
-        font-weight: bold;
-        transition: width 0.5s ease-in-out;
-    }
-    .task {
-        margin-bottom: 20px;
-        padding: 20px;
-        background: linear-gradient(135deg, #e1f5fe, #b3e5fc);
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        display: inline-flex;
         align-items: center;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        cursor: pointer;
+        gap: 0.75rem;
+        font-weight: 600;
     }
-    .task.completed {
-        background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+
+    .test-type-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
     }
-    .task:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(2, 136, 209, 0.3);
-    }
-    .task h4 {
-        font-size: 1.3rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin: 0;
-    }
-    .task p {
-        margin: 0;
-        font-size: 1rem;
-    }
-    .avg-scores {
-        display: flex;
-        justify-content: space-around;
-        background: linear-gradient(135deg, #bbdefb, #90caf9);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 40px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-    .score-item {
-        text-align: center;
-        flex: 1;
-    }
-    .score-item i {
-        font-size: 2.2rem;
-        color: #0288d1;
-        margin-bottom: 10px;
-    }
-    .score-item h5 {
-        font-size: 1.3rem;
-        color: #2c3e50;
-        margin: 5px 0;
-    }
-    .score-item p {
-        font-size: 1.1rem;
-        color: #1976d2;
-        margin: 0;
-    }
+
     .chart-container {
-        margin: 40px 0;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-    .badge {
-        margin-top: 20px;
-        padding: 12px 20px;
-        font-size: 1.1rem;
-        background: linear-gradient(120deg, #42a5f5, #478ed1);
-        color: white;
-        border-radius: 15px;
-        display: inline-block;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    }
-    .notification {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        display: none;
-        background-color: #e8f5e9;
-        color: #2e7d32;
-        padding: 15px;
-        border: 1px solid #c8e6c9;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        font-weight: bold;
-    }
-    .notification.show {
-        display: block;
-        animation: fadeInOut 5s ease-in-out;
-    }
-    @keyframes fadeInOut {
-        0%, 100% { opacity: 0; transform: translateY(20px); }
-        10%, 90% { opacity: 1; transform: translateY(0); }
-    }
-    .action-buttons {
-        text-align: center;
-        margin-top: 40px;
-    }
-    .action-buttons .btn {
-        background: linear-gradient(120deg, #4fc3f7, #0288d1);
-        border: none;
-        padding: 12px 30px;
-        font-size: 1.1rem;
-        color: #fff;
-        border-radius: 25px;
-        margin: 0 10px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .action-buttons .btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 5px 15px rgba(2, 136, 209, 0.5);
-    }
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .container {
-            width: 90%;
-            padding: 20px;
-        }
-        h2 {
-            font-size: 2rem;
-        }
-        p.subtitle {
-            font-size: 1rem;
-        }
-        .progress-bar {
-            height: 30px;
-        }
-        .progress {
-            line-height: 30px;
-        }
-        .task h4 {
-            font-size: 1.1rem;
-        }
-        .task p {
-            font-size: 0.9rem;
-        }
-        .avg-scores {
-            flex-direction: column;
-            gap: 20px;
-        }
-        .score-item {
-            margin-bottom: 15px;
-        }
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div id="particles-js"></div>
-<div class="container">
-    <h2><i class="fas fa-chart-line"></i> Career Progress Tracker</h2>
-    <p class="subtitle">Track your progress across all career domains and specific tasks!</p>
-
-    <h3>Average Test Scores</h3>
-    <div class="avg-scores">
-        <div class="score-item">
-            <i class="fas fa-flask"></i>
-            <h5>Sample Test</h5>
-            <p>{{ avg_scores['sample'] | round }}%</p>
-        </div>
-        <div class="score-item">
-            <i class="fas fa-brain"></i>
-            <h5>Aptitude Test</h5>
-            <p>{{ avg_scores['aptitude'] | round }}%</p>
-        </div>
-        <div class="score-item">
-            <i class="fas fa-user"></i>
-            <h5>Personality Test</h5>
-            <p>{{ avg_scores['personality'] | round }}%</p>
-        </div>
-    </div>
-
-    <h3>Test Scores Over Time</h3>
-    <div class="chart-container">
-        <canvas id="progressChart"></canvas>
-    </div>
-
-    <h3>Task Progress</h3>
-    <div id="taskList">
-        {% for task in tasks %}
-            <div class="task {{ 'completed' if task.completed else '' }}">
-                <h4>{{ task.name }}</h4>
-                <p class="{{ 'text-success' if task.completed else 'text-danger' }}">
-                    {{ 'Completed' if task.completed else 'Not Completed' }}
-                </p>
-            </div>
-        {% endfor %}
-    </div>
-
-    <h3>Overall Task Progress</h3>
-    <div class="progress-container">
-        <div class="progress-bar">
-            <div class="progress" style="width: {{ progress_percentage }}%;">
-                {{ progress_percentage | round }}%
+<div class="container py-5">
+    <div class="glass-card p-4 p-lg-5 mb-5">
+        <!-- Header Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold mb-3">
+                <i class="fas fa-chart-line me-2"></i>Career Progress Tracker
+            </h1>
+            <p class="lead text-muted mb-4">Your personalized career development dashboard</p>
+            
+            <!-- Streak Counter -->
+            <div class="streak-counter mb-4">
+                <i class="fas fa-fire fa-beat"></i>
+                <span>{{ current_streak }} Day Streak</span>
             </div>
         </div>
-    </div>
 
-    <div class="badge" id="streak">
-        Current Streak: {{ total_tests }} Days
-    </div>
+        <!-- Test Scores Grid -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center">
+                    <i class="fas fa-vial fa-3x mb-3 text-info"></i>
+                    <h5 class="mb-2">Sample Tests</h5>
+                    <div class="display-5 fw-bold text-primary">
+                        {{ avg_scores.sample | round }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center">
+                    <i class="fas fa-brain fa-3x mb-3 text-warning"></i>
+                    <h5 class="mb-2">Aptitude Tests</h5>
+                    <div class="display-5 fw-bold text-primary">
+                        {{ avg_scores.aptitude | round }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center">
+                    <i class="fas fa-user-tie fa-3x mb-3 text-success"></i>
+                    <h5 class="mb-2">Personality Tests</h5>
+                    <div class="display-5 fw-bold text-primary">
+                        {{ avg_scores.personality | round }}%
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <div class="action-buttons">
-        <a href="{{ url_for('roadmap') }}" class="btn"><i class="fas fa-map-marked-alt"></i> View Career Roadmap</a>
+        <!-- Progress Chart -->
+        <div class="chart-container mb-5">
+            <canvas id="progressChart"></canvas>
+        </div>
+
+        <!-- Milestones Section -->
+        <div class="mb-5">
+            <h3 class="h4 fw-bold mb-4">
+                <i class="fas fa-flag-checkered me-2"></i>Career Milestones
+            </h3>
+            
+            <!-- Progress Bar -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Overall Progress</span>
+                    <span>{{ progress_percentage | round }}%</span>
+                </div>
+                <div class="progress-bar-custom">
+                    <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
+                </div>
+            </div>
+
+            <!-- Tasks List -->
+            <div class="row g-3">
+                {% for task in tasks %}
+                <div class="col-12">
+                    <div class="task-card p-4 {{ 'completed' if task.completed else '' }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">{{ task.name }}</h5>
+                                <small class="text-muted">{{ task.description }}</small>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill bg-{{ 'success' if task.completed else 'warning' }}">
+                                    {{ 'Completed' if task.completed else 'Pending' }}
+                                </span>
+                                <i class="fas fa-{{ 'check-circle text-success' if task.completed else 'hourglass-half text-warning' }}"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="text-center mt-5">
+            <a href="{{ url_for('roadmap') }}" class="btn btn-lg btn-primary px-5 rounded-pill">
+                <i class="fas fa-map-marked-alt me-2"></i>View Career Roadmap
+            </a>
+        </div>
     </div>
 </div>
-
-<div class="notification" id="notification">
-    {% if progress_percentage == 100 %}
-        Amazing! You've completed all tasks!
-    {% else %}
-        Keep going! You're making great progress!
-    {% endif %}
+<div class="streak-counter mb-4">
+    <i class="fas fa-fire fa-beat"></i>
+    <span>{{ current_streak }} Day Streak</span>
 </div>
-{% include 'notifications.html' %}
+<!-- Notification Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="progressToast" class="toast glass-card" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-bell text-primary me-2"></i>
+            <strong class="me-auto">Progress Update</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            {% if progress_percentage == 100 %}
+                🎉 Amazing! You've completed all milestones!
+            {% else %}
+                🔥 Keep going! {{ 100 - progress_percentage | round }}% to complete!
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-    // Particle Background
-    particlesJS('particles-js', {
-        particles: {
-            number: { value: 60, density: { enable: true, value_area: 800 } },
-            color: { value: '#4fc3f7' },
-            shape: { type: 'circle' },
-            opacity: { value: 0.5, random: true },
-            size: { value: 3, random: true },
-            line_linked: { enable: false },
-            move: { enable: true, speed: 1.5, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
+    // Initialize Chart
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ progress_data.labels | tojson }},
+            datasets: [{
+                label: 'Progress Trend',
+                data: {{ progress_data.scores | tojson }},
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.4,
+                borderWidth: 3,
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
         },
-        interactivity: {
-            detect_on: 'canvas',
-            events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
-            modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
-        },
-        retina_detect: true
-    });
-
-    // Progress Chart
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('progressChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: {{ progress_data.labels | tojson }},
-                datasets: [{
-                    label: 'Test Scores (%)',
-                    data: {{ progress_data.scores | tojson }},
-                    borderColor: '#4fc3f7',
-                    backgroundColor: 'rgba(79, 195, 247, 0.2)',
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: {{ progress_data.types | tojson | replace('"sample"', '"#ffca28"') | replace('"aptitude"', '"#0288d1"') | replace('"personality"', '"#81c784"') }},
-                    pointBorderColor: '#fff',
-                    pointRadius: 5,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'Score (%)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                label += context.parsed.y + '%';
-                                label += ' (' + {{ progress_data.types | tojson }}[context.dataIndex] + ' test)';
-                                return label;
-                            }
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            const type = {{ progress_data.types | tojson }}[context.dataIndex];
+                            return `${type.charAt(0).toUpperCase() + type.slice(1)} Test: ${context.parsed.y}%`;
                         }
                     }
                 }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: '#e2e8f0' },
+                    ticks: { color: '#64748b' }
+                },
+                x: { 
+                    grid: { display: false },
+                    ticks: { color: '#64748b' }
+                }
             }
-        });
-
-        // Show Notification on Load
-        const notification = document.getElementById('notification');
-        notification.classList.add('show');
-
-        // Confetti for 100% Progress
-        {% if progress_percentage == 100 %}
-            confetti({
-                particleCount: 200,
-                spread: 90,
-                origin: { y: 0.6 },
-                colors: ['#4fc3f7', '#0288d1', '#a5d6a7', '#ffca28'],
-                shapes: ['circle', 'square', 'star']
-            });
-        {% endif %}
+        }
     });
+
+    // Show toast notification
+    const toastEl = document.getElementById('progressToast');
+    const toast = new bootstrap.Toast(toastEl);
+    setTimeout(() => toast.show(), 1000);
 </script>
 {% endblock %}

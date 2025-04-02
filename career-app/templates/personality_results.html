@@ -1,136 +1,204 @@
 {% extends "base.html" %}
-{% block title %}Personality Test Results{% endblock %}
-{% block extra_head %}
-<style>
-    .trait-explanation {
-        font-size: 0.95rem;
-        color: #555;
-        margin-top: 0.5rem;
-    }
-    .list-group-item {
-        padding: 1rem;
-        border-radius: 5px;
-    }
-    .btn-primary, .btn-secondary, .btn-option {
-        padding: 0.75rem 1.5rem;
-        border-radius: 20px;
-        transition: background-color 0.3s ease;
-    }
-    .btn-option {
-        background-color: #2a5298;
-        color: white;
-    }
-    .btn-option:hover {
-        background-color: #1e3c72;
-    }
-</style>
-{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center mb-4">Personality Test Results</h1>
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-title text-center">Your Personality Profile</h3>
-            <p class="text-center">Your dominant trait is <strong>{{ trait_names[dominant_trait] }}</strong> with a score of {{ scores[dominant_trait] | round(2) }}%.</p>
-            
-            <!-- Chart Visualization -->
-            <div class="mt-4">
-                <canvas id="traitChart" width="400" height="200"></canvas>
+<div class="results-container">
+    <h1 class="page-title">Personality Test Results</h1>
+    <p class="page-subtitle">Here’s a breakdown of your personality traits based on the Big Five model.</p>
+
+    <!-- Personality Chart -->
+    <div class="chart-container">
+        <canvas id="personalityChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Trait Descriptions -->
+    <div class="trait-descriptions">
+        {% for trait, score in scores.items() %}
+            <div class="trait-item">
+                <h3>{{ trait_names[trait] }}: {{ score|round(1) }}%</h3>
+                <p>
+                    {% if trait == 'Openness' %}
+                        Openness to Experience reflects your level of creativity, curiosity, and willingness to embrace new ideas or experiences. High scores (above 60%) suggest you're imaginative, adventurous, and open to abstract thinking—traits common in artists, inventors, or explorers. Low scores (below 40%) indicate a preference for routine, practicality, and familiarity, often seen in those who thrive in structured environments.
+                    {% elif trait == 'Conscientiousness' %}
+                        Conscientiousness reflects your level of organization, dependability, and goal-directed behavior. High scores (above 60%) suggest you're disciplined, reliable, and focused on achieving goals—qualities often seen in leaders and planners. Low scores (below 40%) indicate a more spontaneous, carefree approach, which can be beneficial in flexible, creative roles.
+                    {% elif trait == 'Extraversion' %}
+                        Extraversion reflects your sociability, energy, and preference for social interaction. High scores (above 60%) suggest you're outgoing, energetic, and thrive in social settings—traits common in salespeople or public speakers. Low scores (below 40%) indicate introversion, meaning you prefer solitary activities and may excel in roles requiring deep focus, like research or writing.
+                    {% elif trait == 'Agreeableness' %}
+                        Agreeableness reflects your level of compassion, cooperation, and likability. High scores (above 60%) suggest you're empathetic, cooperative, and value harmony—traits often seen in caregivers or team players. Low scores (below 40%) indicate a more competitive or skeptical nature, which can be advantageous in roles requiring tough decision-making, like management or law.
+                    {% elif trait == 'Neuroticism' %}
+                        Neuroticism reflects your emotional stability and tendency to experience negative emotions. High scores (above 60%) suggest you're more prone to stress, anxiety, or mood swings, which might require strategies to manage emotional well-being. Low scores (below 40%) indicate emotional stability and resilience, often seen in high-pressure roles like emergency response or leadership.
+                    {% endif %}
+                </p>
             </div>
-            
-            <!-- Scores List with Explanations -->
-            <h4 class="mt-4">Your Trait Scores</h4>
-            <ul class="list-group list-group-flush mt-3">
-                <li class="list-group-item">
-                    <strong>{{ trait_names['Openness'] }}:</strong> {{ scores['Openness'] | round(2) }}%
-                    <p class="trait-explanation">
-                        <strong>Openness to Experience</strong> reflects your level of creativity, curiosity, and willingness to embrace new ideas or experiences. High scores (above 60%) suggest you’re imaginative, adventurous, and open to abstract thinking—traits common in artists, inventors, or explorers. Low scores (below 40%) indicate a preference for routine, practicality, and familiarity, often seen in those who thrive in structured environments.
-                    </p>
-                </li>
-                <li class="list-group-item">
-                    <strong>{{ trait_names['Conscientiousness'] }}:</strong> {{ scores['Conscientiousness'] | round(2) }}%
-                    <p class="trait-explanation">
-                        <strong>Conscientiousness</strong> measures organization, responsibility, and goal-directed behavior. High scores suggest you’re diligent, reliable, and detail-oriented—qualities valuable in leadership or precision-based roles like accounting. Low scores may indicate spontaneity or flexibility, sometimes leading to procrastination but also adaptability in dynamic settings.
-                    </p>
-                </li>
-                <li class="list-group-item">
-                    <strong>{{ trait_names['Extraversion'] }}:</strong> {{ scores['Extraversion'] | round(2) }}%
-                    <p class="trait-explanation">
-                        <strong>Extraversion</strong> captures your energy, sociability, and enthusiasm in social settings. High scores reflect outgoing, talkative, and assertive tendencies—ideal for sales, teaching, or team-driven roles. Low scores (introversion) suggest you’re reserved, reflective, and comfortable working independently, often excelling in research or creative pursuits.
-                    </p>
-                </li>
-                <li class="list-group-item">
-                    <strong>{{ trait_names['Agreeableness'] }}:</strong> {{ scores['Agreeableness'] | round(2) }}%
-                    <p class="trait-explanation">
-                        <strong>Agreeableness</strong> indicates your level of compassion, cooperation, and likability. High scores show you’re empathetic, trusting, and team-oriented—traits suited for caregiving or collaborative professions. Low scores might mean you’re competitive or skeptical, which can be advantageous in negotiation or critical analysis roles.
-                    </p>
-                </li>
-                <li class="list-group-item">
-                    <strong>{{ trait_names['Neuroticism'] }}:</strong> {{ scores['Neuroticism'] | round(2) }}%
-                    <p class="trait-explanation">
-                        <strong>Neuroticism</strong> reflects emotional stability and stress response. High scores suggest sensitivity to stress, anxiety, or mood swings, which can heighten awareness but may challenge resilience. Low scores indicate calmness, confidence, and emotional steadiness—key for high-pressure environments like emergency services or management.
-                    </p>
-                </li>
-            </ul>
-            
-            <!-- Navigation Buttons -->
-            <div class="text-center mt-4">
-                {% if not has_aptitude %}
-                <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-option">Take Aptitude Test</a>
-                {% endif %}
-                <a href="{{ url_for('career_match') }}" class="btn btn-primary">Proceed to Career Match</a>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
-            </div>
-        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Call to Action -->
+    <div class="next-steps">
+        {% if has_aptitude %}
+            <p>Great job! You've completed both the personality and aptitude tests.</p>
+            <a href="{{ url_for('career_match') }}" class="btn btn-primary">See Your Career Matches</a>
+        {% else %}
+            <p>Next, take the Aptitude Test to get a complete picture of your strengths.</p>
+            <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-primary">Take Aptitude Test</a>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
 
-<!-- Include Chart.js -->
+{% block styles %}
+<style>
+.results-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    color: #1e293b;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 1rem;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-container::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    z-index: -1;
+    border-radius: 17px;
+}
+
+.trait-descriptions {
+    max-width: 800px;
+    margin: 2rem auto;
+    text-align: left;
+}
+
+.trait-item {
+    background: #ffffff;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.trait-item::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    z-index: -1;
+    border-radius: 12px;
+}
+
+.trait-item h3 {
+    margin: 0 0 0.5rem;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.trait-item p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.next-steps {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.next-steps p {
+    font-size: 1.2rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    color: #ffffff;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('traitChart').getContext('2d');
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('personalityChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: [
-                    '{{ trait_names['Openness'] }}',
-                    '{{ trait_names['Conscientiousness'] }}',
-                    '{{ trait_names['Extraversion'] }}',
-                    '{{ trait_names['Agreeableness'] }}',
-                    '{{ trait_names['Neuroticism'] }}'
-                ],
+                labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
                 datasets: [{
-                    label: 'Scores (%)',
+                    label: 'Score (%)',
                     data: [
-                        {{ scores['Openness'] | round(2) }},
-                        {{ scores['Conscientiousness'] | round(2) }},
-                        {{ scores['Extraversion'] | round(2) }},
-                        {{ scores['Agreeableness'] | round(2) }},
-                        {{ scores['Neuroticism'] | round(2) }}
+                        {{ scores['Openness']|default(0) }},
+                        {{ scores['Conscientiousness']|default(0) }},
+                        {{ scores['Extraversion']|default(0) }},
+                        {{ scores['Agreeableness']|default(0) }},
+                        {{ scores['Neuroticism']|default(0) }}
                     ],
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'Score (%)'
-                        }
+                    y: { 
+                        beginAtZero: true, 
+                        max: 100, 
+                        title: { display: true, text: 'Score (%)' },
+                        grid: { color: '#e2e8f0' }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Personality Traits'
-                        }
+                        grid: { display: false }
                     }
                 },
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         display: false

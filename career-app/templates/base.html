@@ -329,7 +329,7 @@
             0% { width: 0; }
             100% { width: 50%; }
         }
-        @media (max-width: 992px) {
+        @media (max-width: 992px) {}
         .navbar-nav {
             padding-top: 1rem;
             text-align: center;
@@ -403,7 +403,7 @@
     <!-- Add block for child templates to inject styles -->
     {% block styles %}{% endblock %}
 </head>
-<body class="{% if active_page == 'dashboard' %}dashboard-page{% endif %}">
+<body class="{% if active_page == 'dashboard' %}dashboard-page{% endif %} {% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-mode{% endif %}">
     <nav class="navbar custom-navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <div class="navbar-brand-container">

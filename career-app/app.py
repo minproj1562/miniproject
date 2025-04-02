@@ -54,9 +54,8 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def cosine_similarity(a, b):
-    """Calculate the cosine similarity between two vectors."""
-    a = np.array(a)
-    b = np.array(b)
+    a = np.array(a, dtype=float).flatten()  # Ensure 1D and numeric
+    b = np.array(b, dtype=float).flatten()
     dot_product = np.dot(a, b)
     norm_a = np.linalg.norm(a)
     norm_b = np.linalg.norm(b)
@@ -71,6 +70,16 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=True)
     animations_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    # New fields for settings
+    theme = db.Column(db.String(10), default='light', nullable=False)  # For theme preference
+    notify_test_reminders = db.Column(db.Boolean, default=True, nullable=False)  # Notification preferences
+    notify_badge_earned = db.Column(db.Boolean, default=True, nullable=False)
+    notify_progress_updates = db.Column(db.Boolean, default=True, nullable=False)
+    email_notifications = db.Column(db.Boolean, default=True, nullable=False)  # Email preferences
+    email_newsletters = db.Column(db.Boolean, default=False, nullable=False)
+    profile_visibility = db.Column(db.String(10), default='public', nullable=False)  # Profile visibility
+    preferred_test_categories = db.Column(db.JSON, default=lambda: [], nullable=False)  # Preferred test categories
+    # Existing relationships
     tests = db.relationship('TestResult', backref='user', lazy=True)
     badges = db.relationship('Badge', backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
@@ -100,6 +109,11 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+def get_recommendations(field, score):
+    """Get personalized learning recommendations"""
+    levels = ['basic', 'intermediate', 'advanced']
+    level = np.digitize(score, [40, 70]) 
+    return LEARNING_RESOURCES.get(field, {}).get(levels[level], [])
 # In calculate_match function (app.py)
 def calculate_match(user_scores, career):
     # 1. Trait Alignment (Personality)
@@ -774,7 +788,7 @@ def submit_aptitude():
             test_type='aptitude',
             score=overall_score,
             time_spent=sum(r['time_spent'] for r in user_responses),
-            details=json.dumps(detailed_scores)
+            details=json.dumps(detailed_scores)  # Ensure detailed_scores is a dict
         )
         db.session.add(result)
 
@@ -943,24 +957,65 @@ def submit_assessment():
     if len(responses) != len(questions):
         return jsonify({'error': 'Incomplete responses'}), 400
     
-    scores = {'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0, 'Agreeableness': 0, 'Neuroticism': 0}
+    scores = {
+        'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0,
+        ' Agreeableness': 0, 'Neuroticism': 0
+    }
     counts = {trait: 0 for trait in scores}
-    
+    trait_mapping = {
+        'O': 'Openness',
+        'C': 'Conscientiousness',
+        'E': 'Extraversion',
+        'A': ' Agreeableness',
+        'N': 'Neuroticism'
+    }
+
     for response in responses:
         question = next((q for q in questions if q['id'] == response['questionId']), None)
-        if question:
+        if not question:
+            logger.warning(f"Question ID {response['questionId']} not found in session questions")
+            continue
+        try:
             value = int(response['answer'])
+            if value < 0 or value > 4:
+                logger.warning(f"Invalid answer value {value} for question {question['id']}")
+                continue
             trait = question['trait']
-            scores[trait] += SCORING_KEY[trait][value]
-            counts[trait] += 1
+            if trait not in trait_mapping:
+                logger.error(f"Invalid trait {trait} for question {question['id']}")
+                continue
+            trait_name = trait_mapping[trait]
+            # Adjust score based on question-specific direction
+            if question['direction'] == 'positive':
+                score = value  # 0 to 4
+            else:  # 'negative'
+                score = 4 - value  # Reverse: 4 to 0
+            scores[trait_name] += score
+            counts[trait_name] += 1
+        except (ValueError, KeyError) as e:
+            logger.error(f"Error processing response {response}: {e}")
+            continue
     
+    # Normalize scores to a percentage
     for trait in scores:
-        scores[trait] = (scores[trait] / (counts[trait] * 4)) * 100 if counts[trait] > 0 else 0
+        if counts[trait] > 0:
+            max_possible = counts[trait] * 4  # Each question scored from 0 to 4
+            scores[trait] = (scores[trait] / max_possible) * 100
+        else:
+            scores[trait] = 0
+            logger.warning(f"No responses recorded for trait {trait}")
     
     dominant_trait = max(scores, key=scores.get)
-    result = TestResult(user_id=current_user.id, test_type='personality', score=scores[dominant_trait], time_spent=duration, details=json.dumps(scores))
+    result = TestResult(
+        user_id=current_user.id,
+        test_type='personality',
+        score=scores[dominant_trait],
+        time_spent=duration,
+        details=json.dumps(scores)
+    )
     db.session.add(result)
     
+    # Award badges
     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
         badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
         db.session.add(badge)
@@ -969,23 +1024,23 @@ def submit_assessment():
             badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher!", icon="fas fa-star")
             db.session.add(badge)
     
+    # Add notification
     notification = Notification(user_id=current_user.id, message=f"Personality Test completed! Dominant trait: {dominant_trait} ({scores[dominant_trait]:.1f}%)", type="test_result")
     db.session.add(notification)
     db.session.commit()
     
-    # Update completed tests
+    # Update session
     completed_tests = session.get('completed_tests', [])
     if 'personality' not in completed_tests:
         completed_tests.append('personality')
         session['completed_tests'] = completed_tests
 
-    # Store test results for display in dashboard
     test_results = session.get('test_results', {})
     test_results['personality'] = {'score': scores[dominant_trait], 'details': scores}
     session['test_results'] = test_results
     
     session.pop('personality_questions', None)
-    return jsonify({'redirect': url_for('personality_results')})  # Redirect to personality_results
+    return jsonify({'redirect': url_for('personality_results')})
 
 @app.route('/submit_skill_gap', methods=['POST'])
 @login_required
@@ -1195,7 +1250,7 @@ def aptitude_results():
     test_results = session.get('test_results', {})
     score_data = test_results.get('aptitude', None)
     has_personality = 'personality' in session.get('completed_tests', [])
-    has_aptitude = 'aptitude' in session.get('completed_tests', [])  # Add this
+    has_aptitude = 'aptitude' in session.get('completed_tests', [])
 
     if not score_data:
         flash('No aptitude test results found. Please complete the test first.', 'warning')
@@ -1209,7 +1264,7 @@ def aptitude_results():
         'results.html',
         score_data=score_data,
         has_personality=has_personality,
-        has_aptitude=has_aptitude,  # Pass to template
+        has_aptitude=has_aptitude,
         active_page='results',
         notifications=notifications
     )
@@ -1217,7 +1272,6 @@ def aptitude_results():
 @app.route('/personality_results')
 @login_required
 def personality_results():
-    # Retrieve the latest personality test result
     latest_test = TestResult.query.filter_by(user_id=current_user.id, test_type='personality').order_by(TestResult.completed_at.desc()).first()
     if not latest_test:
         flash('No personality test results found.', 'warning')
@@ -1225,8 +1279,6 @@ def personality_results():
 
     scores = json.loads(latest_test.details)
     dominant_trait = max(scores, key=scores.get)
-    
-    # Trait names for display
     trait_names = {
         'Openness': 'Openness to Experience',
         'Conscientiousness': 'Conscientiousness',
@@ -1234,11 +1286,9 @@ def personality_results():
         'Agreeableness': 'Agreeableness',
         'Neuroticism': 'Neuroticism'
     }
-
-    # Check if aptitude test is completed
     has_aptitude = TestResult.query.filter_by(user_id=current_user.id, test_type='aptitude').count() > 0
-
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    
     return render_template('personality_results.html',
                           scores=scores,
                           dominant_trait=dominant_trait,
@@ -1247,59 +1297,139 @@ def personality_results():
                           active_page='results',
                           notifications=notifications)
     
-@app.route('/career_match')
+def calculate_match(user_scores, career):
+    components = {}
+    base_weights = {'personality': 0.4, 'aptitude': 0.4, 'skill_gap': 0.2}
+
+    try:
+        # Personality component
+        if 'personality' in user_scores and user_scores['personality']:
+            career_personality = {k.strip(): float(v) for k, v in career['personality'].items()}
+            user_personality = {k: float(v) for k, v in user_scores['personality'].items()}
+            traits = ['Openness', 'Conscientiousness', 'Extraversion', ' Agreeableness', 'Neuroticism']
+            user_vals = [user_personality.get(trait, 0) for trait in traits]
+            career_vals = [career_personality.get(trait, 0) for trait in traits]
+            trait_score = cosine_similarity(user_vals, career_vals)
+            components['personality'] = trait_score if not np.isnan(trait_score) else 0.0
+
+        # Aptitude component
+        if 'aptitude' in user_scores and user_scores['aptitude']:
+            career_aptitude = {k: float(v) for k, v in career['aptitude'].items()}
+            user_aptitude = {k: float(v) for k, v in user_scores['aptitude'].items()}
+            total_career_aptitude = sum(career_aptitude.values())
+            if total_career_aptitude > 0:
+                apt_score = sum(
+                    min(user_aptitude.get(cat, 0), career_aptitude.get(cat, 0))
+                    for cat in career_aptitude
+                ) / total_career_aptitude
+                components['aptitude'] = apt_score
+            else:
+                components['aptitude'] = 0.0
+
+        # Skill gap component
+        if 'skill_gap' in user_scores and 'score' in user_scores['skill_gap']:
+            user_skill_score = float(user_scores['skill_gap']['score'])
+            career_required = float(career['skills'].get('required', 0))
+            skill_score = 1 - abs(user_skill_score - career_required) / 100
+            components['skill_gap'] = skill_score
+
+        if not components:
+            return 0.0
+
+        available_weights = {k: base_weights[k] for k in components}
+        total_weight = sum(available_weights.values())
+        if total_weight == 0:
+            return 0.0
+
+        weighted_sum = sum(components[k] * (available_weights[k] / total_weight) for k in components)
+        return round(weighted_sum * 100, 2)
+    except Exception as e:
+        logger.error(f"Error in calculate_match: {str(e)}")
+        return 0.0
+
+@app.route('/career_match', methods=['GET'])
 @login_required
 def career_match():
-    user_scores = {}
-    tests = TestResult.query.filter_by(user_id=current_user.id).all()
-    
-    # Collect scores
-    for test in tests:
-        if test.test_type == 'personality':
-            user_scores['personality'] = json.loads(test.details)
-        elif test.test_type == 'aptitude':
-            user_scores['aptitude'] = json.loads(test.details)
-        elif test.test_type == 'skill_gap':
-            user_scores['skill_gap'] = {
-                'field': list(json.loads(test.details).keys())[0],
-                'score': test.score
-            }
-    
-    # Calculate matches
-    matches = []
-    for career, data in CAREER_MAPPING.items():
-        score = calculate_match(user_scores, data)
-        matches.append({
-            'name': career,
-            'score': score,
-            'details': data,
-            'resources': get_recommendations(
-                data['interests'][0], 
-                user_scores.get('skill_gap', {}).get('score', 0)
-            )
-        })
-    
-    matches.sort(key=lambda x: x['score'], reverse=True)
-    
-    # Determine completion status
-    completed = {
-        'aptitude': 'aptitude' in user_scores,
-        'personality': 'personality' in user_scores,
-        'skill_gap': 'skill_gap' in user_scores
-    }
-    
-    # Calculate accuracy based on completed tests
-    completed_tests = sum(1 for test in completed.values() if test)
-    accuracy = (completed_tests / 3) * 100  # 3 tests total: aptitude, personality, skill_gap
+    try:
+        # Fetch user's test results
+        personality_result = TestResult.query.filter_by(user_id=current_user.id, test_type='personality').order_by(TestResult.completed_at.desc()).first()
+        aptitude_result = TestResult.query.filter_by(user_id=current_user.id, test_type='aptitude').order_by(TestResult.completed_at.desc()).first()
+        skill_gap_result = TestResult.query.filter_by(user_id=current_user.id, test_type='skill_gap').order_by(TestResult.completed_at.desc()).first()
+        
+        user_scores = {}
+        if personality_result:
+            try:
+                user_scores['personality'] = json.loads(personality_result.details)
+            except json.JSONDecodeError:
+                logger.error(f"Invalid personality details JSON for user {current_user.id}")
+                user_scores['personality'] = {}
+        if aptitude_result:
+            try:
+                user_scores['aptitude'] = json.loads(aptitude_result.details)
+            except json.JSONDecodeError:
+                logger.error(f"Invalid aptitude details JSON for user {current_user.id}")
+                user_scores['aptitude'] = {}
+        if skill_gap_result:
+            try:
+                user_scores['skill_gap'] = json.loads(skill_gap_result.details)
+                if 'score' not in user_scores['skill_gap']:
+                    user_scores['skill_gap']['score'] = skill_gap_result.score
+            except json.JSONDecodeError:
+                logger.error(f"Invalid skill_gap details JSON for user {current_user.id}")
+                user_scores['skill_gap'] = {'score': skill_gap_result.score}
 
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('career_match.html',
-                          matches=matches[:5],
-                          completed=completed,
-                          has_skill_gap='skill_gap' in user_scores,
-                          accuracy=accuracy,
-                          active_page='career_match',
-                          notifications=notifications)
+        # Calculate career matches
+        matches = []
+        onet_api, _ = get_onet_api()
+        soc_codes = {
+            "Software Developer": "15-1132.00",
+            "Data Scientist": "15-2051.00",
+            "Graphic Designer": "27-1024.00",
+            "Business Manager": "11-1021.00",
+            "Research Scientist": "19-1042.00"
+        }
+
+        for career_name, career_data in CAREER_MAPPING.items():
+            try:
+                match_score = calculate_match(user_scores, career_data)
+                soc_code = soc_codes.get(career_name, "15-1132.00")
+                career_details = onet_api.get_career_details(soc_code)
+                skills = onet_api.get_skills_for_occupation(soc_code)
+                education = onet_api.get_education_for_occupation(soc_code)
+
+                matches.append({
+                    'name': career_name,
+                    'score': match_score,
+                    'description': career_data.get('description', 'No description available'),
+                    'resources': career_data.get('resources', []),
+                    'onet_details': {
+                        'title': career_details['title'],
+                        'median_wage': career_details['wages']['median'],
+                        'growth_rate': career_details['outlook']['growth_rate'],
+                        'skills': [skill['name'] for skill in skills],
+                        'education': education['typical_level']
+                    }
+                })
+            except Exception as e:
+                logger.error(f"Error calculating match for {career_name}: {str(e)}")
+                continue
+        
+        # Sort matches by score in descending order
+        matches.sort(key=lambda x: x['score'], reverse=True)
+
+        # Fetch notifications
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+
+        return render_template(
+            'career_match.html',
+            matches=matches,
+            active_page='career_match',
+            notifications=notifications
+        )
+    except Exception as e:
+        logger.error(f"Error in career_match route: {str(e)}")
+        flash('An error occurred while calculating career matches. Please try again later.', 'error')
+        return redirect(url_for('dashboard'))
 
 def generate_career_matches(test_results, include_skill_gap):
     career_scores = defaultdict(float)
@@ -1346,44 +1476,6 @@ WEIGHTS = {
     'partial': {'aptitude': 0.6, 'personality': 0.4},
     'skill_only': {'skill_gap': 1.0}
 }
-
-def calculate_match(user_scores, career):
-    """Calculate career fit using adaptive weighting"""
-    scores = {}
-    weights = WEIGHTS['base']  # Default weights
-    
-    # Determine weighting scheme based on available data
-    if not user_scores.get('personality') and not user_scores.get('aptitude'):
-        weights = WEIGHTS['skill_only']
-    elif not user_scores.get('skill_gap'):
-        weights = WEIGHTS['partial']
-    
-    total = 0
-    max_possible = 0
-    
-    # Personality component
-    if 'personality' in user_scores and 'personality' in weights:
-        for trait, score in user_scores['personality'].items():
-            career_trait = career['personality'].get(trait, 50)
-            trait_match = 1 - abs(score - career_trait)/100
-            total += weights['personality'] * trait_match
-            max_possible += weights['personality']
-    
-    # Aptitude component  
-    if 'aptitude' in user_scores and 'aptitude' in weights:
-        for category, score in user_scores['aptitude'].items():
-            career_apt = career['aptitude'].get(category, 50)
-            apt_match = score/100 * (career_apt/100)
-            total += weights['aptitude'] * apt_match
-            max_possible += weights['aptitude']
-    
-    # Skill gap component
-    if 'skill_gap' in user_scores and 'skill_gap' in weights:
-        skill_match = user_scores['skill_gap']['score']/100
-        total += weights['skill_gap'] * skill_match
-        max_possible += weights['skill_gap']
-    
-    return (total / max_possible) * 100 if max_possible > 0 else 0
 
 def get_recommendations(field, score):
     """Get personalized learning recommendations"""
@@ -1496,14 +1588,18 @@ def full_analysis():
         skills = onet_api.get_skills_for_occupation(soc_code)
         education = onet_api.get_education_for_occupation(soc_code)
         
+        # Fetch resources using get_recommendations
+        primary_interest = data['interests'][0] if data['interests'] else "Software Development"
+        resources = get_recommendations(primary_interest, user_scores['skill_gap']['score'])
+        formatted_resources = [
+            {"name": res["name"], "link": res["url"]} for res in resources
+        ]
+        
         matches.append({
             'name': career,
             'score': score,
             'details': data,
-            'resources': get_recommendations(
-                data['interests'][0], 
-                user_scores['skill_gap']['score']
-            ),
+            'resources': formatted_resources,
             'onet_details': {
                 'title': career_details['title'],
                 'median_wage': career_details['wages']['median'],
@@ -1773,20 +1869,56 @@ def faq():
 def settings():
     if request.method == 'POST':
         print("Form data received:", request.form)
+        
+        # Theme Preferences
         if 'theme' in request.form:
             theme = request.form['theme']
-            print(f"Updating theme to: {theme}")
-            current_user.theme = theme
+            if theme in ['light', 'dark']:
+                current_user.theme = theme
+                db.session.commit()
+                flash('Theme updated successfully!', 'success')
+            else:
+                flash('Invalid theme selection.', 'danger')
+        
+        # Notification Preferences
+        elif 'notify_test_reminders' in request.form:
+            current_user.notify_test_reminders = 'notify_test_reminders' in request.form
+            current_user.notify_badge_earned = 'notify_badge_earned' in request.form
+            current_user.notify_progress_updates = 'notify_progress_updates' in request.form
             db.session.commit()
-            flash('Theme updated successfully!', 'success')
-            return redirect(url_for('settings'))
-        elif 'animations' in request.form:
-            animations = request.form.get('animations') == 'on'
-            print(f"Updating animations to: {animations}")
-            current_user.animations_enabled = animations
+            flash('Notification preferences updated successfully!', 'success')
+        
+        # Email Preferences
+        elif 'email_notifications' in request.form:
+            current_user.email_notifications = 'email_notifications' in request.form
+            current_user.email_newsletters = 'email_newsletters' in request.form
             db.session.commit()
-            flash('Animation settings updated!', 'success')
-            return redirect(url_for('settings'))
+            flash('Email preferences updated successfully!', 'success')
+        
+        # Profile Visibility
+        elif 'profile_visibility' in request.form:
+            visibility = request.form['profile_visibility']
+            if visibility in ['public', 'private']:
+                current_user.profile_visibility = visibility
+                db.session.commit()
+                flash('Profile visibility updated successfully!', 'success')
+            else:
+                flash('Invalid visibility selection.', 'danger')
+        
+        # Preferred Test Categories
+        elif 'pref_aptitude' in request.form or 'pref_personality' in request.form or 'pref_skill_gap' in request.form:
+            categories = []
+            if 'pref_aptitude' in request.form:
+                categories.append('aptitude')
+            if 'pref_personality' in request.form:
+                categories.append('personality')
+            if 'pref_skill_gap' in request.form:
+                categories.append('skill_gap')
+            current_user.preferred_test_categories = categories
+            db.session.commit()
+            flash('Preferred test categories updated successfully!', 'success')
+        
+        # Change Password
         elif 'current_password' in request.form:
             current_password = request.form['current_password']
             new_password = request.form['new_password']
@@ -1801,100 +1933,122 @@ def settings():
                 current_user.password = generate_password_hash(new_password)
                 db.session.commit()
                 flash('Password updated successfully!', 'success')
-            return redirect(url_for('settings'))
+        
+        # Reset Roadmap (existing functionality)
         elif 'reset_roadmap' in request.form:
             TestResult.query.filter_by(user_id=current_user.id).delete()
             db.session.commit()
             flash('Roadmap progress reset successfully!', 'success')
-            return redirect(url_for('settings'))
+        
+        # Delete Account
         elif 'delete_account' in request.form:
-            db.session.delete(current_user)
-            db.session.commit()
-            logout_user()
-            flash('Your account has been deleted.', 'info')
-            return redirect(url_for('index'))
+            confirm_username = request.form.get('confirm_username')
+            if confirm_username != current_user.username:
+                flash('Username does not match. Account deletion aborted.', 'danger')
+            else:
+                # Delete all user-related data
+                TestResult.query.filter_by(user_id=current_user.id).delete()
+                Badge.query.filter_by(user_id=current_user.id).delete()
+                Notification.query.filter_by(user_id=current_user.id).delete()
+                db.session.delete(current_user)
+                db.session.commit()
+                logout_user()
+                flash('Your account has been deleted.', 'info')
+                return redirect(url_for('index'))
+        
+        return redirect(url_for('settings'))
+    
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('settings.html', user=current_user, csrf_token=generate_csrf(), active_page='settings', notifications=notifications)
+    return render_template('settings.html', user=current_user, active_page='settings', notifications=notifications)
 
 @app.route('/progress_tracking')
 @login_required
 def progress_tracking():
-    # Fetch test history
+    # Fetch test history from database
     test_history = TestResult.query.filter_by(user_id=current_user.id).order_by(TestResult.completed_at.asc()).all()
+    
+    # Streak calculation function
+    def calculate_streak(test_dates):
+        if not test_dates:
+            return 0
+        
+        current_streak = 1
+        sorted_dates = sorted(test_dates, reverse=True)
+        
+        for i in range(1, len(sorted_dates)):
+            if (sorted_dates[i-1] - sorted_dates[i]).days == 1:
+                current_streak += 1
+            else:
+                break
+        return current_streak
+
+    # Calculate current streak
+    test_dates = [test.completed_at.date() for test in test_history if test.completed_at]
+    current_streak = calculate_streak(test_dates)
+
+    # Handle empty test history
     total_tests = len(test_history)
     if total_tests == 0:
         flash('No tests taken yet. Take a test to track your progress!', 'info')
         return redirect(url_for('test'))
 
-    # Calculate average scores for each test type
+    # Calculate average scores
     test_types = ['sample', 'aptitude', 'personality']
     avg_scores = {}
     for test_type in test_types:
-        tests = [test for test in test_history if test.test_type == test_type]
-        if tests:
-            max_score = 9 if test_type == 'sample' else (5 if test_type == 'personality' else 10)
-            avg_scores[test_type] = sum(test.score for test in tests) / len(tests) / max_score * 100
-        else:
-            avg_scores[test_type] = 0
+        type_tests = [test for test in test_history if test.test_type == test_type]
+        max_score = 9 if test_type == 'sample' else (5 if test_type == 'personality' else 10)
+        avg_scores[test_type] = (sum(test.score for test in type_tests) / (len(type_tests) * max_score)) * 100 if type_tests else 0
 
-    # Prepare progress data for chart
+    # Prepare progress data (CORRECTED SECTION)
     progress_data = {
         'labels': [test.completed_at.strftime('%Y-%m-%d') for test in test_history],
-        'scores': [(test.score / (9 if test.test_type == 'sample' else (5 if test.test_type == 'personality' else 10)) * 100) for test in test_history],
+        'scores': [
+            (test.score / (
+                9 if test.test_type == 'sample' 
+                else (5 if test.test_type == 'personality' else 10)
+            )) * 100 
+            for test in test_history
+        ],
         'types': [test.test_type for test in test_history]
     }
 
-    # Define tasks based on roadmap milestones
+    # Define career tasks
     career_path = session.get('selected_field', 'Software Development')
     if career_path not in CAREER_MAPPING:
         career_path = 'Software Development'
 
     tasks = [
-        {
-            "name": "Complete Initial Assessment",
-            "id": "assessment",
-            "completed": any(result.test_type == 'aptitude' for result in test_history)
-        },
-        {
-            "name": "Enroll in Relevant Courses",
-            "id": "courses",
-            "completed": False  # Replace with real course enrollment data if available
-        },
-        {
-            "name": "Practice Career-Specific Skills",
-            "id": "skills",
-            "completed": any(result.test_type == 'skill_gap' and career_path in json.loads(result.details) for result in test_history)
-        },
-        {
-            "name": "Build a Portfolio",
-            "id": "portfolio",
-            "completed": False  # Replace with real portfolio/project data if available
-        },
-        {
-            "name": "Apply for Opportunities",
-            "id": "opportunities",
-            "completed": False  # Replace with real job application data if available
-        }
+        {"name": "Complete Initial Assessment", "completed": any(t.test_type == 'aptitude' for t in test_history)},
+        {"name": "Enroll in Courses", "completed": False},
+        {"name": "Practice Skills", "completed": any(t.test_type == 'skill_gap' and career_path in json.loads(t.details) for t in test_history)},
+        {"name": "Build Portfolio", "completed": False},
+        {"name": "Apply for Jobs", "completed": False}
     ]
 
-    # Calculate task-based progress
-    total_tasks = len(tasks)
+    # Calculate progress
     completed_tasks = sum(1 for task in tasks if task["completed"])
-    progress_percentage = (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+    progress_percentage = (completed_tasks / len(tasks)) * 100 if tasks else 0
 
     # Fetch notifications
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id, 
+        is_read=False
+    ).order_by(Notification.date.desc()).limit(5).all()
 
-    return render_template('progress_tracking.html',
-                          user=current_user,
-                          test_history=test_history,
-                          avg_scores=avg_scores,
-                          progress_data=progress_data,
-                          tasks=tasks,
-                          progress_percentage=progress_percentage,
-                          total_tests=total_tests,
-                          active_page='progress_tracking',
-                          notifications=notifications)
+    return render_template(
+        'progress_tracking.html',
+        user=current_user,
+        test_history=test_history,
+        avg_scores=avg_scores,
+        progress_data=progress_data,
+        tasks=tasks,
+        progress_percentage=progress_percentage,
+        current_streak=current_streak,
+        total_tests=total_tests,
+        active_page='progress_tracking',
+        notifications=notifications
+    )
 
 @app.route('/roadmap')
 @login_required

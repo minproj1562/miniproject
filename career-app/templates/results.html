@@ -63,12 +63,12 @@
 
         <!-- Detailed Question Breakdown -->
         <div class="question-breakdown">
-            <h3>
-                <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown</button>
-            </h3>
-            <div id="breakdown-content" style="display: none;">
-                {% if score_data.responses and score_data.questions %}
-                {% for response in score_data.responses %}
+    <h3>
+        <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown <i class="fas fa-chevron-down"></i></button>
+    </h3>
+    <div id="breakdown-content" style="display: none;">
+        {% if score_data.responses and score_data.questions %}
+            {% for response in score_data.responses %}
                 {% set question = score_data.questions[loop.index0] %}
                 <div class="question-item {% if response.correct %}correct{% else %}incorrect{% endif %}">
                     <p><strong>Question {{ loop.index }}:</strong> {{ question.text }}</p>
@@ -76,19 +76,19 @@
                     <p><strong>Correct Answer:</strong> <span class="correct-answer">{{ question.options[question.correct] }}</span></p>
                     <p><strong>Result:</strong> 
                         {% if response.correct %}
-                        <span class="correct-text">Correct</span>
+                            <span class="correct-text">Correct</span>
                         {% else %}
-                        <span class="incorrect-text">Incorrect</span>
+                            <span class="incorrect-text">Incorrect</span>
                         {% endif %}
                     </p>
                     <p><strong>Time Spent:</strong> {{ response.time_spent }} seconds</p>
                 </div>
-                {% endfor %}
-                {% else %}
-                <p>No detailed response data available.</p>
-                {% endif %}
-            </div>
-        </div>
+            {% endfor %}
+        {% else %}
+            <p>No detailed response data available.</p>
+        {% endif %}
+    </div>
+</div>
     </div>
     {% else %}
     <div class="no-results">
@@ -106,9 +106,18 @@
 </div>
 
 <script>
-function toggleBreakdown() {
+    function toggleBreakdown() {
     const content = document.getElementById('breakdown-content');
-    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    const icon = document.querySelector('.toggle-btn i');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
 }
 </script>
 
@@ -321,6 +330,26 @@ function toggleBreakdown() {
     .action-buttons {
         flex-direction: column;
     }
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn i {
+    margin-left: 0.5rem;
+}
+
+.toggle-btn:hover {
+    color: #4f46e5;
+}
 }
 </style>
 {% endblock %}
