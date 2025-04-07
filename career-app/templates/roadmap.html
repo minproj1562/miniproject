@@ -1,4 +1,4 @@
-roadmap.html {% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block meta %}
 <meta property="og:title" content="My Career Roadmap">
@@ -1074,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Progress Timeline Animation
     const timeline = document.querySelector('.roadmap-timeline');
     let progressPercent = (completedCount / totalCount) * 100;
-    console.log(Progress: ${completedCount}/${totalCount} = ${progressPercent}%);
+    console.log(`Progress: ${completedCount}/${totalCount} = ${progressPercent}%`);
 
     window.addEventListener('scroll', () => {
         const windowHeight = window.innerHeight;
@@ -1092,11 +1092,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Cap the fill based on the user's progress
         const fillPercent = Math.min(scrollProgress * 100, progressPercent);
-        timeline.style.setProperty('--timeline-fill', ${fillPercent}%);
+        timeline.style.setProperty('--timeline-fill', `${fillPercent}%`);
     });
 
     // Initial fill
-    timeline.style.setProperty('--timeline-fill', ${progressPercent}%);
+    timeline.style.setProperty('--timeline-fill', `${progressPercent}%`);
 
     // Animate progress bars
     document.querySelectorAll('.roadmap-progress-bar').forEach(bar => {
@@ -1132,7 +1132,7 @@ function shareJourney() {
     const completed = "{{ milestones | selectattr('completed') | list | length }}";
     const total = "{{ (milestones | length or 1) | tojson }}";
     const progress = Math.round((completed / total) * 100);
-    const text = I'm on my way to becoming a {{ career_goal }}! 🚀 I've completed ${completed} out of ${total} milestones (${progress}%). Check out my career roadmap! #CareerJourney;
+    const text = `I'm on my way to becoming a {{ career_goal }}! 🚀 I've completed ${completed} out of ${total} milestones (${progress}%). Check out my career roadmap! #CareerJourney`;
     
     if (navigator.share) {
         navigator.share({

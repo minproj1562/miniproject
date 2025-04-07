@@ -10,14 +10,13 @@ from flask_mail import Mail, Message
 from flask_migrate import Migrate
 from datetime import datetime
 from collections import defaultdict
-import requests
+import logging
 import random
 import copy
 import json
 from PIL import Image
 from datetime import datetime, timezone
 import numpy as np
-import logging
 
 # Import question data
 from questions import (
@@ -108,6 +107,9 @@ class Notification(db.Model):
     type = db.Column(db.String(50), nullable=False)
     is_read = db.Column(db.Boolean, default=False)
     date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+with app.app_context():
+    db.create_all()
 
 def get_recommendations(field, score):
     """Get personalized learning recommendations"""
@@ -652,6 +654,9 @@ def test():
         questions = session.get('personality_questions')
         if not questions or request.method == 'GET':
             questions = generate_questions('personality')
+            session['personality_questions'] = questions
+            logger.debug(f"Session questions: {questions}")
+            logger.debug(f"Received responses: {responses}")
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/personality.html',
                               questions=questions,
@@ -663,7 +668,7 @@ def test():
     elif test_type == 'skill_gap':
         selected_field = request.args.get('field', session.get('selected_field', None))
         if not selected_field:
-            return redirect(url_for('interest_test'))
+            return redirect(url_for('test',type='interest_test'))
         session['selected_field'] = selected_field
         questions = session.get('skill_gap_questions')
         if not questions or request.method == 'GET':
@@ -947,31 +952,46 @@ def calculate_aptitude_scores(responses, questions):
 @login_required
 def submit_assessment():
     data = request.get_json()
-    if not data or data.get('type') != 'personality':
+    logger.debug(f"Received JSON data: {data}")
+    if data is None:
+        logger.error("No JSON data received")
+        return jsonify({'error': 'No data received'}), 400
+    if not isinstance(data, dict) or 'responses' not in data or data.get('type') != 'personality':
+        logger.error(f"Invalid data format or type: {data}")
         return jsonify({'error': 'Invalid data'}), 400
-    
+
     responses = data['responses']
-    duration = data['duration']
+    duration = data.get('duration', 0)
     questions = session.get('personality_questions', [])
-    
+    logger.debug(f"Session questions: {questions}")
+    logger.debug(f"Responses: {responses}")
+
+    if not isinstance(responses, list):
+        logger.error(f"Responses is not a list: {responses}")
+        return jsonify({'error': 'Responses must be a list'}), 400
     if len(responses) != len(questions):
+        logger.error(f"Response count ({len(responses)}) does not match question count ({len(questions)})")
         return jsonify({'error': 'Incomplete responses'}), 400
-    
+
     scores = {
         'Openness': 0, 'Conscientiousness': 0, 'Extraversion': 0,
-        ' Agreeableness': 0, 'Neuroticism': 0
+        'Agreeableness': 0, 'Neuroticism': 0
     }
     counts = {trait: 0 for trait in scores}
     trait_mapping = {
         'O': 'Openness',
         'C': 'Conscientiousness',
         'E': 'Extraversion',
-        'A': ' Agreeableness',
+        'A': 'Agreeableness',
         'N': 'Neuroticism'
     }
 
     for response in responses:
+        if not isinstance(response, dict) or 'questionId' not in response or 'answer' not in response:
+            logger.error(f"Invalid response format: {response}")
+            continue
         question = next((q for q in questions if q['id'] == response['questionId']), None)
+        logger.debug(f"Response: {response}, Matched question: {question}")
         if not question:
             logger.warning(f"Question ID {response['questionId']} not found in session questions")
             continue
@@ -985,26 +1005,25 @@ def submit_assessment():
                 logger.error(f"Invalid trait {trait} for question {question['id']}")
                 continue
             trait_name = trait_mapping[trait]
-            # Adjust score based on question-specific direction
-            if question['direction'] == 'positive':
-                score = value  # 0 to 4
-            else:  # 'negative'
-                score = 4 - value  # Reverse: 4 to 0
+            direction = question.get('direction', 'positive')  # Default to positive if missing
+            score = value if direction == 'positive' else (4 - value)
             scores[trait_name] += score
             counts[trait_name] += 1
+            logger.debug(f"Scored {trait_name}: value={value}, direction={direction}, score={score}, total={scores[trait_name]}")
         except (ValueError, KeyError) as e:
             logger.error(f"Error processing response {response}: {e}")
             continue
-    
-    # Normalize scores to a percentage
+
+    # Normalize scores
     for trait in scores:
         if counts[trait] > 0:
-            max_possible = counts[trait] * 4  # Each question scored from 0 to 4
+            max_possible = counts[trait] * 4
             scores[trait] = (scores[trait] / max_possible) * 100
+            logger.debug(f"{trait}: score={scores[trait]}%, count={counts[trait]}, max={max_possible}")
         else:
             scores[trait] = 0
-            logger.warning(f"No responses recorded for trait {trait}")
-    
+            logger.warning(f"No valid responses for {trait}")
+
     dominant_trait = max(scores, key=scores.get)
     result = TestResult(
         user_id=current_user.id,
@@ -1015,7 +1034,7 @@ def submit_assessment():
     )
     db.session.add(result)
     
-    # Award badges
+    # Award badges and notifications (unchanged)
     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
         badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
         db.session.add(badge)
@@ -1024,12 +1043,10 @@ def submit_assessment():
             badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher!", icon="fas fa-star")
             db.session.add(badge)
     
-    # Add notification
     notification = Notification(user_id=current_user.id, message=f"Personality Test completed! Dominant trait: {dominant_trait} ({scores[dominant_trait]:.1f}%)", type="test_result")
     db.session.add(notification)
     db.session.commit()
     
-    # Update session
     completed_tests = session.get('completed_tests', [])
     if 'personality' not in completed_tests:
         completed_tests.append('personality')
@@ -1306,7 +1323,7 @@ def calculate_match(user_scores, career):
         if 'personality' in user_scores and user_scores['personality']:
             career_personality = {k.strip(): float(v) for k, v in career['personality'].items()}
             user_personality = {k: float(v) for k, v in user_scores['personality'].items()}
-            traits = ['Openness', 'Conscientiousness', 'Extraversion', ' Agreeableness', 'Neuroticism']
+            traits = ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism']
             user_vals = [user_personality.get(trait, 0) for trait in traits]
             career_vals = [career_personality.get(trait, 0) for trait in traits]
             trait_score = cosine_similarity(user_vals, career_vals)
@@ -1351,7 +1368,6 @@ def calculate_match(user_scores, career):
 @login_required
 def career_match():
     try:
-        # Fetch user's test results
         personality_result = TestResult.query.filter_by(user_id=current_user.id, test_type='personality').order_by(TestResult.completed_at.desc()).first()
         aptitude_result = TestResult.query.filter_by(user_id=current_user.id, test_type='aptitude').order_by(TestResult.completed_at.desc()).first()
         skill_gap_result = TestResult.query.filter_by(user_id=current_user.id, test_type='skill_gap').order_by(TestResult.completed_at.desc()).first()
@@ -1360,12 +1376,14 @@ def career_match():
         if personality_result:
             try:
                 user_scores['personality'] = json.loads(personality_result.details)
+                logger.debug(f"Personality scores: {user_scores['personality']}")
             except json.JSONDecodeError:
                 logger.error(f"Invalid personality details JSON for user {current_user.id}")
                 user_scores['personality'] = {}
         if aptitude_result:
             try:
                 user_scores['aptitude'] = json.loads(aptitude_result.details)
+                logger.debug(f"Aptitude scores: {user_scores['aptitude']}")
             except json.JSONDecodeError:
                 logger.error(f"Invalid aptitude details JSON for user {current_user.id}")
                 user_scores['aptitude'] = {}
@@ -1374,11 +1392,15 @@ def career_match():
                 user_scores['skill_gap'] = json.loads(skill_gap_result.details)
                 if 'score' not in user_scores['skill_gap']:
                     user_scores['skill_gap']['score'] = skill_gap_result.score
+                logger.debug(f"Skill gap scores: {user_scores['skill_gap']}")
             except json.JSONDecodeError:
                 logger.error(f"Invalid skill_gap details JSON for user {current_user.id}")
                 user_scores['skill_gap'] = {'score': skill_gap_result.score}
 
-        # Calculate career matches
+        if not any(user_scores.values()):
+            flash('Please complete at least one test (Personality, Aptitude, or Skill Gap) to see career matches.', 'warning')
+            return redirect(url_for('dashboard'))
+
         matches = []
         onet_api, _ = get_onet_api()
         soc_codes = {
@@ -1414,12 +1436,10 @@ def career_match():
                 logger.error(f"Error calculating match for {career_name}: {str(e)}")
                 continue
         
-        # Sort matches by score in descending order
         matches.sort(key=lambda x: x['score'], reverse=True)
+        logger.debug(f"Career matches: {matches}")
 
-        # Fetch notifications
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-
         return render_template(
             'career_match.html',
             matches=matches,
