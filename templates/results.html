@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Test Results{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <h1>Test Results</h1>
+    
+    {% if score_data %}
+    <div class="result-card">
+        <h2>{{ score_data.test_type|capitalize }} Test</h2>
+        <div class="score-display">
+            <div class="score-circle">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#6366f1" 
+                            stroke-width="10" stroke-dasharray="{{ score_data.score * 2.8274 }} 282.74"
+                            transform="rotate(-90 50 50)"/>
+                </svg>
+                <div class="score-value">{{ score_data.score|round(1) }}%</div>
+            </div>
+        </div>
+        
+        <div class="result-details">
+            <div class="detail-item">
+                <span class="detail-label">Correct Answers:</span>
+                <span class="detail-value">{{ score_data.correct }}/{{ score_data.total }}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Time Spent:</span>
+                <span class="detail-value">{{ score_data.time_spent }} seconds</span>
+            </div>
+        </div>
+
+        <!-- Category-wise Scores -->
+        <div class="category-scores">
+            <h3>Category-wise Performance</h3>
+            <div class="category-grid">
+                {% for category, score in score_data.detailed_scores.items() %}
+                <div class="category-item">
+                    <span class="category-label">{{ category }}</span>
+                    <span class="category-score">{{ score|round(1) }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Performance Feedback -->
+        <div class="performance-feedback">
+            <h3>Performance Feedback</h3>
+            {% for category, score in score_data.detailed_scores.items() %}
+            <p>
+                <strong>{{ category }} ({{ score|round(1) }}%):</strong>
+                {% if score < 40 %}
+                It looks like you might need more practice in {{ category }}. Consider reviewing basic concepts or trying some practice questions!
+                {% elif score < 70 %}
+                Good effort in {{ category }}! With a bit more practice, you can improve your skills further.
+                {% else %}
+                Excellent performance in {{ category }}! Keep up the great work.
+                {% endif %}
+            </p>
+            {% endfor %}
+        </div>
+
+        <!-- Detailed Question Breakdown -->
+        <div class="question-breakdown">
+    <h3>
+        <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown <i class="fas fa-chevron-down"></i></button>
+    </h3>
+    <div id="breakdown-content" style="display: none;">
+        {% if score_data.responses and score_data.questions %}
+            {% for response in score_data.responses %}
+                {% set question = score_data.questions[loop.index0] %}
+                <div class="question-item {% if response.correct %}correct{% else %}incorrect{% endif %}">
+                    <p><strong>Question {{ loop.index }}:</strong> {{ question.text }}</p>
+                    <p><strong>Your Answer:</strong> <span class="user-answer">{{ question.options[response.answer] }}</span></p>
+                    <p><strong>Correct Answer:</strong> <span class="correct-answer">{{ question.options[question.correct] }}</span></p>
+                    <p><strong>Result:</strong> 
+                        {% if response.correct %}
+                            <span class="correct-text">Correct</span>
+                        {% else %}
+                            <span class="incorrect-text">Incorrect</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Time Spent:</strong> {{ response.time_spent }} seconds</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No detailed response data available.</p>
+        {% endif %}
+    </div>
+</div>
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p>No results available yet. Please complete a test to see your scores.</p>
+    </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        {% if not has_personality %}
+        <a href="{{ url_for('test', type='personality') }}" class="btn btn-option">Take Personality Test</a>
+        {% endif %}
+        <a href="{{ url_for('career_match') }}" class="btn btn-primary">Proceed to Career Match</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+
+<script>
+    function toggleBreakdown() {
+    const content = document.getElementById('breakdown-content');
+    const icon = document.querySelector('.toggle-btn i');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+</script>
+
+<style>
+.results-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.result-card {
+    margin: 2rem 0;
+}
+
+.score-display {
+    margin: 2rem 0;
+}
+
+.score-circle {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+.score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #6366f1;
+}
+
+.result-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.detail-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.detail-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.category-scores {
+    margin: 2rem 0;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.category-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.category-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+}
+
+.category-score {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #1e293b;
+}
+
+.performance-feedback {
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.performance-feedback p {
+    margin: 0.5rem 0;
+    color: #1e293b;
+}
+
+.performance-feedback strong {
+    color: #6366f1;
+}
+
+.question-breakdown {
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.toggle-btn:hover {
+    color: #4f46e5;
+}
+
+.question-item {
+    background: #f8fafc;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    border-left: 5px solid;
+}
+
+.question-item.correct {
+    border-left-color: #10b981;
+}
+
+.question-item.incorrect {
+    border-left-color: #ef4444;
+}
+
+.user-answer {
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.correct-answer {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.correct-text {
+    color: #10b981;
+    font-weight: bold;
+}
+
+.incorrect-text {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn, .btn-option {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #6366f1;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #4f46e5;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: white;
+    color: #6366f1;
+    border: 1px solid #6366f1;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+}
+
+.btn-option {
+    background-color: #2a5298;
+    color: white;
+}
+
+.btn-option:hover {
+    background-color: #1e3c72;
+}
+
+@media (max-width: 768px) {
+    .result-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #6366f1;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn i {
+    margin-left: 0.5rem;
+}
+
+.toggle-btn:hover {
+    color: #4f46e5;
+}
+}
+</style>
+{% endblock %}

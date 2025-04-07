@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="career-match-container">
+    <h1 class="page-title">Your Career Matches</h1>
+    <p class="page-subtitle">Based on your personality, aptitude, and skills, here are the careers that best suit you.</p>
+
+    {% if matches %}
+        <div class="career-list">
+            {% for career in matches %}
+                <div class="career-card">
+                    <div class="career-header">
+                        <h2>{{ career.name }}</h2>
+                        <div class="match-score">
+                            <span class="score-circle">{{ career.score|round(1) }}%</span>
+                            Match
+                        </div>
+                    </div>
+                    <p class="career-description">{{ career.description }}</p>
+                    <div class="career-details">
+                        <h3>Details</h3>
+                        <p><strong>Title:</strong> {{ career.onet_details.title }}</p>
+                        <p><strong>Median Wage:</strong> ${{ career.onet_details.median_wage|format_number }}</p>
+                        <p><strong>Growth Rate:</strong> {{ career.onet_details.growth_rate }}%</p>
+                        <p><strong>Typical Education:</strong> {{ career.onet_details.education }}</p>
+                        <p><strong>Key Skills:</strong> {{ career.onet_details.skills|join(', ') }}</p>
+                    </div>
+                    {% if career.resources %}
+                        <div class="career-resources">
+                            <h3>Resources to Get Started</h3>
+                            <ul>
+                                {% for resource in career.resources %}
+                                    <li><a href="{{ resource.url }}" target="_blank">{{ resource.name }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Add Call-to-Action Buttons -->
+        <div class="cta-buttons">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+            <a href="{{ url_for('full_analysis') }}" class="btn btn-secondary">View Full Analysis</a>
+        </div>
+    {% else %}
+        <div class="no-matches">
+            <p>No career matches found. Please complete the personality and aptitude tests to get personalized recommendations.</p>
+            <a href="{{ url_for('assessments') }}" class="btn btn-primary">Take Assessments</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.career-match-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    color: #1e293b;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.career-list {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.career-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    transition: transform 0.2s;
+}
+
+.career-card:hover {
+    transform: translateY(-5px);
+}
+
+.career-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.career-header h2 {
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin: 0;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: #64748b;
+}
+
+.score-circle {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    text-align: center;
+    background: #6366f1;
+    color: #ffffff;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+
+.career-description {
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+.career-details, .career-resources {
+    margin-top: 1rem;
+}
+
+.career-details h3, .career-resources h3 {
+    font-size: 1.2rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.career-details p, .career-resources ul {
+    margin: 0.3rem 0;
+    color: #64748b;
+}
+
+.career-resources ul {
+    padding-left: 1.5rem;
+}
+
+.career-resources a {
+    color: #6366f1;
+    text-decoration: none;
+}
+
+.career-resources a:hover {
+    text-decoration: underline;
+}
+
+.no-matches {
+    text-align: center;
+    padding: 2rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+}
+
+.no-matches p {
+    font-size: 1.2rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #6366f1;
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #4f46e5;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: white;
+    color: #6366f1;
+    border: 1px solid #6366f1;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add any interactivity if needed, e.g., for expanding/collapsing career details
+    document.querySelectorAll('.career-card').forEach(card => {
+        card.addEventListener('click', () => {
+            card.classList.toggle('expanded');
+        });
+    });
+</script>
+{% endblock %}

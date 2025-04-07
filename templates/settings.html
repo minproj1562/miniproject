@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Career Analytics{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+        color: #2c3e50;
+        font-family: 'Poppins', sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+        transition: background 0.5s ease;
+    }
+    body.dark-mode {
+        background: linear-gradient(135deg, #4b134f 0%, #1e3c72 100%) !important;
+        color: #ecf0f1;
+    }
+    .container {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        animation: fadeIn 1s ease-in-out;
+        margin-top: 60px;
+        margin-bottom: 50px;
+    }
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+        color: #e91e63;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        margin-bottom: 30px;
+        animation: slideIn 0.8s ease-out;
+    }
+    @keyframes slideIn {
+        0% { opacity: 0; transform: translateX(-50px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
+    .card {
+        border: none;
+        border-radius: 15px;
+        background: linear-gradient(145deg, #ffffff, #e6e6e6);
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15), -5px -5px 15px rgba(255, 255, 255, 0.5);
+        transition: transform 0.3s, box-shadow 0.3s;
+        margin-bottom: 30px;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.2), -8px -8px 20px rgba(255, 255, 255, 0.6);
+    }
+    .card-header {
+        background: linear-gradient(90deg, #ff6f61, #ff3d2e);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        font-weight: 600;
+        padding: 15px 20px;
+    }
+    .card-body {
+        padding: 20px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    .form-control, .form-select {
+        border-radius: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ced4da;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #1abc9c;
+        box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #1abc9c, #16a085);
+        border: none;
+        padding: 10px 25px;
+        border-radius: 25px;
+        color: white;
+        font-weight: 600;
+        transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(90deg, #16a085, #1abc9c);
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(26, 188, 156, 0.5);
+    }
+    .btn-danger {
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
+        border: none;
+        padding: 10px 25px;
+        border-radius: 25px;
+        color: white;
+        font-weight: 600;
+        transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+    }
+    .btn-danger:hover {
+        background: linear-gradient(90deg, #c0392b, #e74c3c);
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5);
+    }
+    .form-check-input {
+        margin-right: 10px;
+    }
+    .form-check-label {
+        color: #2c3e50;
+    }
+    .alert {
+        margin-bottom: 20px;
+    }
+    body.dark-mode .container {
+        background: rgba(30, 60, 114, 0.3);
+    }
+    body.dark-mode .card {
+        background: linear-gradient(145deg, #34495e, #2c3e50);
+    }
+    body.dark-mode .card-header {
+        background: linear-gradient(90deg, #e91e63, #d81b60);
+    }
+    body.dark-mode .form-label,
+    body.dark-mode .form-check-label {
+        color: #ecf0f1;
+    }
+    body.dark-mode .form-control,
+    body.dark-mode .form-select {
+        background: #34495e;
+        border-color: #5a6268;
+        color: #ecf0f1;
+    }
+    body.dark-mode .form-control:focus,
+    body.dark-mode .form-select:focus {
+        border-color: #1abc9c;
+        box-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Settings ⚙️</h1>
+
+    <!-- Theme Selection -->
+    <div class="card">
+        <div class="card-header">Theme Preferences</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}" id="theme-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="theme" class="form-label">Select Theme</label>
+                    <select class="form-select" id="theme" name="theme">
+                        <option value="light" {% if current_user.theme == 'light' %}selected{% endif %}>Light</option>
+                        <option value="dark" {% if current_user.theme == 'dark' %}selected{% endif %}>Dark</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Theme</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Preferences -->
+    <div class="card">
+        <div class="card-header">Notification Preferences</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="notify_test_reminders" name="notify_test_reminders" 
+                           {% if current_user.notify_test_reminders %}checked{% endif %}>
+                    <label class="form-check-label" for="notify_test_reminders">
+                        Receive Test Reminders
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="notify_badge_earned" name="notify_badge_earned" 
+                           {% if current_user.notify_badge_earned %}checked{% endif %}>
+                    <label class="form-check-label" for="notify_badge_earned">
+                        Notify When Badge Earned
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="notify_progress_updates" name="notify_progress_updates" 
+                           {% if current_user.notify_progress_updates %}checked{% endif %}>
+                    <label class="form-check-label" for="notify_progress_updates">
+                        Receive Progress Updates
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Notification Preferences</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Preferences -->
+    <div class="card">
+        <div class="card-header">Email Preferences</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" 
+                           {% if current_user.email_notifications %}checked{% endif %}>
+                    <label class="form-check-label" for="email_notifications">
+                        Receive Email Notifications
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="email_newsletters" name="email_newsletters" 
+                           {% if current_user.email_newsletters %}checked{% endif %}>
+                    <label class="form-check-label" for="email_newsletters">
+                        Subscribe to Newsletters
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Email Preferences</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Visibility -->
+    <div class="card">
+        <div class="card-header">Profile Visibility</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="profile_visibility" class="form-label">Profile Visibility</label>
+                    <select class="form-select" id="profile_visibility" name="profile_visibility">
+                        <option value="public" {% if current_user.profile_visibility == 'public' %}selected{% endif %}>Public</option>
+                        <option value="private" {% if current_user.profile_visibility == 'private' %}selected{% endif %}>Private</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Visibility Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Preferred Test Categories -->
+    <div class="card">
+        <div class="card-header">Preferred Test Categories</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="pref_aptitude" name="pref_aptitude" 
+                           {% if current_user.preferred_test_categories and 'aptitude' in current_user.preferred_test_categories %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_aptitude">
+                        Aptitude Tests
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="pref_personality" name="pref_personality" 
+                           {% if current_user.preferred_test_categories and 'personality' in current_user.preferred_test_categories %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_personality">
+                        Personality Tests
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="pref_skill_gap" name="pref_skill_gap" 
+                           {% if current_user.preferred_test_categories and 'skill_gap' in current_user.preferred_test_categories %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_skill_gap">
+                        Skill Gap Tests
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Test Preferences</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card">
+        <div class="card-header">Change Password</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="current_password" class="form-label">Current Password</label>
+                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="new_password" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Account -->
+    <div class="card">
+        <div class="card-header">Delete Account</div>
+        <div class="card-body">
+            <p>Deleting your account will permanently remove all your data from our system. This action cannot be undone.</p>
+            <form method="POST" action="{{ url_for('settings') }}" onsubmit="return confirm('Are you sure you want to delete your account? This action is permanent and cannot be undone. Please type your username ({{ current_user.username }}) to confirm.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="delete_account" value="true">
+                <div class="mb-3">
+                    <label for="confirm_username" class="form-label">Confirm Username</label>
+                    <input type="text" class="form-control" id="confirm_username" name="confirm_username" required>
+                </div>
+                <button type="submit" class="btn btn-danger">Delete Account</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function (e) {
+                const submitButton = this.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Saving...';
+
+                // Additional validation for delete account form
+                if (this.querySelector('input[name="delete_account"]')) {
+                    const confirmUsername = this.querySelector('#confirm_username').value;
+                    const actualUsername = '{{ current_user.username }}';
+                    if (confirmUsername !== actualUsername) {
+                        e.preventDefault();
+                        alert('Username does not match. Please type your username correctly to confirm account deletion.');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Delete Account';
+                    }
+                }
+            });
+        });
+
+        // Theme toggle preview
+        const themeSelect = document.getElementById('theme');
+        themeSelect.addEventListener('change', function () {
+            const selectedTheme = this.value;
+            document.body.classList.toggle('dark-mode', selectedTheme === 'dark');
+        });
+    });
+</script>
+{% endblock %}

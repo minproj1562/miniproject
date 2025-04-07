@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Interview Preparation Hub{% endblock %}
+{% block extra_head %}
+<style>
+  /* Styles for Interview Preparation Hub */
+  .container {
+      max-width: 1200px;
+      margin: 80px auto;
+      padding: 2rem;
+  }
+  h1 {
+      text-align: center;
+      color: #1e3c72;
+      margin-bottom: 2rem;
+  }
+  .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+      margin-bottom: 20px;
+  }
+  .card:hover {
+      transform: translateY(-5px);
+  }
+  .card h3 {
+      color: #1e3c72;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #1e3c72;
+      padding-bottom: 5px;
+  }
+  .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #ecf0f1;
+      border-radius: 10px;
+      margin: 10px 0;
+      overflow: hidden;
+  }
+  .progress {
+      height: 100%;
+      background: #2ecc71;
+      width: 0;
+      transition: width 0.3s ease;
+  }
+  .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+  }
+  .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+  }
+  .close {
+      float: right;
+      cursor: pointer;
+      font-size: 24px;
+  }
+  .timer {
+      font-size: 24px;
+      margin: 10px 0;
+      color: #1e3c72;
+  }
+  .question-card {
+      background: white;
+      padding: 20px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border-left: 4px solid #1e3c72;
+  }
+  .feedback {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+  }
+  .feedback.correct {
+      background: #d4edda;
+      color: #155724;
+  }
+  .feedback.incorrect {
+      background: #f8d7da;
+      color: #721c24;
+  }
+  .checklist {
+      list-style: none;
+      padding: 0;
+  }
+  .checklist li {
+      margin: 10px 0;
+      padding: 10px;
+      background: #ecf0f1;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+  }
+  .checklist input[type="checkbox"] {
+      margin-right: 10px;
+  }
+  .resources a {
+      color: #1e3c72;
+      text-decoration: none;
+      display: block;
+      margin: 5px 0;
+  }
+  .resources a:hover {
+      text-decoration: underline;
+  }
+  .tag {
+      display: inline-block;
+      padding: 5px 10px;
+      background: #ecf0f1;
+      border-radius: 15px;
+      margin: 5px;
+      font-size: 14px;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<main class="container">
+    <h1>Interview Preparation Hub</h1>
+    <div class="card">
+        <h3>Mock Interview</h3>
+        <p>Practice common interview questions.</p>
+        <button onclick="startMockInterview()">Start Practice</button>
+        <div class="progress-bar">
+            <div class="progress" id="mockProgress"></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Technical Preparation</h3>
+        <p>Review key technical concepts.</p>
+        <button onclick="showTechnicalTopics()">Review Topics</button>
+        <div class="progress-bar">
+            <div class="progress" id="techProgress"></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Behavioral Questions</h3>
+        <p>Practice responses using the STAR method.</p>
+        <button onclick="showBehavioralQuestions()">Practice STAR</button>
+        <div class="progress-bar">
+            <div class="progress" id="behavioralProgress"></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Interview Checklist</h3>
+        <ul class="checklist" id="interviewChecklist">
+            <li><input type="checkbox" onchange="updateProgress()"> Research the company</li>
+            <li><input type="checkbox" onchange="updateProgress()"> Prepare questions to ask</li>
+            <li><input type="checkbox" onchange="updateProgress()"> Review job description</li>
+            <li><input type="checkbox" onchange="updateProgress()"> Practice responses</li>
+            <li><input type="checkbox" onchange="updateProgress()"> Prepare your attire</li>
+        </ul>
+    </div>
+
+    <!-- Mock Interview Modal -->
+    <div id="mockInterviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMockInterview()">&times;</span>
+            <h2>Mock Interview Session</h2>
+            <div class="timer" id="timer">00:00</div>
+            <div id="questionContainer" class="question-card"></div>
+            <div id="feedback" class="feedback"></div>
+            <button onclick="nextQuestion()" id="nextBtn">Next Question</button>
+        </div>
+    </div>
+
+    <!-- Technical Topics Modal -->
+    <div id="technicalModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeTechnical()">&times;</span>
+            <h2>Technical Topics</h2>
+            <div class="tag-container" id="techTopics">
+                <!-- Topics will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Behavioral Questions Modal -->
+    <div id="behavioralModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBehavioral()">&times;</span>
+            <h2>Behavioral Questions (STAR Method)</h2>
+            <div id="starGuide"></div>
+            <div id="behavioralQuestion" class="question-card"></div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+  // (Include your consolidated interview preparation JS here or load from your consolidated JS file)
+  // This example script is similar to what you have in your standalone interviewprep.html
+  const mockQuestions = [
+      "Tell me about yourself.",
+      "Why are you interested in this position?",
+      "What are your greatest strengths?",
+      "Where do you see yourself in 5 years?",
+      "Why should we hire you?",
+      "Describe a challenging situation and how you handled it.",
+      "What are your salary expectations?",
+      "Do you have any questions for us?"
+  ];
+
+  const technicalTopics = [
+      "Data Structures", "Algorithms", "System Design", "Programming Languages",
+      "Databases", "Web Technologies", "Operating Systems", "Networking", "Cloud Computing"
+  ];
+
+  const behavioralQuestions = [
+      "Describe a time when you demonstrated leadership.",
+      "Tell me about a project you're proud of.",
+      "How do you handle conflicts in a team?",
+      "Describe a failure and what you learned from it.",
+      "How do you prioritize tasks when you have multiple deadlines?"
+  ];
+
+  let currentQuestionIndex = 0;
+  let timer;
+
+  function startMockInterview() {
+      document.getElementById('mockInterviewModal').style.display = 'flex';
+      currentQuestionIndex = 0;
+      showQuestion();
+      startTimer();
+  }
+
+  function showQuestion() {
+      document.getElementById('questionContainer').innerHTML = mockQuestions[currentQuestionIndex];
+      document.getElementById('feedback').innerHTML = '';
+  }
+
+  function nextQuestion() {
+      currentQuestionIndex = (currentQuestionIndex + 1) % mockQuestions.length;
+      showQuestion();
+      updateMockProgress();
+  }
+
+  function startTimer() {
+      let seconds = 0;
+      clearInterval(timer);
+      timer = setInterval(() => {
+          seconds++;
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          document.getElementById('timer').innerHTML = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+      }, 1000);
+  }
+
+  function closeMockInterview() {
+      document.getElementById('mockInterviewModal').style.display = 'none';
+      clearInterval(timer);
+  }
+
+  function showTechnicalTopics() {
+      const modal = document.getElementById('technicalModal');
+      const topicsContainer = document.getElementById('techTopics');
+      topicsContainer.innerHTML = technicalTopics.map(topic => `<span class="tag">${topic}</span>`).join('');
+      modal.style.display = 'flex';
+  }
+
+  function closeTechnical() {
+      document.getElementById('technicalModal').style.display = 'none';
+  }
+
+  function showBehavioralQuestions() {
+      const modal = document.getElementById('behavioralModal');
+      document.getElementById('starGuide').innerHTML = `
+          <h3>STAR Method:</h3>
+          <p><strong>S</strong>ituation: Describe the context</p>
+          <p><strong>T</strong>ask: Explain your responsibility</p>
+          <p><strong>A</strong>ction: What steps did you take?</p>
+          <p><strong>R</strong>esult: What was the outcome?</p>
+      `;
+      document.getElementById('behavioralQuestion').innerHTML = behavioralQuestions[Math.floor(Math.random() * behavioralQuestions.length)];
+      modal.style.display = 'flex';
+  }
+
+  function closeBehavioral() {
+      document.getElementById('behavioralModal').style.display = 'none';
+  }
+
+  function updateMockProgress() {
+      const progress = ((currentQuestionIndex + 1) / mockQuestions.length) * 100;
+      document.getElementById('techProgress').style.width = `${progress}%`;
+  }
+
+  function updateProgress() {
+      const checkboxes = document.querySelectorAll('.checklist input[type="checkbox"]');
+      const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+      const progress = (checked / checkboxes.length) * 100;
+      document.getElementById('mockProgress').style.width = `${progress}%`;
+  }
+
+  // Save and load progress functions can be added as needed
+
+  window.onclick = function(event) {
+      const modals = document.getElementsByClassName('modal');
+      Array.from(modals).forEach(modal => {
+          if (event.target == modal) {
+              modal.style.display = 'none';
+              if (modal.id === 'mockInterviewModal') {
+                  clearInterval(timer);
+              }
+          }
+      });
+  }
+</script>
+{% endblock %}

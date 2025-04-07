@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}{% endblock %} - Career Analytics</title>
+    <link rel="icon" href="data:,">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/personality.css') }}">
+    <!-- Add Poppins Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Navbar with Contrasting Cosmic Gradient */
+        .navbar.custom-navbar {
+            background: linear-gradient(90deg, #2a2a72, #4a2a8d, #5e2a8d) !important;
+            padding: 0.3rem 1rem !important;
+            box-shadow: 0 5px 25px rgba(0, 247, 255, 0.5), 0 -5px 25px rgba(255, 0, 255, 0.5);
+            position: relative;
+            animation: navbarGlow 3s infinite alternate;
+            border-bottom: 2px solid rgba(0, 247, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .navbar.custom-navbar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 247, 255, 0.3), transparent);
+            animation: shine 4s infinite;
+        }
+        .navbar-brand-container { flex: 0 0 auto; }
+        .navbar-brand {
+            font-size:  1.5rem !important;
+            font-weight: 900;
+            color: #00f7ff !important;
+            text-shadow: 0 3px 15px rgba(0, 0, 0, 0.7);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        .navbar-brand:hover {
+            transform: scale(1.1);
+            color: #ff00ff !important;
+        }
+        .navbar-nav { flex: 0 0 auto; margin-left: auto; }
+        .nav-link {
+            color: #e0e0e0 !important;
+            padding: 0.4rem 0.8rem !important;  /* Tighter padding */
+            font-size: 1rem !important;
+            transition: color 0.3s ease, background 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        .nav-link i { 
+            margin-right: 0.3rem !important;
+            justify-content: center !important;
+            padding: 0.5rem !important;}
+        .nav-link:hover {
+            color: #00f7ff !important;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transform: scale(1.05);
+        }
+        .nav-link.active {
+            color: #ff00ff !important;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 2px;
+            background: #ff00ff;
+            animation: underlineExpand 0.5s ease-out;
+        }
+                .dropdown-menu {
+            background: linear-gradient(135deg, #2a2a72, #4a2a8d) !important;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            border-radius: 0.75rem;
+        }
+        .dropdown-item {
+            color: #e0e0e0 !important;
+            padding: 0.6rem 1.2rem;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .dropdown-item:hover {
+            background: #00f7ff !important;
+            color: #1e1e2f !important;
+        }
+        .dropdown-item.active {
+            background: #ff00ff !important;
+            color: #1e1e2f !important;
+            font-weight: bold;
+        }
+        .profile-icon {
+            width: 35px !important;
+            height: 35px !important;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00f7ff, #ff00ff) !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.7);
+            border: 3px solid #000;
+        }
+        .profile-icon img {
+            width: 90%;
+            height: 90%;
+            border-ra9dius: 50%;
+            object-fit: cover;
+            justify-content: center;
+
+        }
+        .profile-icon:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 1);
+        }
+        .navbar-toggler {
+            border: none;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(0, 247, 255, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        .test-link {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1.2rem;
+            color: #e0e0e0 !important;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .test-link i { margin-right: 0.6rem;
+        margin-right: 0.8rem;
+        flex-shrink: 0;  /* Prevent icon shrinking */
+        margin-top: 2px;  /* Better icon alignment */ }
+        .login-required { position: relative; }
+        .login-required-text {
+            font-size: 0.8rem;
+            color: #ff00ff !important;
+            margin-left: 0.6rem;
+            font-style: italic;
+        }
+        .dropdown-menu .dropdown-menu {
+    display: none;
+    background: #2a2a72 !important;
+    margin-left: 0.6rem;
+    border-radius: 0.75rem;
+}
+.dropdown-menu .dropdown .dropdown-menu.show {
+    display: block !important;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 0.6rem;
+    background: #2a2a72 !important;
+    border-radius: 0.75rem;
+}
+        .dropdown-item.dropdown-toggle:hover {
+            background: #00f7ff !important;
+            color: #1e1e2f !important;
+        }
+        .notification-bell {
+            position: relative;
+            color: #e0e0e0;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-left: 0 !important;
+            margin-top: 0.5rem;
+        }
+        .notification-bell:hover { transform: scale(1.1); }
+        .notification-bell .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff00ff;
+            color: #fff;
+            border-radius: 50%;
+            padding: 3px 7px;
+            font-size: 0.8rem;
+        }
+        .notification-dropdown {
+            background: linear-gradient(135deg, #2a2a72, #4a2a8d) !important;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            border-radius: 0.75rem;
+            width: 320px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        .notification-item {
+            padding: 12px;
+            border-bottom: 1px solid #00f7ff;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+        .notification-item.unread {
+            background: #00f7ff !important;
+            color: #1e1e2f;
+        }
+        .notification-item:hover { background: #ff00ff !important; }
+        .notification-item .mark-read {
+            color: #1e1e2f;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .notification-item .mark-read:hover { color: #fff; }
+        .quick-test {
+            background: linear-gradient(to right, #00f7ff, #ff00ff) !important;
+            color: #1e1e2f !important;
+            border-radius: 25px;
+            padding: 0.6rem 1.2rem !important;
+            transition: transform 0.3s ease, background 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 247, 255, 0.7);
+            margin-left: 15px;
+        }
+        .quick-test:hover {
+            transform: scale(1.1);
+            background: linear-gradient(to right, #ff00ff, #00f7ff) !important;
+        }
+        .user-greeting .nav-link {
+            color: #ff00ff !important;
+            font-style: italic;
+            pointer-events: none;
+            font-size: 1.1rem;
+        }
+        /* Flash Messages */
+        .flash-container {
+            background: none !important;
+            backdrop-filter: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            animation: none !important;
+        }
+        .alert {
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: #2c3e50 !important; /* Updated for better contrast */
+            border: 1px solid #00f7ff !important;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+        .alert-success {
+            border-color: #00f7ff !important;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.7);
+        }
+        .alert-danger {
+            border-color: #ff00ff !important;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+        }
+        .alert .btn-close {
+            filter: invert(1) brightness(2);
+        }
+        /* Footer */
+        footer {
+            background: linear-gradient(90deg, #2e3c56, #34495e) !important;
+            padding: 2rem 0;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.4);
+        }
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+        footer p { margin: 0; font-size: 1.1rem; color: #fff; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); }
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #00f7ff, #ff00ff);
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+            cursor: pointer;
+            z-index: 1000; /* Ensure it’s above other elements */
+        }
+        .back-to-top.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover { transform: scale(1.1); }
+        /* Animations */
+        @keyframes navbarGlow {
+            0% { box-shadow: 0 5px 25px rgba(0, 247, 255, 0.5), 0 -5px 25px rgba(255, 0, 255, 0.5); }
+            50% { box-shadow: 0 8px 35px rgba(0, 247, 255, 0.7), 0 -8px 35px rgba(255, 0, 255, 0.7); }
+            100% { box-shadow: 0 5px 25px rgba(0, 247, 255, 0.5), 0 -5px 25px rgba(255, 0, 255, 0.5); }
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        @keyframes underlineExpand {
+            0% { width: 0; }
+            100% { width: 50%; }
+        }
+        @media (max-width: 992px) {}
+        .navbar-nav {
+            padding-top: 1rem;
+            text-align: center;
+            .user-greeting .nav-link {
+            display: none !important;  /* Hide greeting on smallest screens */
+             } }
+             @media (max-width: 1400px) {
+        .nav-link { font-size: 1rem !important; }
+        .navbar-brand { font-size: 1.6rem !important; }
+    }
+
+    @media (max-width: 1200px) {
+        .nav-link { padding: 0.5rem 0.7rem !important; }
+        .nav-link i { margin-right: 0.4rem !important; }
+    }
+
+    @media (max-width: 992px) {
+        .navbar-brand { font-size: 1.4rem !important; }
+        .nav-link { font-size: 0.95rem !important; }
+        .dropdown-menu { min-width: 200px !important; }
+    }
+
+    @media (max-width: 768px) {
+        .nav-link { 
+            padding: 0.4rem 0.6rem !important;
+            font-size: 0.9rem !important;
+        }
+        .profile-icon { 
+            width: 38px !important;
+            height: 38px !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .navbar-brand { font-size: 1.2rem !important; }
+        .nav-link { 
+            padding: 0.3rem 0.5rem !important;
+            font-size: 0.85rem !important;
+        }
+        .nav-link i { font-size: 0.8rem !important; }
+    }
+
+    /* Add text truncation */
+    .nav-link, .dropdown-item {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+@media (max-width: 768px) {
+        .dropdown-menu {
+            min-width: 200px !important;
+        }
+        
+        .dropdown-item {
+            font-size: 0.95rem !important;
+            padding: 0.6rem 1rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .dropdown-menu {
+            min-width: 180px !important;
+        }
+        
+        .dropdown-item {
+            font-size: 0.9rem !important;
+        }
+ }
+    </style>
+    <!-- Add block for child templates to inject styles -->
+    {% block styles %}{% endblock %}
+</head>
+<body class="{% if active_page == 'dashboard' %}dashboard-page{% endif %} {% if current_user.is_authenticated and current_user.theme == 'dark' %}dark-mode{% endif %}">
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <div class="navbar-brand-container">
+                <a class="navbar-brand {% if active_page == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Career Analytics</a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'about' %}active{% endif %}" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i> About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'faq' %}active{% endif %}" href="{{ url_for('faq') }}"><i class="fas fa-question-circle"></i> FAQs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}"><i class="fas fa-envelope"></i> Contact Us</a>
+                    </li>
+                    <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if active_page == 'student' %}active{% endif %}" href="#" id="studentDropdown" role="button" 
+       data-bs-toggle="dropdown" aria-expanded="false">
+       <i class="fas fa-user-graduate"></i> Student
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="studentDropdown">
+        <li class="dropdown">
+            <a class="dropdown-item dropdown-toggle" href="#" id="testsDropdown" role="button" 
+               data-bs-toggle="dropdown" aria-expanded="false">
+               <i class="fas fa-vial"></i> Tests
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="testsDropdown">
+                <li><a class="dropdown-item test-link {% if active_page == 'career_assessment' %}active{% endif %}" href="{{ url_for('career_assessment') }}"><i class="fas fa-briefcase"></i> Career Assessment</a></li>
+                <li><a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'sample' %}active{% endif %}" href="{{ url_for('test', type='sample') }}"><i class="fas fa-flask"></i> Sample Test</a></li>
+                <li>
+                    {% if current_user.is_authenticated %}
+                        <a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'aptitude' %}active{% endif %}" href="{{ url_for('test', type='aptitude') }}"><i class="fas fa-brain"></i> Aptitude Test</a>
+                    {% else %}
+                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('test', type='aptitude')) }}"><i class="fas fa-brain"></i> Aptitude Test <span class="login-required-text">(Login Required)</span></a>
+                    {% endif %}
+                </li>
+                <li>
+                    {% if current_user.is_authenticated %}
+                        <a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'personality' %}active{% endif %}" href="{{ url_for('test', type='personality') }}"><i class="fas fa-user"></i> Personality Test</a>
+                    {% else %}
+                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('test', type='personality')) }}"><i class="fas fa-user"></i> Personality Test <span class="login-required-text">(Login Required)</span></a>
+                    {% endif %}
+                </li>
+                <li>
+                    {% if current_user.is_authenticated %}
+                        <a class="dropdown-item test-link {% if active_page == 'interest_test' %}active{% endif %}" href="{{ url_for('test',type='interest_test') }}"><i class="fas fa-tools"></i> Skill Gap Test</a>
+                    {% else %}
+                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('test',type='interest_test')) }}"><i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span></a>
+                    {% endif %}
+                </li>
+            </ul>
+        </li>
+        <li><a class="dropdown-item {% if active_page == 'degree' %}active{% endif %}" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
+    </ul>
+</li>
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link notification-bell dropdown-toggle" href="#" id="notificationDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-bell"></i>
+                                {% set unread_count = notifications|selectattr('is_read', 'equalto', False)|list|length %}
+                                {% if unread_count > 0 %}
+                                    <span class="badge">{{ unread_count }}</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
+                                {% if notifications %}
+                                    {% for notification in notifications %}
+                                        <li class="notification-item {% if not notification.is_read %}unread{% endif %}" data-notification-id="{{ notification.id }}">
+                                            <span>{{ notification.message }}</span>
+                                            {% if not notification.is_read %}
+                                                <span class="mark-read" onclick="markNotificationRead({{ notification.id }})"><i class="fas fa-check"></i></span>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="notification-item">No notifications</li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item user-greeting">
+                            <span class="nav-link">Hi, {{ current_user.username }}!</span>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link profile-icon dropdown-toggle" href="#" id="profileDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if current_user.is_authenticated and current_user.profile_image and current_user.profile_image != 'images/default_profile.jpg' %}
+                                <img src="{{ url_for('static', filename=current_user.profile_image) }}" alt="Profile Image">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                            {% if current_user.is_authenticated %}
+                                <li><a class="dropdown-item {% if active_page == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}"><i class="fas fa-user-circle"></i> Profile</a></li>
+                                <li><a class="dropdown-item {% if active_page == 'progress_tracking' %}active{% endif %}" href="{{ url_for('progress_tracking') }}"><i class="fas fa-chart-line"></i> Progress Tracking</a></li>
+                                <li><a class="dropdown-item {% if active_page == 'roadmap' %}active{% endif %}" href="{{ url_for('roadmap') }}"><i class="fas fa-map"></i> Roadmap</a></li>
+                                <li><a class="dropdown-item {% if active_page == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><hr class="dropdown-divider" style="border-color: #fff;"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            {% else %}
+                                <li><a class="dropdown-item {% if active_page == 'login' %}active{% endif %}" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                                <li><a class="dropdown-item {% if active_page == 'register' %}active{% endif %}" href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> Register</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container flash-container mt-3 pt-2">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+        <div class="footer-content">
+            <p>© <span>{{ 'now' | datetimeformat }}</span> Career Analytics. All rights reserved.</p>
+        </div>
+    </footer>
+    <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        function markNotificationRead(notificationId) {
+            fetch(`/mark_notification_read/${notificationId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    notificationItem.classList.remove('unread');
+                    notificationItem.querySelector('.mark-read').remove();
+                    const badge = document.querySelector('.notification-bell .badge');
+                    const currentCount = parseInt(badge.textContent);
+                    if (currentCount > 1) {
+                        badge.textContent = currentCount - 1;
+                    } else {
+                        badge.remove();
+                    }
+                }
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
+        }
+
+        // Back to Top Button
+        document.addEventListener('DOMContentLoaded', () => {
+            const backToTop = document.getElementById('backToTop');
+            
+            // Show/hide button on scroll
+            window.addEventListener('scroll', () => {
+                console.log('Scroll event triggered, scrollY:', window.scrollY); // Debug scroll event
+                if (window.scrollY > 300) {
+                    backToTop.classList.add('show');
+                } else {
+                    backToTop.classList.remove('show');
+                }
+            });
+
+            // Smooth scroll to top on click
+            backToTop.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Back to Top button clicked'); // Debug click event
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+document.addEventListener('DOMContentLoaded', function () {
+    // Handle nested dropdowns
+    document.querySelectorAll('.dropdown-item.dropdown-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const submenu = this.nextElementSibling;
+            if (submenu && submenu.classList.contains('dropdown-menu')) {
+                submenu.classList.toggle('show');
+            }
+        });
+    });
+
+    // Close submenus when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown-menu .dropdown-menu.show').forEach(function (submenu) {
+                submenu.classList.remove('show');
+            });
+        }
+    });
+});
+        });
+    </script>
+    <!-- Add block for child templates to inject scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

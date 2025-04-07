@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Career Interest Assessment{% endblock %}
+{% block extra_head %}
+<style>
+  h1 { color: #1e3c72; margin-bottom: 1.5rem; }
+  .question { margin-bottom: 20px; }
+  .question p { font-size: 1.1rem; margin-bottom: 10px; }
+  .question label { display: block; margin-bottom: 5px; }
+  button { padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; }
+  button:hover { background-color: #2980b9; }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Career Interest Assessment</h1>
+<form id="interest-form" method="POST" action="{{ url_for('submit_career_assessment') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <!-- Questions 1 to 10 -->
+    <div class="question">
+        <p>1. Are you interested in solving technical problems (e.g., coding, system design)?</p>
+        <label><input type="radio" name="q1" value="Software Development" required> Yes</label>
+        <label><input type="radio" name="q1" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>2. Do you enjoy working with data and statistics to uncover insights?</p>
+        <label><input type="radio" name="q2" value="Data Science" required> Yes</label>
+        <label><input type="radio" name="q2" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>3. Are you passionate about creating visual designs (e.g., logos, UI/UX)?</p>
+        <label><input type="radio" name="q3" value="Graphic Design" required> Yes</label>
+        <label><input type="radio" name="q3" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>4. Do you enjoy leadership roles and managing teams or projects?</p>
+        <label><input type="radio" name="q4" value="Business Management" required> Yes</label>
+        <label><input type="radio" name="q4" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>5. Are you interested in working with healthcare or scientific research?</p>
+        <label><input type="radio" name="q5" value="Scientific" required> Yes</label>
+        <label><input type="radio" name="q5" value="Other"> No</label>
+    </div>
+    <div class="question">
+        <p>6. Do you prefer working in a collaborative team environment?</p>
+        <label><input type="radio" name="q6" value="Team" required> Yes</label>
+        <label><input type="radio" name="q6" value="Independent"> No</label>
+    </div>
+    <div class="question">
+        <p>7. What type of work environment do you prefer?</p>
+        <label><input type="radio" name="q7" value="Office" required> Office</label>
+        <label><input type="radio" name="q7" value="Remote"> Remote</label>
+        <label><input type="radio" name="q7" value="Field"> Field/Outdoor</label>
+    </div>
+    <div class="question">
+        <p>8. How do you prefer to solve problems?</p>
+        <label><input type="radio" name="q8" value="Analytical" required> Analytically (data-driven)</label>
+        <label><input type="radio" name="q8" value="Creative"> Creatively</label>
+        <label><input type="radio" name="q8" value="Collaborative"> Collaboratively</label>
+    </div>
+    <div class="question">
+        <p>9. What motivates you the most in a career?</p>
+        <label><input type="radio" name="q9" value="Money" required> Financial rewards</label>
+        <label><input type="radio" name="q9" value="Impact"> Making a positive impact</label>
+        <label><input type="radio" name="q9" value="Growth"> Personal growth</label>
+    </div>
+    <div class="question">
+        <p>10. How do you prefer to learn new skills?</p>
+        <label><input type="radio" name="q10" value="HandsOn" required> Hands-on experience</label>
+        <label><input type="radio" name="q10" value="Courses"> Online courses</label>
+        <label><input type="radio" name="q10" value="Mentorship"> Mentorship</label>
+    </div>
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}

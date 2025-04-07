@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Sample Test{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+    --primary: #6366f1;
+    --secondary: #4f46e5;
+    --accent: #f59e0b;
+    --background: #f8fafc;
+    --text: #1e293b;
+}
+
+.assessment-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2.5rem;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 2rem;
+    box-shadow: 0 32px 64px -12px rgba(0,0,0,0.1);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.4);
+}
+
+h1.text-3xl {
+    font-size: 2.5rem;
+    background: linear-gradient(45deg, var(--secondary), var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    margin-bottom: 2rem;
+    letter-spacing: -0.025em;
+}
+
+.instructions {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.instructions::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(var(--primary), var(--accent));
+}
+
+.instructions h3 {
+    font-size: 1.5rem;
+    color: var(--secondary);
+    margin-bottom: 1rem;
+}
+
+.question-card {
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.question-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 36px -8px rgba(99, 102, 241, 0.2);
+}
+
+.question-card label {
+    display: block;
+    padding: 1.25rem;
+    margin: 0.75rem 0;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.question-card label:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+}
+
+.submit-btn {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 1.25rem 3rem;
+    border-radius: 2rem;
+    font-size: 1.1rem;
+    border: none;
+    width: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(99, 102, 241, 0.3);
+}
+
+.submit-btn:focus {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.progress-container {
+    height: 12px;
+    border-radius: 6px;
+    background: rgba(226, 232, 240, 0.5);
+    margin-bottom: 2rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="assessment-container">
+    <h1 class="text-3xl font-bold mb-8">Sample Career Assessment</h1>
+    
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {{ progress }}%"></div>
+    </div>
+
+    <div class="instructions">
+        <h3>📋 Assessment Guidelines</h3>
+        <p><strong>⏳ Time Limit:</strong> {{ instructions.time_limit }}</p>
+        <p><strong>🎯 Honesty:</strong> {{ instructions.honesty }}</p>
+        <p><strong>🔬 Scientific Accuracy:</strong> {{ instructions.scientific_accuracy }}</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('test', type='sample') }}" id="sample-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% for question in questions %}
+        <div class="question-card">
+            <p class="question-text">{{ loop.index }}. {{ question.question | safe }}</p>
+            <div class="options-grid">
+                {% for option in question.options %}
+                <label>
+                    <input type="radio" name="{{ question.id }}" value="{{ loop.index0 }}" required>
+                    <span class="option-text">{{ option | safe }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="assessment-controls">
+            <button type="submit" class="submit-btn">
+                🚀 Submit Assessment
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
