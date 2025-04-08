@@ -656,7 +656,7 @@ def test():
             questions = generate_questions('personality')
             session['personality_questions'] = questions
             logger.debug(f"Session questions: {questions}")
-            logger.debug(f"Received responses: {responses}")
+            #logger.debug(f"Received responses: {responses}")
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/personality.html',
                               questions=questions,
@@ -953,7 +953,7 @@ def calculate_aptitude_scores(responses, questions):
 def submit_assessment():
     data = request.get_json()
     logger.debug(f"Received JSON data: {data}")
-    if data is None:
+    if not data:
         logger.error("No JSON data received")
         return jsonify({'error': 'No data received'}), 400
     if not isinstance(data, dict) or 'responses' not in data or data.get('type') != 'personality':
@@ -963,13 +963,13 @@ def submit_assessment():
     responses = data['responses']
     duration = data.get('duration', 0)
     questions = session.get('personality_questions', [])
-    logger.debug(f"Session questions: {questions}")
-    logger.debug(f"Responses: {responses}")
+    logger.debug(f"Processing {len(responses)} responses with {len(questions)} questions")
 
-    if not isinstance(responses, list):
-        logger.error(f"Responses is not a list: {responses}")
-        return jsonify({'error': 'Responses must be a list'}), 400
-    if len(responses) != len(questions):
+    if not questions:
+        logger.error("No personality questions found in session")
+        return jsonify({'error': 'Session data missing'}), 400
+
+    if not isinstance(responses, list) or len(responses) != len(questions):
         logger.error(f"Response count ({len(responses)}) does not match question count ({len(questions)})")
         return jsonify({'error': 'Incomplete responses'}), 400
 
@@ -979,11 +979,8 @@ def submit_assessment():
     }
     counts = {trait: 0 for trait in scores}
     trait_mapping = {
-        'O': 'Openness',
-        'C': 'Conscientiousness',
-        'E': 'Extraversion',
-        'A': 'Agreeableness',
-        'N': 'Neuroticism'
+        'O': 'Openness', 'C': 'Conscientiousness', 'E': 'Extraversion',
+        'A': 'Agreeableness', 'N': 'Neuroticism'
     }
 
     for response in responses:
@@ -991,35 +988,33 @@ def submit_assessment():
             logger.error(f"Invalid response format: {response}")
             continue
         question = next((q for q in questions if q['id'] == response['questionId']), None)
-        logger.debug(f"Response: {response}, Matched question: {question}")
         if not question:
-            logger.warning(f"Question ID {response['questionId']} not found in session questions")
+            logger.warning(f"Question ID {response['questionId']} not found")
             continue
         try:
             value = int(response['answer'])
             if value < 0 or value > 4:
                 logger.warning(f"Invalid answer value {value} for question {question['id']}")
                 continue
-            trait = question['trait']
-            if trait not in trait_mapping:
-                logger.error(f"Invalid trait {trait} for question {question['id']}")
+            trait = question.get('trait')
+            if not trait or trait not in trait_mapping:
+                logger.error(f"Invalid or missing trait {trait} for question {question['id']}")
                 continue
             trait_name = trait_mapping[trait]
-            direction = question.get('direction', 'positive')  # Default to positive if missing
+            direction = question.get('direction', 'positive')
             score = value if direction == 'positive' else (4 - value)
             scores[trait_name] += score
             counts[trait_name] += 1
-            logger.debug(f"Scored {trait_name}: value={value}, direction={direction}, score={score}, total={scores[trait_name]}")
-        except (ValueError, KeyError) as e:
-            logger.error(f"Error processing response {response}: {e}")
+            logger.debug(f"Scored {trait_name}: value={value}, direction={direction}, score={score}")
+        except ValueError as e:
+            logger.error(f"Invalid answer type in response {response}: {e}")
             continue
 
-    # Normalize scores
     for trait in scores:
         if counts[trait] > 0:
             max_possible = counts[trait] * 4
             scores[trait] = (scores[trait] / max_possible) * 100
-            logger.debug(f"{trait}: score={scores[trait]}%, count={counts[trait]}, max={max_possible}")
+            logger.debug(f"{trait}: score={scores[trait]}%, count={counts[trait]}")
         else:
             scores[trait] = 0
             logger.warning(f"No valid responses for {trait}")
@@ -1032,9 +1027,13 @@ def submit_assessment():
         time_spent=duration,
         details=json.dumps(scores)
     )
-    db.session.add(result)
-    
-    # Award badges and notifications (unchanged)
+    try:
+        db.session.add(result)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Database error: {e}")
+        return jsonify({'error': 'Failed to save results'}), 500
+
     if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
         badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first test!", icon="fas fa-trophy")
         db.session.add(badge)
@@ -1042,11 +1041,11 @@ def submit_assessment():
         if not Badge.query.filter_by(user_id=current_user.id, name="High Scorer").first():
             badge = Badge(user_id=current_user.id, name="High Scorer", description="Scored 80% or higher!", icon="fas fa-star")
             db.session.add(badge)
-    
+
     notification = Notification(user_id=current_user.id, message=f"Personality Test completed! Dominant trait: {dominant_trait} ({scores[dominant_trait]:.1f}%)", type="test_result")
     db.session.add(notification)
     db.session.commit()
-    
+
     completed_tests = session.get('completed_tests', [])
     if 'personality' not in completed_tests:
         completed_tests.append('personality')
@@ -1055,7 +1054,7 @@ def submit_assessment():
     test_results = session.get('test_results', {})
     test_results['personality'] = {'score': scores[dominant_trait], 'details': scores}
     session['test_results'] = test_results
-    
+
     session.pop('personality_questions', None)
     return jsonify({'redirect': url_for('personality_results')})
 

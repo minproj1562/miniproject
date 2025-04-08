@@ -269,7 +269,7 @@ SCORING_KEY = {
         'O': {'trait': 'Openness', 'direction': 'positive'},
         'C': {'trait': 'Conscientiousness', 'direction': 'positive'},
         'E': {'trait': 'Extraversion', 'direction': 'positive'},
-        'A': {'trait': ' Agreeableness', 'direction': 'positive'},
+        'A': {'trait': 'Agreeableness', 'direction': 'positive'},
         'N': {'trait': 'Neuroticism', 'direction': 'positive'}
     }
 }
@@ -297,7 +297,7 @@ CAREER_MAPPING = {
             "Openness": 80,
             "Conscientiousness": 70,
             "Extraversion": 40,
-            " Agreeableness": 50,
+            "Agreeableness": 50,
             "Neuroticism": 30
         },
         "aptitude": {
@@ -319,7 +319,7 @@ CAREER_MAPPING = {
             "Openness": 85,
             "Conscientiousness": 75,
             "Extraversion": 35,
-            " Agreeableness": 45,
+            "Agreeableness": 45,
             "Neuroticism": 25
         },
         "aptitude": {
@@ -341,7 +341,7 @@ CAREER_MAPPING = {
             "Openness": 90,
             "Conscientiousness": 60,
             "Extraversion": 50,
-            " Agreeableness": 70,
+            "Agreeableness": 70,
             "Neuroticism": 40
         },
         "aptitude": {
@@ -363,7 +363,7 @@ CAREER_MAPPING = {
             "Openness": 60,
             "Conscientiousness": 85,
             "Extraversion": 75,
-            " Agreeableness": 65,
+            "Agreeableness": 65,
             "Neuroticism": 35
         },
         "aptitude": {
@@ -385,7 +385,7 @@ CAREER_MAPPING = {
             "Openness": 95,
             "Conscientiousness": 80,
             "Extraversion": 30,
-            " Agreeableness": 50,
+            "Agreeableness": 50,
             "Neuroticism": 20
         },
         "aptitude": {
