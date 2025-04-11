@@ -1,153 +1,38 @@
 {% extends "base.html" %}
-{% block title %}{{ career_name }} Details - Career Analytics{% endblock %}
 
-{% block extra_head %}
-<style>
-:root {
-    --primary: #6366f1;
-    --secondary: #4f46e5;
-    --accent: #f59e0b;
-    --dark: #1e293b;
-    --light: #f8fafc;
-}
-
-.details-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.header h1 {
-    font-size: 2.5rem;
-    color: var(--primary);
-    margin-bottom: 0.5rem;
-}
-
-.match-score {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: var(--primary);
-    color: white;
-    border-radius: 1rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-}
-
-.career-details p {
-    margin: 0.5rem 0;
-    color: #64748b;
-}
-
-.skill-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1rem 0;
-}
-
-.skill-pill {
-    background: #e0e7ff;
-    color: var(--primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.8rem;
-}
-
-.section {
-    margin: 2rem 0;
-}
-
-.section h2 {
-    font-size: 1.8rem;
-    color: var(--dark);
-    margin-bottom: 1rem;
-    border-bottom: 2px solid var(--primary);
-    padding-bottom: 0.5rem;
-}
-
-.cta-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: var(--secondary);
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .details-container {
-        padding: 1rem;
-    }
-    
-    .cta-buttons {
-        flex-direction: column;
-    }
-}
-</style>
-{% endblock %}
+{% block title %}{{ career_name }} Details{% endblock %}
 
 {% block content %}
-<div class="details-container">
-    <div class="header">
-        <h1>{{ career_name }}</h1>
-        <div class="match-score">{{ match_score|round(1) }}% Match</div>
-    </div>
-
-    <div class="section">
-        <h2>Career Overview</h2>
-        <div class="career-details">
-            <p><strong>O*NET Title:</strong> {{ onet_data.title }}</p>
-            <p><strong>Median Wage:</strong> ${{ onet_data.median_wage | default('N/A') }}</p>
-            <p><strong>Job Growth:</strong> {{ onet_data.growth_rate | default('N/A') }}%</p>
-            <p><strong>Typical Education:</strong> {{ onet_data.education }}</p>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>Required Skills</h2>
-        <div class="skill-list">
-            {% for skill in onet_data.skills %}
-            <span class="skill-pill">{{ skill }}</span>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>Interests</h2>
-        <p>{{ career_data.interests | join(', ') }}</p>
-    </div>
-
-    <div class="cta-buttons">
-        <a href="{{ url_for('career_match') }}" class="btn btn-primary">
-            Back to Career Matches
-        </a>
-        <a href="{{ url_for('resources') }}" class="btn btn-primary">
-            Explore Resources
-        </a>
-    </div>
-</div>
+  <h1>{{ career_data.name }}</h1>
+  
+  <section>
+    <h2>Career Overview</h2>
+    <p>{{ career_data.description }}</p>
+    <p><strong>Your Match Score:</strong> {{ match_score|round(1) }}%</p>
+  </section>
+  
+  <section>
+    <h2>O*NET Details</h2>
+    <p><strong>Title:</strong> {{ onet_data.title }}</p>
+    <p><strong>Median Wage:</strong> {{ onet_data.median_wage }}</p>
+    <p><strong>Growth Rate:</strong> {{ onet_data.growth_rate }}%</p>
+    <p><strong>Required Education:</strong> {{ onet_data.education }}</p>
+    <h3>Top Skills:</h3>
+    <ul>
+      {% for skill in onet_data.skills %}
+        <li>{{ skill }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  
+  {% if notifications %}
+    <section>
+      <h2>Notifications</h2>
+      <ul>
+        {% for notification in notifications %}
+          <li>{{ notification.message }} - {{ notification.date|datetimeformat }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
 {% endblock %}

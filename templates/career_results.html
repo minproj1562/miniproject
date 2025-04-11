@@ -1,22 +1,14 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="analysis-container">
     <h2>Career Match Results</h2>
     <div class="accuracy-banner">
-        {% if session['analysis_type'] == 'basic' %}
-            <div class="accuracy-warning">
-                <i class="fas fa-info-circle"></i>
-                Basic Analysis - Complete Skill Gap Test for Enhanced Accuracy
-            </div>
+        {% if 'skill_gap' in session.get('test_results', {}) %}
+            <div class="accuracy-success"><i class="fas fa-check-circle"></i> Enhanced Analysis</div>
         {% else %}
-            <div class="accuracy-success">
-                <i class="fas fa-check-circle"></i>
-                Enhanced Analysis - Includes Skill Gap Evaluation
-            </div>
+            <div class="accuracy-warning"><i class="fas fa-info-circle"></i> Basic Analysis - Add Skill Gap Test</div>
         {% endif %}
     </div>
-
     <div class="career-grid">
         {% for career, score in careers %}
         <div class="career-card">
@@ -24,29 +16,6 @@
             <div class="match-meter">
                 <div class="match-fill" style="width: {{ score|int }}%;"></div>
                 <span class="match-percent">{{ score|int }}% Match</span>
-            </div>
-            <button class="detail-toggle">Show Breakdown <i class="fas fa-chevron-down"></i></button>
-            <div class="breakdown-details">
-                <div class="factor">
-                    <span>Aptitude Contribution</span>
-                    <div class="progress-bar">
-                        <div class="progress" style="width: 60%"></div>
-                    </div>
-                </div>
-                <div class="factor">
-                    <span>Personality Alignment</span>
-                    <div class="progress-bar">
-                        <div class="progress" style="width: 40%"></div>
-                    </div>
-                </div>
-                {% if session['analysis_type'] == 'enhanced' %}
-                <div class="factor">
-                    <span>Skill Gap Impact</span>
-                    <div class="progress-bar">
-                        <div class="progress" style="width: 30%"></div>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
         {% endfor %}

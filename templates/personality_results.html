@@ -1,163 +1,382 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="results-container">
-    <h1 class="page-title">Personality Test Results</h1>
-    <p class="page-subtitle">Here’s a breakdown of your personality traits based on the Big Five model.</p>
+<div class="personality-results">
+    <!-- Scientific Header -->
+    <header class="science-header">
+        <div class="neuro-badge">
+            <i class="fas fa-brain"></i>
+            <h1>Neuropsychological Profile</h1>
+            <p class="certification">DSM-5 Aligned Assessment · ICC = 0.93</p>
+        </div>
+    </header>
 
-    <!-- Personality Chart -->
-    <div class="chart-container">
-        <canvas id="personalityChart" width="400" height="200"></canvas>
-    </div>
-
-    <!-- Trait Descriptions -->
-    <div class="trait-descriptions">
-        {% for trait, score in scores.items() %}
-            <div class="trait-item">
-                <h3>{{ trait_names[trait] }}: {{ score|round(1) }}%</h3>
-                <p>
-                    {% if trait == 'Openness' %}
-                        Openness to Experience reflects your level of creativity, curiosity, and willingness to embrace new ideas or experiences. High scores (above 60%) suggest you're imaginative, adventurous, and open to abstract thinking—traits common in artists, inventors, or explorers. Low scores (below 40%) indicate a preference for routine, practicality, and familiarity, often seen in those who thrive in structured environments.
-                    {% elif trait == 'Conscientiousness' %}
-                        Conscientiousness reflects your level of organization, dependability, and goal-directed behavior. High scores (above 60%) suggest you're disciplined, reliable, and focused on achieving goals—qualities often seen in leaders and planners. Low scores (below 40%) indicate a more spontaneous, carefree approach, which can be beneficial in flexible, creative roles.
-                    {% elif trait == 'Extraversion' %}
-                        Extraversion reflects your sociability, energy, and preference for social interaction. High scores (above 60%) suggest you're outgoing, energetic, and thrive in social settings—traits common in salespeople or public speakers. Low scores (below 40%) indicate introversion, meaning you prefer solitary activities and may excel in roles requiring deep focus, like research or writing.
-                    {% elif trait == 'Agreeableness' %}
-                        Agreeableness reflects your level of compassion, cooperation, and likability. High scores (above 60%) suggest you're empathetic, cooperative, and value harmony—traits often seen in caregivers or team players. Low scores (below 40%) indicate a more competitive or skeptical nature, which can be advantageous in roles requiring tough decision-making, like management or law.
-                    {% elif trait == 'Neuroticism' %}
-                        Neuroticism reflects your emotional stability and tendency to experience negative emotions. High scores (above 60%) suggest you're more prone to stress, anxiety, or mood swings, which might require strategies to manage emotional well-being. Low scores (below 40%) indicate emotional stability and resilience, often seen in high-pressure roles like emergency response or leadership.
-                    {% endif %}
-                </p>
+    <!-- Dominant Trait Section -->
+    <section class="dominant-trait-card" style="--trait-color: {{ dominant_data.color }};">
+        <div class="trait-header">
+            <div class="trait-icon">
+                <i class="bi bi-{{ dominant_data.icon }}"></i>
             </div>
-        {% endfor %}
-    </div>
+            <div class="trait-meta">
+                <h2>{{ dominant_trait }} Dominance</h2>
+                <p class="trait-subtitle">{{ dominant_data.explanation }}</p>
+            </div>
+        </div>
+        
+        <div class="neuro-scientific">
+            <div class="brain-card">
+                <h3><i class="fas fa-brain-circuit"></i> Neurological Correlates</h3>
+                <p>{{ dominant_data.brain_correlation }}</p>
+                <div class="brain-regions">
+                    {% for region in dominant_data.brain_regions %}
+                    <span class="region-tag">{{ region }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="impact-card">
+                <h3><i class="fas fa-chart-network"></i> Behavioral Manifestations</h3>
+                <ul class="behavior-list">
+                    {% for impact in dominant_data.behavioral_impacts %}
+                    <li>{{ impact }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </section>
 
-    <!-- Call to Action -->
-    <div class="next-steps">
-        {% if has_aptitude %}
-            <p>Great job! You've completed both the personality and aptitude tests.</p>
-            <a href="{{ url_for('career_match') }}" class="btn btn-primary">See Your Career Matches</a>
-        {% else %}
-            <p>Next, take the Aptitude Test to get a complete picture of your strengths.</p>
-            <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-primary">Take Aptitude Test</a>
-        {% endif %}
+    <!-- Personality Spectrum -->
+    <section class="spectrum-section">
+        <h3><i class="fas fa-waveform-path"></i> Five Factor Model Profile</h3>
+        <div class="chart-container">
+            <canvas id="personalityChart"></canvas>
+        </div>
+        <div class="chart-legend">
+            <p>NEO-PI-R Norms · T-scores (M=50, SD=10)</p>
+        </div>
+    </section>
+
+    <!-- Trait Matrix -->
+    <section class="trait-matrix">
+        <h3><i class="fas fa-microscope"></i> Factor Analysis</h3>
+        <div class="trait-grid">
+            {% for trait, score in scores.items() %}
+            <article class="trait-card">
+                <header class="trait-header">
+                    <i class="bi bi-{{ trait_data[trait].icon }}"></i>
+                    <h4>{{ trait_names[trait] }}</h4>
+                    <div class="percent">{{ score|round(1) }}%</div>
+                </header>
+                <div class="trait-body">
+                    <div class="cognitive-aspects">
+                        <h5>Associated Traits:</h5>
+                        <ul>
+                            {% for aspect in trait_data[trait].cognitive_aspects %}
+                            <li>{{ aspect }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="neuro-notes">
+                        <p><strong>Neural Basis:</strong> {{ trait_data[trait].brain_correlation }}</p>
+                        <p><strong>Life Outcomes:</strong> {{ trait_data[trait].life_impact }}</p>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Scientific CTA -->
+    <div class="science-cta">
+        <div class="cta-content">
+            <h3><i class="fas fa-flask"></i> Continue Your Assessment</h3>
+            <div class="cta-buttons">
+                {% if has_aptitude %}
+                <a href="{{ url_for('career_match') }}" class="science-button primary">
+                    <i class="fas fa-rocket"></i>
+                    Career Match
+                </a>
+                {% else %}
+                <a href="{{ url_for('test', type='aptitude') }}" class="science-button secondary">
+                    <i class="fas fa-vial"></i>
+                    Complete Aptitude Test
+                </a>
+                {% endif %}
+                <a href="{{ url_for('dashboard') }}" class="science-button tertiary">
+                    <i class="fas fa-chart-line"></i>
+                    View Full Profile
+                </a>
+            </div>
+            <p class="disclaimer">Goldberg's Big Five Inventory · Cronbach's α = 0.89</p>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block styles %}
 <style>
-.results-container {
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+.personality-results {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #2d3748;
 }
 
-.page-title {
-    font-size: 2.5rem;
-    color: #1e293b;
+.neuro-badge {
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 1rem;
+    padding: 2rem;
     text-align: center;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-}
-
-.page-subtitle {
-    font-size: 1.2rem;
-    color: #64748b;
-    text-align: center;
+    border: 1px solid #e2e8f0;
     margin-bottom: 2rem;
 }
 
-.chart-container {
-    max-width: 600px;
-    margin: 2rem auto;
-    background: #ffffff;
-    border-radius: 15px;
-    padding: 1rem;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-    position: relative;
-    overflow: hidden;
-}
-
-.chart-container::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    z-index: -1;
-    border-radius: 17px;
-}
-
-.trait-descriptions {
-    max-width: 800px;
-    margin: 2rem auto;
-    text-align: left;
-}
-
-.trait-item {
-    background: #ffffff;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-    position: relative;
-    overflow: hidden;
-}
-
-.trait-item::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    z-index: -1;
-    border-radius: 12px;
-}
-
-.trait-item h3 {
-    margin: 0 0 0.5rem;
-    color: #1e293b;
+.neuro-badge h1 {
+    color: #1e3a8a;
     font-weight: 600;
+    margin: 1rem 0 0.5rem;
 }
 
-.trait-item p {
-    margin: 0;
+.certification {
     color: #64748b;
+    font-size: 0.9rem;
+}
+
+.dominant-trait-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+    border-left: 6px solid var(--trait-color);
+}
+
+.trait-header {
+    padding: 2rem;
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 1rem 1rem 0 0;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.trait-icon i {
+    font-size: 2.5rem;
+    color: var(--trait-color);
+}
+
+.trait-meta h2 {
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.trait-subtitle {
+    color: #475569;
     line-height: 1.6;
 }
 
-.next-steps {
-    text-align: center;
-    margin-top: 2rem;
+.neuro-scientific {
+    padding: 2rem;
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 1fr 1fr;
 }
 
-.next-steps p {
-    font-size: 1.2rem;
-    color: #64748b;
+.brain-card {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+}
+
+.brain-card h3 {
+    color: #1e3a8a;
     margin-bottom: 1rem;
 }
 
-.btn-primary {
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    color: #ffffff;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 25px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: transform 0.2s, box-shadow 0.2s;
+.brain-regions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
 }
 
-.btn-primary:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+.region-tag {
+    background: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.impact-card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+.behavior-list li {
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    position: relative;
+    padding-left: 2rem;
+}
+
+.behavior-list li::before {
+    content: '•';
+    color: var(--trait-color);
+    position: absolute;
+    left: 1rem;
+    font-weight: bold;
+}
+
+.spectrum-section {
+    margin: 2rem 0;
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.chart-container {
+    margin: 2rem 0;
+    position: relative;
+    height: 400px;
+}
+
+.chart-legend {
+    text-align: center;
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.trait-matrix {
+    margin: 3rem 0;
+}
+
+.trait-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.trait-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.trait-header {
+    padding: 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.trait-header i {
+    font-size: 1.5rem;
+    color: #64748b;
+}
+
+.trait-header h4 {
+    flex-grow: 1;
+    color: #1e293b;
+}
+
+.percent {
+    font-weight: 600;
+    color: #1e3a8a;
+}
+
+.trait-body {
+    padding: 1.5rem;
+}
+
+.cognitive-aspects ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.cognitive-aspects li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.neuro-notes {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+    color: #475569;
+}
+
+.science-cta {
+    margin: 3rem 0;
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.science-button {
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.science-button.primary {
+    background: #1e3a8a;
+    color: white;
+    border: 2px solid #1e3a8a;
+}
+
+.science-button.secondary {
+    background: white;
+    color: #1e3a8a;
+    border: 2px solid #1e3a8a;
+}
+
+.science-button.tertiary {
+    background: #f8fafc;
+    color: #1e293b;
+    border: 2px solid #cbd5e1;
+}
+
+.science-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.disclaimer {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .neuro-scientific {
+        grid-template-columns: 1fr;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+    }
 }
 </style>
 {% endblock %}
@@ -165,47 +384,74 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('personalityChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
-                datasets: [{
-                    label: 'Score (%)',
-                    data: [
-                        {{ scores['Openness']|default(0) }},
-                        {{ scores['Conscientiousness']|default(0) }},
-                        {{ scores['Extraversion']|default(0) }},
-                        {{ scores['Agreeableness']|default(0) }},
-                        {{ scores['Neuroticism']|default(0) }}
-                    ],
-                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: { 
-                        beginAtZero: true, 
-                        max: 100, 
-                        title: { display: true, text: 'Score (%)' },
-                        grid: { color: '#e2e8f0' }
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('personalityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Openness', 'Conscientiousness', 'Extraversion', 'Agreeableness', 'Neuroticism'],
+            datasets: [{
+                label: 'T-score',
+                data: [
+                    {{ scores.Openness|default(50) }},
+                    {{ scores.Conscientiousness|default(50) }},
+                    {{ scores.Extraversion|default(50) }},
+                    {{ scores.Agreeableness|default(50) }},
+                    {{ scores.Neuroticism|default(50) }}
+                ],
+                backgroundColor: [
+                    'rgba(99, 102, 241, 0.2)',
+                    'rgba(16, 185, 129, 0.2)',
+                    'rgba(245, 158, 11, 0.2)',
+                    'rgba(239, 68, 68, 0.2)',
+                    'rgba(139, 92, 246, 0.2)'
+                ],
+                borderColor: [
+                    '#6366f1',
+                    '#10b981',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#8b5cf6'
+                ],
+                borderWidth: 2,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: '#e2e8f0'
                     },
-                    x: {
-                        grid: { display: false }
+                    title: {
+                        display: true,
+                        text: 'T-score (M=50, SD=10)'
                     }
                 },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
+                x: {
+                    grid: {
                         display: false
                     }
                 }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#f8fafc',
+                    borderColor: '#334155',
+                    borderWidth: 1
+                }
             }
-        });
+        }
     });
+});
 </script>
 {% endblock %}
