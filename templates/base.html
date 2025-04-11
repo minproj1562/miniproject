@@ -176,6 +176,17 @@
             background: #00f7ff !important;
             color: #1e1e2f !important;
         }
+        .dropdown-menu .dropdown-menu {
+    display: none;
+    left: 100%;
+    top: 0;
+    margin-left: 0.125rem;
+    margin-right: 0.125rem;
+}
+
+.dropdown-menu > li:hover > .dropdown-menu {
+    display: block;
+}
         .notification-bell {
             position: relative;
             color: #e0e0e0;
@@ -461,6 +472,9 @@
                 </li>
             </ul>
         </li>
+        <li><a class="dropdown-item {% if active_page == 'resources' %}active{% endif %}" href="{{ url_for('resources') }}">
+    <i class="fas fa-book-open"></i> Resources
+</a></li>
         <li><a class="dropdown-item {% if active_page == 'degree' %}active{% endif %}" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
     </ul>
 </li>

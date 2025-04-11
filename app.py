@@ -148,6 +148,7 @@ class User(UserMixin, db.Model):
     personality_scores = db.Column(db.JSON, default="{}", nullable=False)  # Changed to string default
     skill_gap_scores = db.Column(db.JSON, default="{}", nullable=False)  # Added field with default
     skill_gap_completed_at = db.Column(db.DateTime)
+    top_careers = db.Column(db.JSON, default=lambda: [], nullable=False)
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -621,7 +622,6 @@ def compare_degrees():
         flash('User not found.', 'danger')
         return redirect(url_for('degree'))
 
-    # Fetch user's aptitude scores to suggest relevant degrees
     aptitude_scores = json.loads(user.aptitude_scores) if user.aptitude_scores else {}
     top_careers = json.loads(user.top_careers) if user.top_careers else []
 
@@ -629,17 +629,16 @@ def compare_degrees():
         flash('Please complete an aptitude test to get personalized degree recommendations.', 'warning')
         return redirect(url_for('degree'))
 
-    # Fetch degree data based on top careers or aptitude
     degree_data = {}
     onet_api = ONetAPI()
     selected_degrees = request.form.getlist('degree_select') if request.method == 'POST' else []
 
     if request.method == 'POST' and selected_degrees:
-        for soc_code in selected_degrees[:3]:  # Limit to 3 for comparison
+        for soc_code in selected_degrees[:3]:  # Limit to 3
             details = onet_api.get_occupation_summary(soc_code)
-            education = onet_api.get_education(soc_code)
-            skills = onet_api.get_skills(soc_code)
-            if details and education:
+            if details:
+                education = onet_api.get_education(soc_code)
+                skills = onet_api.get_skills(soc_code)
                 degree_data[soc_code] = {
                     'title': details.get('title', 'Unknown'),
                     'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
@@ -647,19 +646,32 @@ def compare_degrees():
                     'description': details.get('description', 'No description available')
                 }
     else:
-        # Default to top careers from aptitude if available
-        career_codes = top_careers[:3] if top_careers else ['15-1252.00', '15-2051.01', '27-1024.00']  # Default SOC codes
-        for soc_code in career_codes:
-            details = onet_api.get_occupation_summary(soc_code)
-            education = onet_api.get_education(soc_code)
-            skills = onet_api.get_skills(soc_code)
-            if details and education:
-                degree_data[soc_code] = {
-                    'title': details.get('title', 'Unknown'),
-                    'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
-                    'required_skills': [skill.get('name', 'N/A') for skill in skills],
-                    'description': details.get('description', 'No description available')
-                }
+        # Use aptitude scores to suggest careers if top_careers is empty
+        if not top_careers and aptitude_scores:
+            career_codes = [CAREERS[career] for career in CAREER_MAPPING.keys()[:3]]  # Default to first 3 careers
+            for soc_code in career_codes:
+                details = onet_api.get_occupation_summary(soc_code)
+                if details:
+                    education = onet_api.get_education(soc_code)
+                    skills = onet_api.get_skills(soc_code)
+                    degree_data[soc_code] = {
+                        'title': details.get('title', 'Unknown'),
+                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
+                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
+                        'description': details.get('description', 'No description available')
+                    }
+        elif top_careers:
+            for soc_code in top_careers[:3]:
+                details = onet_api.get_occupation_summary(soc_code)
+                if details:
+                    education = onet_api.get_education(soc_code)
+                    skills = onet_api.get_skills(soc_code)
+                    degree_data[soc_code] = {
+                        'title': details.get('title', 'Unknown'),
+                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
+                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
+                        'description': details.get('description', 'No description available')
+                    }
 
     # Match degrees with aptitude scores for recommendation
     recommendations = []
@@ -1615,17 +1627,51 @@ def submit_career_assessment():
 @app.route('/aptitude_results')
 @login_required
 def aptitude_results():
-    test_results = session.get('test_results', {})
-    score_data = test_results.get('aptitude', None)
-    has_personality = 'personality' in session.get('completed_tests', [])
-    has_aptitude = 'aptitude' in session.get('completed_tests', [])
+    # Fetch the latest aptitude test result
+    latest_test = TestResult.query.filter_by(
+        user_id=current_user.id,
+        test_type='aptitude'
+    ).order_by(TestResult.completed_at.desc()).first()
 
-    if not score_data:
+    if not latest_test:
         flash('No aptitude test results found. Please complete the test first.', 'warning')
         return redirect(url_for('dashboard'))
 
-    # Ensure responses and questions are included in score_data
-    score_data['test_type'] = 'aptitude'
+    # Load detailed scores
+    detailed_scores = json.loads(latest_test.details) if latest_test.details else {}
+    aptitude_scores = {APTITUDE_TO_ONET.get(k, k): v for k, v in detailed_scores.items()}
+    user_scores = {'aptitude': aptitude_scores}
+
+    # Calculate top career matches
+    top_careers = []
+    for career_name, career_data in CAREER_MAPPING.items():
+        soc_code = CAREERS.get(career_name, "15-1252.00")
+        match_score = calculate_match(user_scores, career_data)
+        top_careers.append({'name': career_name, 'soc_code': soc_code, 'score': match_score})
+
+    # Sort by match score and take top 3
+    top_careers.sort(key=lambda x: x['score'], reverse=True)
+    top_careers = [career['soc_code'] for career in top_careers[:3]]
+
+    # Update user's top_careers
+    current_user.top_careers = json.dumps(top_careers)
+    db.session.commit()
+
+    # Prepare score data for display
+    score_data = {
+        'test_type': 'aptitude',
+        'score': latest_test.score,
+        'correct': int(latest_test.score / 10) if latest_test.score else 0,  # Assuming percentage-based scoring
+        'total': 10,
+        'time_spent': latest_test.time_spent or 0,
+        'detailed_scores': detailed_scores,
+        'responses': session.get('aptitude_responses', []),
+        'questions': session.get('aptitude_questions', [])
+    }
+
+    has_personality = 'personality' in session.get('completed_tests', [])
+    has_aptitude = 'aptitude' in session.get('completed_tests', [])
+
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
 
     return render_template(
@@ -1634,7 +1680,8 @@ def aptitude_results():
         has_personality=has_personality,
         has_aptitude=has_aptitude,
         active_page='results',
-        notifications=notifications
+        notifications=notifications,
+        top_careers=top_careers
     )
 
 @app.route('/personality_results')
@@ -2011,23 +2058,14 @@ def career_details(career_name):
 @app.route('/resources')
 @login_required
 def resources():
-    # Determine the user's career path
     career_path = session.get('selected_field', 'Software Development')
-    if career_path not in CAREER_MAPPING:
-        career_path = 'Software Development'
-    
-    # Fetch resources for the career path
     resources = LEARNING_RESOURCES.get(career_path, [])
-    
-    # Fetch notifications
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).all()
     
     return render_template('resources.html',
-                          user=current_user,
-                          career_path=career_path,
-                          resources=resources,
-                          active_page='resources',
-                          notifications=notifications)
+                         active_page='resources',
+                         notifications=notifications,
+                         resources=resources)
     
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
