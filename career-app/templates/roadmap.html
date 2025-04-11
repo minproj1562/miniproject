@@ -14,41 +14,52 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Montserrat:wght@400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 <style>
-    /* CSS Variables for Theming */
-    :root {
-        --background-start: #0d0d1f;
-        --background-end: #1a1a2e;
-        --gradient-start: #ff4d97;
-        --gradient-end: #4dffc6;
-        --text-color: #e0e0e0;
-        --card-bg-start: #2a2a4e;
-        --card-bg-end: #1a1a2e;
-        --card-completed-bg-start: #1a3e4e;
-        --card-completed-bg-end: #0d2e3e;
-        --highlight-color: #ff4d97;
-        --secondary-highlight: #4dffc6;
-        --timeline-base-start: #4b4b6f; /* Added: Base color for unfilled timeline */
-        --timeline-base-end: #2a2a4e;   /* Added: Base color for unfilled timeline */
-        transition: all 0.5s ease;
+        /* Updated CSS Variables for Theming */
+        :root {
+        /* Base Colors */
+        --background-start: #0f172a;  /* Deep navy blue */
+        --background-end: #1e293b;     /* Slightly lighter navy */
+        
+        /* Primary Gradient Colors */
+        --gradient-start: #6366f1;     /* Indigo */
+        --gradient-end: #8b5cf6;       /* Violet */
+        
+        /* Text and UI Colors */
+        --text-color: #e2e8f0;         /* Light blue-gray */
+        --highlight-color: #818cf8;    /* Lighter indigo */
+        --secondary-highlight: #a78bfa; /* Lighter violet */
+        
+        /* Card Colors */
+        --card-bg-start: #1e293b;      /* Dark slate */
+        --card-bg-end: #334155;        /* Lighter slate */
+        --card-completed-bg-start: #1e3a8a;  /* Dark blue */
+        --card-completed-bg-end: #1d4ed8;    /* Royal blue */
+        
+        /* Timeline Colors */
+        --timeline-base-start: #334155; /* Medium slate */
+        --timeline-base-end: #475569;   /* Lighter slate */
     }
 
     [data-theme="light"] {
-        --background-start: #e0e7ff;
-        --background-end: #d7e7f0; /* Updated: Added subtle teal tint */
-        --gradient-start: #ff6f91;
-        --gradient-end: #a3e4d7;
-        --text-color: #1f2937;
-        --card-bg-start: #e5e7eb;
-        --card-bg-end: #d1d5db;
-        --card-completed-bg-start: #d1fae5;
-        --card-completed-bg-end: #a7f3d0;
-        --highlight-color: #ff6f91;
-        --secondary-highlight: #2dd4bf;
-        --timeline-base-start: #b0b0c0; /* Added: Lighter base for light theme */
-        --timeline-base-end: #9090a0;   /* Added: Lighter base for light theme */
-        transition: all 0.5s ease;
+        /* Light Theme Colors */
+        --background-start: #f8fafc;    /* Very light gray */
+        --background-end: #f1f5f9;      /* Slightly darker light gray */
+        
+        --gradient-start: #6366f1;     /* Indigo */
+        --gradient-end: #8b5cf6;       /* Violet */
+        
+        --text-color: #1e293b;         /* Dark slate */
+        --highlight-color: #4f46e5;    /* Darker indigo */
+        --secondary-highlight: #7c3aed; /* Darker violet */
+        
+        --card-bg-start: #ffffff;      /* Pure white */
+        --card-bg-end: #f1f5f9;        /* Light gray */
+        --card-completed-bg-start: #e0e7ff; /* Light blue */
+        --card-completed-bg-end: #c7d2fe;   /* Lighter blue */
+        
+        --timeline-base-start: #cbd5e1; /* Light gray */
+        --timeline-base-end: #e2e8f0;   /* Lighter gray */
     }
-
     /* Scoped styles with roadmap- prefix to avoid overriding */
     .roadmap-body {
         font-family: 'Poppins', sans-serif;
@@ -74,12 +85,13 @@
         z-index: -1;
     }
 
+    /* Update gradient animations to use new colors */
     @keyframes roadmap-gradient-shift {
-        0% { background: radial-gradient(circle at 50% 50%, rgba(255, 77, 151, 0.3), transparent 70%); }
-        25% { background: radial-gradient(circle at 20% 80%, rgba(77, 255, 182, 0.3), transparent 70%); }
-        50% { background: radial-gradient(circle at 80% 20%, rgba(255, 182, 77, 0.3), transparent 70%); }
-        75% { background: radial-gradient(circle at 30% 30%, rgba(182, 77, 255, 0.3), transparent 70%); }
-        100% { background: radial-gradient(circle at 50% 50%, rgba(255, 77, 151, 0.3), transparent 70%); }
+        0% { background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.3), transparent 70%); }
+        25% { background: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.3), transparent 70%); }
+        50% { background: radial-gradient(circle at 80% 20%, rgba(129, 140, 248, 0.3), transparent 70%); }
+        75% { background: radial-gradient(circle at 30% 30%, rgba(167, 139, 250, 0.3), transparent 70%); }
+        100% { background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.3), transparent 70%); }
     }
 
     /* Enhanced Particle Background */
@@ -130,10 +142,11 @@
         box-shadow: 0 25px 70px rgba(0, 0, 0, 0.1);
     }
 
+    /* Update glow effects */
     @keyframes roadmap-neon-glow {
-        0% { border-color: var(--highlight-color); box-shadow: 0 0 20px var(--highlight-color), 0 0 40px rgba(255, 77, 151, 0.6); }
-        50% { border-color: var(--secondary-highlight); box-shadow: 0 0 20px var(--secondary-highlight), 0 0 40px rgba(77, 255, 182, 0.6); }
-        100% { border-color: var(--highlight-color); box-shadow: 0 0 20px var(--highlight-color), 0 0 40px rgba(255, 77, 151, 0.6); }
+        0% { border-color: var(--highlight-color); box-shadow: 0 0 20px var(--highlight-color), 0 0 40px rgba(99, 102, 241, 0.6); }
+        50% { border-color: var(--secondary-highlight); box-shadow: 0 0 20px var(--secondary-highlight), 0 0 40px rgba(139, 92, 246, 0.6); }
+        100% { border-color: var(--highlight-color); box-shadow: 0 0 20px var(--highlight-color), 0 0 40px rgba(99, 102, 241, 0.6); }
     }
 
     /* Achievements Section */
@@ -156,7 +169,9 @@
         flex-wrap: wrap;
     }
 
+    /* Update badge colors */
     .badge {
+        background: linear-gradient(135deg, var(--highlight-color), var(--secondary-highlight));
         background: linear-gradient(135deg, var(--highlight-color), var(--secondary-highlight));
         padding: 5px 10px;
         border-radius: 15px;
@@ -817,6 +832,58 @@
     .roadmap-custom-tooltip .tooltip-arrow::before {
         border-bottom-color: #ff4d97 !important;
     }
+    /* Add these styles with your other CSS */
+.roadmap-theme-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.roadmap-theme-btn {
+    padding: 10px 20px !important;
+    min-width: 100px;
+}
+
+.ocean-theme {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8) !important;
+}
+
+.emerald-theme {
+    background: linear-gradient(90deg, #10b981, #047857) !important;
+}
+
+.sunset-theme {
+    background: linear-gradient(90deg, #f97316, #c2410c) !important;
+}
+
+.roadmap-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    z-index: 1000;
+    animation: slide-up 0.3s ease;
+}
+
+.roadmap-notification.fade-out {
+    animation: fade-out 0.5s ease forwards;
+}
+
+@keyframes slide-up {
+    from { bottom: -50px; opacity: 0; }
+    to { bottom: 20px; opacity: 1; }
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
 </style>
 {% endblock %}
 
@@ -991,8 +1058,20 @@
         <button class="roadmap-btn" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Toggle Theme</button>
         <button class="roadmap-btn" onclick="celebrateAll()"><i class="fas fa-star"></i> Celebrate All Achievements</button>
         <button class="roadmap-btn" onclick="downloadRoadmap()"><i class="fas fa-download"></i> Download Roadmap</button>
+        
+        <!-- Theme Selector Buttons -->
+        <div class="roadmap-theme-selector">
+            <button onclick="setTheme('ocean')" class="roadmap-btn roadmap-theme-btn ocean-theme" title="Ocean Blue Theme">
+                <i class="fas fa-water"></i> Ocean
+            </button>
+            <button onclick="setTheme('emerald')" class="roadmap-btn roadmap-theme-btn emerald-theme" title="Emerald Green Theme">
+                <i class="fas fa-leaf"></i> Emerald
+            </button>
+            <button onclick="setTheme('sunset')" class="roadmap-btn roadmap-theme-btn sunset-theme" title="Sunset Orange Theme">
+                <i class="fas fa-sun"></i> Sunset
+            </button>
+        </div>
     </div>
-</div>
 <button class="roadmap-scroll-top" onclick="scrollToTop()"><i class="fas fa-arrow-up"></i></button>
 {% include 'notifications.html' %}
 {% endblock %}
@@ -1006,7 +1085,7 @@
 particlesJS('roadmap-particles-js', {
     particles: {
         number: { value: 120, density: { enable: true, value_area: 800 } },
-        color: { value: ['#ff4d97', '#4dffc6', '#ffb477', '#b477ff'] },
+        color: { value: ['#ff4d97', '#4dffc6', '#ffb477', '#b477ff'] }, // <-- THIS IS WHAT TO CHANGE
         shape: { type: ['circle', 'star', 'triangle', 'polygon'], polygon: { nb_sides: 5 } },
         opacity: { value: 0.7, random: true },
         size: { value: 5, random: true },
@@ -1246,5 +1325,67 @@ function downloadRoadmap() {
     };
     html2pdf().set(opt).from(element).save();
 }
+/* Add these functions with your other JavaScript */
+function setTheme(themeName) {
+    const root = document.documentElement;
+    let particleColors = [];
+    
+    localStorage.setItem('roadmapTheme', themeName);
+    
+    if (themeName === 'ocean') {
+        root.style.setProperty('--gradient-start', '#3b82f6');
+        root.style.setProperty('--gradient-end', '#1d4ed8');
+        root.style.setProperty('--highlight-color', '#60a5fa');
+        root.style.setProperty('--secondary-highlight', '#93c5fd');
+        root.style.setProperty('--card-completed-bg-start', '#1e3a8a');
+        root.style.setProperty('--card-completed-bg-end', '#1d4ed8');
+        particleColors = ['#3b82f6', '#2563eb', '#1d4ed8', '#60a5fa'];
+        
+    } else if (themeName === 'emerald') {
+        root.style.setProperty('--gradient-start', '#10b981');
+        root.style.setProperty('--gradient-end', '#047857');
+        root.style.setProperty('--highlight-color', '#34d399');
+        root.style.setProperty('--secondary-highlight', '#6ee7b7');
+        root.style.setProperty('--card-completed-bg-start', '#065f46');
+        root.style.setProperty('--card-completed-bg-end', '#047857');
+        particleColors = ['#10b981', '#059669', '#047857', '#34d399'];
+        
+    } else if (themeName === 'sunset') {
+        root.style.setProperty('--gradient-start', '#f97316');
+        root.style.setProperty('--gradient-end', '#c2410c');
+        root.style.setProperty('--highlight-color', '#fb923c');
+        root.style.setProperty('--secondary-highlight', '#fdba74');
+        root.style.setProperty('--card-completed-bg-start', '#9a3412');
+        root.style.setProperty('--card-completed-bg-end', '#c2410c');
+        particleColors = ['#f97316', '#ea580c', '#c2410c', '#fb923c'];
+    }
+    
+    if (window.pJSDom && window.pJSDom.length > 0) {
+        window.pJSDom[0].pJS.particles.color.value = particleColors;
+        window.pJSDom[0].pJS.fn.particlesRefresh();
+    }
+    
+    showNotification(`Theme changed to ${themeName.charAt(0).toUpperCase() + themeName.slice(1)}!`);
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'roadmap-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 500);
+    }, 2000);
+}
+
+// Load saved theme when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('roadmapTheme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    }
+});
 </script>
 {% endblock %}

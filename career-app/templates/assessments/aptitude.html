@@ -178,10 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please select an answer before proceeding.');
             return;
         }
-
+    
         submitBtn.disabled = true;
         document.body.style.cursor = 'wait';
-
+    
         try {
             const response = await fetch('{{ url_for("submit_aptitude") }}', {
                 method: 'POST',
@@ -194,11 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         questionId: questionCard.getAttribute('data-question-id'),
                         answer: selectedAnswer
                     }],
-                    time_spent: {{ initial_time }} - timeLeft,
+                    time_spent: Math.max(0, {{ initial_time }} - timeLeft), // Ensure non-negative time
                     current_question_index: currentQuestionIndex
                 })
             });
-
+    
             const data = await response.json();
             
             if (data.redirect) {

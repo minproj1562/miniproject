@@ -151,5 +151,9 @@
             <p>No badges earned yet.</p>
         {% endif %}
     </div>
+    <form method="POST">
+        <input type="text" name="pin_code" value="{{ user.pin_code }}" placeholder="Enter Pin Code">
+        <button type="submit">Save</button>
+    </form>
 </div>
 {% endblock %}

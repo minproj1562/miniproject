@@ -1,298 +1,62 @@
 {% extends "base.html" %}
-{% block title %}Full Analysis - Career Analytics{% endblock %}
-
-{% block extra_head %}
-<style>
-:root {
-    --primary: #6366f1;
-    --secondary: #4f46e5;
-    --accent: #f59e0b;
-    --dark: #1e293b;
-    --light: #f8fafc;
-}
-
-.analysis-container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.header h1 {
-    font-size: 2.5rem;
-    color: var(--primary);
-    margin-bottom: 0.5rem;
-}
-
-.header p {
-    color: var(--dark);
-    font-size: 1.1rem;
-}
-
-.section {
-    margin: 3rem 0;
-}
-
-.section h2 {
-    font-size: 1.8rem;
-    color: var(--dark);
-    margin-bottom: 1rem;
-    border-bottom: 2px solid var(--primary);
-    padding-bottom: 0.5rem;
-}
-
-.chart-container {
-    max-width: 600px;
-    margin: 2rem auto;
-}
-
-.score-display {
-    text-align: center;
-    margin: 1rem 0;
-}
-
-.score-circle {
-    position: relative;
-    width: 150px;
-    height: 150px;
-    margin: 0 auto;
-}
-
-.score-value {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--primary);
-}
-
-.detail-list {
-    list-style: none;
-    padding: 0;
-}
-
-.detail-list li {
-    background: var(--light);
-    padding: 1rem;
-    margin: 0.5rem 0;
-    border-radius: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.detail-label {
-    font-weight: bold;
-    color: var(--dark);
-}
-
-.detail-value {
-    color: var(--primary);
-}
-
-.career-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin: 2rem 0;
-}
-
-.career-card {
-    background: white;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e5e7eb;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.career-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-}
-
-.match-score {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: var(--primary);
-    color: white;
-    border-radius: 1rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-}
-
-.career-title {
-    font-size: 1.5rem;
-    color: var(--dark);
-    margin-bottom: 0.5rem;
-}
-
-.skill-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1rem 0;
-}
-
-.skill-pill {
-    background: #e0e7ff;
-    color: var(--primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.8rem;
-}
-
-.resources {
-    margin-top: 1.5rem;
-}
-
-.resource-item {
-    display: block;
-    padding: 0.75rem;
-    margin: 0.5rem 0;
-    background: var(--light);
-    border-radius: 0.5rem;
-    transition: background 0.2s;
-}
-
-.resource-item:hover {
-    background: #e0e7ff;
-}
-
-.cta-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: var(--secondary);
-    transform: translateY(-2px);
-}
-
-.btn-secondary {
-    background: white;
-    color: var(--primary);
-    border: 1px solid var(--primary);
-}
-
-.btn-secondary:hover {
-    background: var(--light);
-}
-
-@media (max-width: 768px) {
-    .analysis-container {
-        padding: 1rem;
-    }
-    
-    .career-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .cta-buttons {
-        flex-direction: column;
-    }
-}
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="analysis-container">
     <div class="header">
         <h1>Full Career Analysis</h1>
-        <p>A comprehensive overview of your test results and career recommendations</p>
+        <p>Comprehensive overview of your results</p>
     </div>
 
-    <!-- Aptitude Test Analysis -->
     <div class="section">
         <h2>Aptitude Test Results</h2>
-        <p><strong>Completed:</strong> {{ analysis.aptitude.completed_at | datetimeformat }}</p>
-        <p><strong>Overall Score:</strong> {{ analysis.aptitude.score | round(1) }}%</p>
-        <div class="chart-container">
-            <canvas id="aptitudeChart" width="400" height="200"></canvas>
-        </div>
+        <p><strong>Completed:</strong> {{ analysis.aptitude.completed_at|datetimeformat }}</p>
+        <p><strong>Overall Score:</strong> {{ analysis.aptitude.score|round(1) }}%</p>
+        <canvas id="aptitudeChart" width="400" height="200"></canvas>
         <ul class="detail-list">
             {% for category, score in analysis.aptitude.details.items() %}
-            <li>
-                <span class="detail-label">{{ category | capitalize }}</span>
-                <span class="detail-value">{{ score | round(1) }}%</span>
-            </li>
+            <li><span class="detail-label">{{ category|capitalize }}</span><span class="detail-value">{{ score|round(1) }}%</span></li>
             {% endfor %}
         </ul>
     </div>
 
-    <!-- Personality Test Analysis -->
     <div class="section">
         <h2>Personality Test Results</h2>
-        <p><strong>Completed:</strong> {{ analysis.personality.completed_at | datetimeformat }}</p>
-        <p><strong>Dominant Trait:</strong> {{ max(analysis.personality.details, key=analysis.personality.details.get) }} ({{ analysis.personality.score | round(1) }}%)</p>
-        <div class="chart-container">
-            <canvas id="personalityChart" width="400" height="200"></canvas>
-        </div>
+        <p><strong>Completed:</strong> {{ analysis.personality.completed_at|datetimeformat }}</p>
+        <p><strong>Dominant Trait:</strong> {{ analysis.personality.details|max(attribute='value')|attr('key') }} ({{ analysis.personality.score|round(1) }}%)</p>
+        <canvas id="personalityChart" width="400" height="200"></canvas>
         <ul class="detail-list">
             {% for trait, score in analysis.personality.details.items() %}
-            <li>
-                <span class="detail-label">{{ trait | capitalize }}</span>
-                <span class="detail-value">{{ score | round(1) }}%</span>
-            </li>
+            <li><span class="detail-label">{{ trait|capitalize }}</span><span class="detail-value">{{ score|round(1) }}%</span></li>
             {% endfor %}
         </ul>
     </div>
 
-    <!-- Skill Gap Test Analysis -->
     <div class="section">
         <h2>Skill Gap Test Results</h2>
-        <p><strong>Completed:</strong> {{ analysis.skill_gap.completed_at | datetimeformat }}</p>
-        <p><strong>Field:</strong> {{ analysis.skill_gap.details.keys() | first }}</p>
+        <p><strong>Completed:</strong> {{ analysis.skill_gap.completed_at|datetimeformat }}</p>
+        <p><strong>Field:</strong> {{ analysis.skill_gap.details.keys()|first }}</p>
         <div class="score-display">
             <div class="score-circle">
                 <svg viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"/>
                     <circle cx="50" cy="50" r="45" fill="none" stroke="#6366f1" 
-                            stroke-width="10" stroke-dasharray="{{ analysis.skill_gap.score * 2.8274 }} 282.74"
-                            transform="rotate(-90 50 50)"/>
+                            stroke-width="10" stroke-dasharray="{{ analysis.skill_gap.score * 2.8274 }} 282.74" transform="rotate(-90 50 50)"/>
                 </svg>
-                <div class="score-value">{{ analysis.skill_gap.score | round(1) }}%</div>
+                <div class="score-value">{{ analysis.skill_gap.score|round(1) }}%</div>
             </div>
         </div>
     </div>
 
-    <!-- Career Recommendations -->
     <div class="section">
         <h2>Career Recommendations</h2>
-        <p>Based on your test results, here are your top career matches with additional details from O*NET:</p>
         <div class="career-grid">
             {% for match in matches %}
             <div class="career-card">
-                <div class="match-score">{{ match.score | round(1) }}% Match</div>
+                <div class="match-score">{{ match.score|round(1) }}% Match</div>
                 <h3 class="career-title">{{ match.name }}</h3>
                 <p><strong>O*NET Title:</strong> {{ match.onet_details.title }}</p>
-                <p><strong>Median Wage:</strong> ${{ match.onet_details.median_wage | default('N/A') }}</p>
-                <p><strong>Job Growth:</strong> {{ match.onet_details.growth_rate | default('N/A') }}%</p>
-                <p><strong>Typical Education:</strong> {{ match.onet_details.education }}</p>
+                <p><strong>Median Wage:</strong> {{ match.onet_details.currency }} {{ match.onet_details.median_wage|format_number }}</p>
+                <p><strong>Job Growth:</strong> {{ match.onet_details.growth_rate|default('N/A') }}%</p>
+                <p><strong>Education:</strong> {{ match.onet_details.education }}</p>
                 <div class="skill-list">
                     {% for skill in match.onet_details.skills %}
                     <span class="skill-pill">{{ skill }}</span>
@@ -301,9 +65,7 @@
                 <div class="resources">
                     <h4>Recommended Resources</h4>
                     {% for resource in match.resources %}
-                    <a href="{{ resource.link }}" class="resource-item" target="_blank">
-                        {{ resource.name }}
-                    </a>
+                    <a href="{{ resource.url }}" class="resource-item" target="_blank">{{ resource.name }} ({{ resource.level }})</a>
                     {% endfor %}
                 </div>
             </div>
@@ -312,105 +74,51 @@
     </div>
 
     <div class="cta-buttons">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
-            Back to Dashboard
-        </a>
-        <a href="{{ url_for('resources') }}" class="btn btn-secondary">
-            Explore Resources
-        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        <a href="{{ url_for('resources') }}" class="btn btn-secondary">Explore Resources</a>
     </div>
 </div>
 
-<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Aptitude Chart
     const aptitudeCtx = document.getElementById('aptitudeChart').getContext('2d');
     new Chart(aptitudeCtx, {
         type: 'bar',
         data: {
-            labels: [
-                {% for category in analysis.aptitude.details.keys() %}
-                '{{ category | capitalize }}',
-                {% endfor %}
-            ],
+            labels: [{% for category in analysis.aptitude.details.keys() %}'{{ category|capitalize }}',{% endfor %}],
             datasets: [{
                 label: 'Scores (%)',
-                data: [
-                    {% for score in analysis.aptitude.details.values() %}
-                    {{ score | round(2) }},
-                    {% endfor %}
-                ],
+                data: [{% for score in analysis.aptitude.details.values() %}{{ score|round(2) }},{% endfor %}],
                 backgroundColor: 'rgba(54, 162, 235, 0.5)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
             }]
         },
         options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Score (%)'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Aptitude Categories'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
+            scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Score (%)' } }, x: { title: { display: true, text: 'Categories' } } },
+            plugins: { legend: { display: false } }
         }
     });
 
-    // Personality Chart
     const personalityCtx = document.getElementById('personalityChart').getContext('2d');
     new Chart(personalityCtx, {
         type: 'radar',
         data: {
-            labels: [
-                {% for trait in analysis.personality.details.keys() %}
-                '{{ trait | capitalize }}',
-                {% endfor %}
-            ],
+            labels: [{% for trait in analysis.personality.details.keys() %}'{{ trait|capitalize }}',{% endfor %}],
             datasets: [{
-                label: 'Personality Traits',
-                data: [
-                    {% for score in analysis.personality.details.values() %}
-                    {{ score | round(2) }},
-                    {% endfor %}
-                ],
+                label: 'Traits',
+                data: [{% for score in analysis.personality.details.values() %}{{ score|round(2) }},{% endfor %}],
                 backgroundColor: 'rgba(99, 102, 241, 0.2)',
                 borderColor: 'rgba(99, 102, 241, 1)',
                 borderWidth: 1
             }]
         },
         options: {
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        stepSize: 20
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
+            scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } },
+            plugins: { legend: { display: false } }
         }
     });
 });
 </script>
-{% endblock %}s
+{% endblock %}

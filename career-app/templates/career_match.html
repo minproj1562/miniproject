@@ -1,219 +1,434 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="career-match-container">
-    <h1 class="page-title">Your Career Matches</h1>
-    <p class="page-subtitle">Based on your personality, aptitude, and skills, here are the careers that best suit you.</p>
+<div class="career-match-wrapper">
+    <!-- Hero Section with Parallax Effect -->
+    <div class="hero-section" id="hero-section">
+        <h1 class="hero-title animate__animated animate__fadeInDown">Unveil Your Cosmic Career</h1>
+        <p class="hero-subtitle animate__animated animate__fadeInUp">Explore tailored paths aligned with your stellar potential.</p>
+        <div class="star-field"></div> <!-- Background Stars -->
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="spinner animate__animated animate__fadeIn">
+        <div class="spinner-inner"></div>
+    </div>
+
+    <form method="POST" class="toggle-form animate__animated animate__zoomIn">
+        {{ form.hidden_tag() }}  <!-- CSRF protection -->
+        <div class="form-check">
+            {{ form.global_opportunities(id="global", class="form-check-input") }}
+            <label for="global" class="form-check-label">Show Global Opportunities</label>
+        </div>
+        {{ form.region() }}
+        {{ form.submit(class="btn btn-gradient") }}
+    </form>
 
     {% if matches %}
-        <div class="career-list">
+        <div class="career-galaxy">
             {% for career in matches %}
-                <div class="career-card">
-                    <div class="career-header">
-                        <h2>{{ career.name }}</h2>
-                        <div class="match-score">
-                            <span class="score-circle">{{ career.score|round(1) }}%</span>
-                            Match
-                        </div>
+                <div class="career-planet" data-index="{{ loop.index0 }}">
+                    <div class="planet-core">
+                        <h2 class="career-title">{{ career.name }}</h2>
+                        <p class="career-desc">{{ career.description }}</p>
+                        <p class="match-score"><strong>Match Score:</strong> <span>{{ career.match_score|round(2) }}%</span></p>
                     </div>
-                    <p class="career-description">{{ career.description }}</p>
-                    <div class="career-details">
-                        <h3>Details</h3>
-                        <p><strong>Title:</strong> {{ career.onet_details.title }}</p>
-                        <p><strong>Median Wage:</strong> ${{ career.onet_details.median_wage|format_number }}</p>
-                        <p><strong>Growth Rate:</strong> {{ career.onet_details.growth_rate }}%</p>
-                        <p><strong>Typical Education:</strong> {{ career.onet_details.education }}</p>
-                        <p><strong>Key Skills:</strong> {{ career.onet_details.skills|join(', ') }}</p>
-                    </div>
-                    {% if career.resources %}
-                        <div class="career-resources">
-                            <h3>Resources to Get Started</h3>
-                            <ul>
-                                {% for resource in career.resources %}
-                                    <li><a href="{{ resource.url }}" target="_blank">{{ resource.name }}</a></li>
-                                {% endfor %}
-                            </ul>
+                    <div class="planet-rings">
+                        <div class="detail-orbit">
+                            <p><strong>Title:</strong> {{ career.onet_details.title|default('N/A') }}</p>
+                            <p><strong>Wage:</strong> {{ career.onet_details.currency|default('USD') }} {{ career.onet_details.median_wage|format_number|default('N/A') }}</p>
+                            <p><strong>Growth:</strong> {{ career.onet_details.growth_rate|default(0) }}%</p>
+                            <p><strong>Education:</strong> 
+                                {% if career.onet_details.education %}
+                                    {% for edu in career.onet_details.education %}
+                                        {{ edu.name }} (Score: {{ edu.score }}){% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </p>
+                            <p><strong>Skills:</strong> {{ career.onet_details.skills|join(', ')|default('N/A') }}</p>
                         </div>
-                    {% endif %}
+                        {% if career.resources %}
+                            <div class="resource-orbit">
+                                <h3>Launch Your Journey</h3>
+                                <ul>
+                                    {% for resource in career.resources %}
+                                        <li>
+                                            <a href="{{ resource.url }}" target="_blank" class="resource-link" title="{{ resource.description|default('Explore this learning resource') }}">
+                                                {{ resource.name }} ({{ resource.level }})
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="planet-glow"></div> <!-- Glowing Effect -->
                 </div>
             {% endfor %}
         </div>
-        <!-- Add Call-to-Action Buttons -->
-        <div class="cta-buttons">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
-            <a href="{{ url_for('full_analysis') }}" class="btn btn-secondary">View Full Analysis</a>
+        <div class="cta-constellation">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-galaxy">Back to Dashboard</a>
+            <a href="{{ url_for('full_analysis') }}" class="btn btn-nebula">Full Analysis</a>
+            <a href="{{ url_for('test', type='skill_gap') }}" class="btn btn-nebula">Skill Gap Test</a>
         </div>
     {% else %}
-        <div class="no-matches">
-            <p>No career matches found. Please complete the personality and aptitude tests to get personalized recommendations.</p>
-            <a href="{{ url_for('assessments') }}" class="btn btn-primary">Take Assessments</a>
+        <div class="no-matches animate__animated animate__pulse">
+            <p>No matches yet! Ignite your journey with a test.</p>
+            <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-gradient">Take Aptitude Test</a>
         </div>
     {% endif %}
 </div>
 {% endblock %}
 
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Hide spinner and show content when matches are loaded
+        const spinner = document.getElementById('loading-spinner');
+        const planets = document.querySelectorAll('.career-planet');
+        if (planets.length > 0) {
+            spinner.classList.add('animate__fadeOut');
+            setTimeout(() => spinner.style.display = 'none', 500);
+
+            // Staggered animations
+            planets.forEach((planet, index) => {
+                setTimeout(() => {
+                    planet.classList.add('animate__bounceIn');
+                }, index * 200); // 200ms delay per planet
+            });
+        } else {
+            spinner.style.display = 'none'; // Hide spinner if no matches
+        }
+
+        // Parallax effect (moved to JavaScript)
+        let scrollY = 0;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+            const heroSection = document.querySelector('#hero-section');
+            if (heroSection) {
+                heroSection.style.backgroundPosition = `center ${scrollY * 0.1}px`;
+            }
+        });
+
+        // Star field animation (simple particles)
+        const starField = document.querySelector('.star-field');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = `${Math.random() * 100}vw`;
+            star.style.top = `${Math.random() * 100}vh`;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            starField.appendChild(star);
+        }
+    });
+</script>
+{% endblock %}
+
 {% block styles %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <style>
-.career-match-container {
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+.career-match-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1e1b4b, #6b21a8);
+    padding: 2rem;
+    overflow-x: hidden;
+    position: relative;
+    color: #e5e7eb;
 }
 
-.page-title {
-    font-size: 2.5rem;
-    color: #1e293b;
+.hero-section {
     text-align: center;
-    margin-bottom: 0.5rem;
+    padding: 4rem 0;
+    background: url('https://via.placeholder.com/1920x500?text=Cosmic+Sky') no-repeat center;
+    background-size: cover;
+    position: relative;
+    overflow: hidden;
 }
 
-.page-subtitle {
-    font-size: 1.2rem;
-    color: #64748b;
-    text-align: center;
-    margin-bottom: 2rem;
+.star-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
-.career-list {
-    display: grid;
-    gap: 1.5rem;
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    animation: twinkle 2s infinite alternate;
 }
 
-.career-card {
-    background: #ffffff;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    transition: transform 0.2s;
+@keyframes twinkle {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
 }
 
-.career-card:hover {
-    transform: translateY(-5px);
-}
-
-.career-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.hero-title {
+    font-size: 4rem;
+    color: #fff;
+    text-shadow: 0 0 20px #a855f7, 0 0 10px rgba(255, 255, 255, 0.5);
+    font-family: 'Orbitron', sans-serif;
     margin-bottom: 1rem;
 }
 
-.career-header h2 {
-    font-size: 1.5rem;
-    color: #1e293b;
-    margin: 0;
+.hero-subtitle {
+    font-size: 1.8rem;
+    color: #d1d5db;
+    margin-bottom: 3rem;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.toggle-form {
+    max-width: 450px;
+    margin: 0 auto 3rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+.form-check-label {
+    color: #fff;
+    margin-left: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.btn-gradient {
+    background: linear-gradient(90deg, #8b5cf6, #14b8a6);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 2.5rem;
+    transition: all 0.4s ease;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+.btn-gradient:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px #8b5cf6, 0 0 15px #14b8a6;
+}
+
+.spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner-inner {
+    width: 100%;
+    height: 100%;
+    border: 8px solid #e5e7eb;
+    border-top: 8px solid #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.career-galaxy {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 2.5rem;
+    padding: 2.5rem;
+    position: relative;
+}
+
+.career-planet {
+    position: relative;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2rem;
+    padding: 2.5rem;
+    transition: transform 0.6s ease, box-shadow 0.6s ease;
+    overflow: hidden;
+}
+
+.career-planet:hover {
+    transform: rotate(5deg) scale(1.08);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 15px rgba(20, 184, 166, 0.3);
+}
+
+.planet-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+    z-index: 0;
+    transition: opacity 0.6s ease;
+}
+
+.career-planet:hover .planet-glow {
+    opacity: 1;
+}
+
+.planet-core {
+    text-align: center;
+    color: #fff;
+    position: relative;
+    z-index: 1;
 }
 
 .match-score {
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-    color: #64748b;
+    font-size: 1.2rem;
+    color: #14b8a6;
+    margin-top: 0.75rem;
+    text-shadow: 0 0 5px rgba(20, 184, 166, 0.5);
 }
 
-.score-circle {
-    display: inline-block;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    text-align: center;
-    background: #6366f1;
-    color: #ffffff;
-    border-radius: 50%;
-    margin-right: 0.5rem;
+.match-score span {
     font-weight: bold;
 }
 
-.career-description {
-    color: #64748b;
+.career-title {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #fff;
+    text-shadow: 0 0 10px #8b5cf6;
+}
+
+.career-desc {
+    font-size: 1.1rem;
+    color: #d1d5db;
     margin-bottom: 1rem;
 }
 
-.career-details, .career-resources {
-    margin-top: 1rem;
+.planet-rings {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1.5rem;
+    position: relative;
+    z-index: 1;
 }
 
-.career-details h3, .career-resources h3 {
-    font-size: 1.2rem;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
+.detail-orbit p {
+    margin: 0.75rem 0;
+    color: #e5e7eb;
+    font-size: 1.1rem;
+    line-height: 1.5;
 }
 
-.career-details p, .career-resources ul {
-    margin: 0.3rem 0;
-    color: #64748b;
+.resource-orbit h3 {
+    color: #fff;
+    font-size: 1.4rem;
+    margin-top: 1.5rem;
+    text-shadow: 0 0 5px #8b5cf6;
 }
 
-.career-resources ul {
-    padding-left: 1.5rem;
+.resource-orbit ul {
+    list-style: none;
+    padding: 0;
 }
 
-.career-resources a {
-    color: #6366f1;
+.resource-link {
+    color: #14b8a6;
     text-decoration: none;
+    transition: all 0.4s ease;
+    font-size: 1.1rem;
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px dotted #14b8a6;
 }
 
-.career-resources a:hover {
-    text-decoration: underline;
+.resource-link:hover {
+    color: #fff;
+    text-shadow: 0 0 15px #14b8a6;
+    background: rgba(20, 184, 166, 0.1);
+    border-radius: 0.5rem;
+}
+
+.cta-constellation {
+    text-align: center;
+    margin: 4rem 0;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.btn-galaxy {
+    background: #8b5cf6;
+    color: #fff;
+    padding: 1rem 2.5rem;
+    border-radius: 2.5rem;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.btn-galaxy:hover {
+    background: #6b21a8;
+    box-shadow: 0 0 20px #8b5cf6;
+    transform: translateY(-3px);
+}
+
+.btn-nebula {
+    background: transparent;
+    color: #fff;
+    border: 2px solid #14b8a6;
+    padding: 1rem 2.5rem;
+    border-radius: 2.5rem;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+}
+
+.btn-nebula:hover {
+    background: #14b8a6;
+    box-shadow: 0 0 20px #14b8a6;
+    transform: translateY(-3px);
 }
 
 .no-matches {
     text-align: center;
-    padding: 2rem;
-    background: #f8fafc;
-    border-radius: 0.75rem;
+    padding: 3.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2rem;
+    color: #fff;
+    font-size: 1.4rem;
+    max-width: 600px;
+    margin: 3rem auto;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
 
-.no-matches p {
-    font-size: 1.2rem;
-    color: #64748b;
-    margin-bottom: 1rem;
-}
-
-.cta-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: #6366f1;
-    color: #ffffff;
-}
-
-.btn-primary:hover {
-    background: #4f46e5;
-    transform: translateY(-2px);
-}
-
-.btn-secondary {
-    background: white;
-    color: #6366f1;
-    border: 1px solid #6366f1;
-}
-
-.btn-secondary:hover {
-    background: #f8fafc;
+@media (prefers-contrast: high) {
+    .career-planet, .planet-rings, .toggle-form, .no-matches {
+        background: rgba(255, 255, 255, 0.3);
+        border: 2px solid #fff;
+    }
+    .hero-title, .career-title, .resource-orbit h3 {
+        color: #fff;
+        text-shadow: 0 0 10px #fff;
+    }
+    .career-desc, .detail-orbit p, .form-check-label {
+        color: #e5e7eb;
+    }
+    .btn-gradient, .btn-galaxy, .btn-nebula {
+        border: 2px solid #fff;
+    }
 }
 </style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Add any interactivity if needed, e.g., for expanding/collapsing career details
-    document.querySelectorAll('.career-card').forEach(card => {
-        card.addEventListener('click', () => {
-            card.classList.toggle('expanded');
-        });
-    });
-</script>
 {% endblock %}
