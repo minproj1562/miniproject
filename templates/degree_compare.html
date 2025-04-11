@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Degree Comparison - Career Analytics{% endblock %}
+
+{% block content %}
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        .degree-compare-main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+        }
+        .degree-compare-main h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .comparison-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+        .comparison-section:hover {
+            transform: translateY(-5px);
+        }
+        .comparison-section h2 {
+            color: #34495e;
+            margin-top: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 1rem;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+        .comparison-table td {
+            background: #f8f9fa;
+            vertical-align: top;
+        }
+        .comparison-table tr:hover td {
+            background: #e9ecef;
+        }
+        .degree-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #34495e;
+        }
+        .education-list, .skills-list {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        .education-list li, .skills-list li {
+            margin: 0.2rem 0;
+        }
+        .match-score {
+            font-weight: 600;
+            color: #2ecc71;
+        }
+        .no-data {
+            color: #666;
+            font-style: italic;
+        }
+        .back-button {
+            display: inline-block;
+            background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.2s ease, background 0.3s ease;
+        }
+        .back-button:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%);
+        }
+        .acknowledgment {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f0f4f8;
+            border-radius: 8px;
+        }
+    </style>
+
+    <div class="degree-compare-main">
+        <h1>Degree Comparison Tool</h1>
+
+        <section class="comparison-section">
+            <h2><i class="fas fa-balance-scale"></i> Compare Your Degree Options</h2>
+            <p>Based on your aptitude test results, compare degrees aligned with your strengths.</p>
+            {% if degree_data %}
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Degree</th>
+                            <th>Education Requirements</th>
+                            <th>Required Skills</th>
+                            <th>Description</th>
+                            <th>Match Score (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for soc_code, data in degree_data.items() %}
+                            <tr>
+                                <td class="degree-title">
+                                    <i class="fas fa-book"></i> {{ data.title }}
+                                </td>
+                                <td>
+                                    <ul class="education-list">
+                                        {% for edu in data.education %}
+                                            <li>{{ edu.name }} (Score: {{ edu.score }})</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                                <td>
+                                    <ul class="skills-list">
+                                        {% for skill in data.required_skills %}
+                                            <li>{{ skill }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                                <td>{{ data.description | default('No description available') }}</td>
+                                <td class="match-score">
+                                    {% set match = recommendations | selectattr('soc_code', 'equalto', soc_code) | first %}
+                                    {{ '%0.1f' | format(match.score) if match.score else 'N/A' }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="acknowledgment">
+                    <p>Data sourced from <a href="https://www.onetcenter.org/" target="_blank">O*NET API</a>. Match scores are based on your aptitude test results.</p>
+                </div>
+            {% else %}
+                <p class="no-data"><i class="fas fa-exclamation-circle"></i> No degree data available. Please complete an aptitude test or select degrees to compare.</p>
+            {% endif %}
+        </section>
+
+        <a href="{{ url_for('degree') }}" class="back-button">Back to Degree Search</a>
+    </div>
+{% endblock %}
