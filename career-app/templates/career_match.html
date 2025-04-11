@@ -1,25 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="career-match-wrapper">
-    <!-- Hero Section with Parallax Effect -->
     <div class="hero-section" id="hero-section">
         <h1 class="hero-title animate__animated animate__fadeInDown">Unveil Your Cosmic Career</h1>
         <p class="hero-subtitle animate__animated animate__fadeInUp">Explore tailored paths aligned with your stellar potential.</p>
-        <div class="star-field"></div> <!-- Background Stars -->
+        <div class="star-field"></div>
     </div>
 
-    <!-- Loading Spinner -->
     <div id="loading-spinner" class="spinner animate__animated animate__fadeIn">
         <div class="spinner-inner"></div>
     </div>
 
     <form method="POST" class="toggle-form animate__animated animate__zoomIn">
-        {{ form.hidden_tag() }}  <!-- CSRF protection -->
+        {{ form.hidden_tag() }}
         <div class="form-check">
             {{ form.global_opportunities(id="global", class="form-check-input") }}
             <label for="global" class="form-check-label">Show Global Opportunities</label>
         </div>
-        {{ form.region() }}
         {{ form.submit(class="btn btn-gradient") }}
     </form>
 
@@ -30,47 +27,16 @@
                     <div class="planet-core">
                         <h2 class="career-title">{{ career.name }}</h2>
                         <p class="career-desc">{{ career.description }}</p>
-                        <p class="match-score"><strong>Match Score:</strong> <span>{{ career.match_score|round(2) }}%</span></p>
+                        <p class="fit-level"><strong>Why It Fits:</strong> {{ career.fit_reasons|join(', ') }}</p>
                     </div>
-                    <div class="planet-rings">
-                        <div class="detail-orbit">
-                            <p><strong>Title:</strong> {{ career.onet_details.title|default('N/A') }}</p>
-                            <p><strong>Wage:</strong> {{ career.onet_details.currency|default('USD') }} {{ career.onet_details.median_wage|format_number|default('N/A') }}</p>
-                            <p><strong>Growth:</strong> {{ career.onet_details.growth_rate|default(0) }}%</p>
-                            <p><strong>Education:</strong> 
-                                {% if career.onet_details.education %}
-                                    {% for edu in career.onet_details.education %}
-                                        {{ edu.name }} (Score: {{ edu.score }}){% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </p>
-                            <p><strong>Skills:</strong> {{ career.onet_details.skills|join(', ')|default('N/A') }}</p>
-                        </div>
-                        {% if career.resources %}
-                            <div class="resource-orbit">
-                                <h3>Launch Your Journey</h3>
-                                <ul>
-                                    {% for resource in career.resources %}
-                                        <li>
-                                            <a href="{{ resource.url }}" target="_blank" class="resource-link" title="{{ resource.description|default('Explore this learning resource') }}">
-                                                {{ resource.name }} ({{ resource.level }})
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="planet-glow"></div> <!-- Glowing Effect -->
+                    <div class="planet-glow"></div>
                 </div>
             {% endfor %}
         </div>
         <div class="cta-constellation">
             <a href="{{ url_for('dashboard') }}" class="btn btn-galaxy">Back to Dashboard</a>
             <a href="{{ url_for('full_analysis') }}" class="btn btn-nebula">Full Analysis</a>
-            <a href="{{ url_for('test', type='skill_gap') }}" class="btn btn-nebula">Skill Gap Test</a>
+            <a href="{{ url_for('test', type='interest_test') }}" class="btn btn-nebula">Skill Gap Test</a>
         </div>
     {% else %}
         <div class="no-matches animate__animated animate__pulse">
@@ -82,37 +48,28 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Hide spinner and show content when matches are loaded
         const spinner = document.getElementById('loading-spinner');
         const planets = document.querySelectorAll('.career-planet');
         if (planets.length > 0) {
             spinner.classList.add('animate__fadeOut');
             setTimeout(() => spinner.style.display = 'none', 500);
-
-            // Staggered animations
             planets.forEach((planet, index) => {
-                setTimeout(() => {
-                    planet.classList.add('animate__bounceIn');
-                }, index * 200); // 200ms delay per planet
+                setTimeout(() => planet.classList.add('animate__bounceIn'), index * 200);
             });
         } else {
-            spinner.style.display = 'none'; // Hide spinner if no matches
+            spinner.style.display = 'none';
         }
 
-        // Parallax effect (moved to JavaScript)
         let scrollY = 0;
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
             const heroSection = document.querySelector('#hero-section');
-            if (heroSection) {
-                heroSection.style.backgroundPosition = `center ${scrollY * 0.1}px`;
-            }
+            if (heroSection) heroSection.style.backgroundPosition = `center ${scrollY * 0.1}px`;
         });
 
-        // Star field animation (simple particles)
         const starField = document.querySelector('.star-field');
         for (let i = 0; i < 50; i++) {
             const star = document.createElement('div');
@@ -401,7 +358,12 @@
     box-shadow: 0 0 20px #14b8a6;
     transform: translateY(-3px);
 }
-
+.fit-level {
+        font-size: 1.2rem;
+        color: #14b8a6;
+        margin-top: 0.75rem;
+        text-shadow: 0 0 5px rgba(20, 184, 166, 0.5);
+    }
 .no-matches {
     text-align: center;
     padding: 3.5rem;
