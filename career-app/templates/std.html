@@ -2,23 +2,81 @@
 {% block title %}Career Advice and Resources{% endblock %}
 {% block extra_head %}
 <style>
-  /* Insert your existing std CSS here */
+  /* Existing std CSS */
   h1 {
       color: #0a1e3b;
       font-size: 2.8rem;
       margin-bottom: 20px;
   }
-  /* ... Additional styles for std.html ... */
+
+  /* Add new card styles here */
+  .card {
+      transition: transform 0.3s ease;
+      border-radius: 15px;
+      overflow: hidden;
+  }
+
+  .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-img-top {
+      height: 200px;
+      object-fit: cover;
+  }
 </style>
 {% endblock %}
+
 {% block content %}
-<main>
-    <h1>Career Advice and Resources</h1>
-    <!-- Insert your existing content from std.html here -->
-</main>
+<div class="container py-5">
+    <h1 class="text-center mb-5">Latest Career Resources</h1>
+    <div id="resourcesGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <!-- Resources will be loaded here by JavaScript -->
+    </div>
+</div>
 {% endblock %}
+
 {% block extra_scripts %}
 <script>
-  // Insert your existing JS code from std.html if any
+// Fetch data from News API (replace with your API key)
+const API_KEY = '2145c991da0d47689be9cd4739e4cd86';
+const API_URL = `https://newsapi.org/v2/everything?q=career+advice&sortBy=publishedAt&apiKey=${API_KEY}`;
+
+function createResourceCard(article) {
+    return `
+        <div class="col">
+            <div class="card h-100 shadow">
+                <img src="${article.urlToImage || 'https://via.placeholder.com/300'}" class="card-img-top" alt="${article.title}">
+                <div class="card-body">
+                    <h5 class="card-title">${article.title}</h5>
+                    <p class="card-text">${article.description || ''}</p>
+                    <a href="${article.url}" target="_blank" class="btn btn-primary">Read More</a>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">${new Date(article.publishedAt).toLocaleDateString()}</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadResources() {
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        const grid = document.getElementById('resourcesGrid');
+        
+        grid.innerHTML = data.articles.slice(0, 9).map(article => 
+            createResourceCard(article)
+        ).join('');
+    } catch (error) {
+        console.error('Error loading resources:', error);
+        grid.innerHTML = '<p class="text-center">Unable to load resources at this time.</p>';
+    }
+}
+
+// Load resources when page loads
+document.addEventListener('DOMContentLoaded', loadResources);
 </script>
 {% endblock %}

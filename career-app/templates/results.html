@@ -61,34 +61,50 @@
             {% endfor %}
         </div>
 
+        <!-- Top Careers Suggestion -->
+        {% if top_careers %}
+        <div class="career-suggestions">
+            <h3>Top Career Suggestions</h3>
+            <div class="career-grid">
+                {% for soc_code in top_careers %}
+                {% set career_name = CAREERS | selectattr('1', 'equalto', soc_code) | first | first %}
+                <div class="career-item">
+                    <span class="career-label">{{ career_name }}</span>
+                    <a href="{{ url_for('career_details', career_name=career_name) }}" class="btn btn-option">Explore</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Detailed Question Breakdown -->
         <div class="question-breakdown">
-    <h3>
-        <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown <i class="fas fa-chevron-down"></i></button>
-    </h3>
-    <div id="breakdown-content" style="display: none;">
-        {% if score_data.responses and score_data.questions %}
-            {% for response in score_data.responses %}
-                {% set question = score_data.questions[loop.index0] %}
-                <div class="question-item {% if response.correct %}correct{% else %}incorrect{% endif %}">
-                    <p><strong>Question {{ loop.index }}:</strong> {{ question.text }}</p>
-                    <p><strong>Your Answer:</strong> <span class="user-answer">{{ question.options[response.answer] }}</span></p>
-                    <p><strong>Correct Answer:</strong> <span class="correct-answer">{{ question.options[question.correct] }}</span></p>
-                    <p><strong>Result:</strong> 
-                        {% if response.correct %}
-                            <span class="correct-text">Correct</span>
-                        {% else %}
-                            <span class="incorrect-text">Incorrect</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>Time Spent:</strong> {{ response.time_spent }} seconds</p>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>No detailed response data available.</p>
-        {% endif %}
-    </div>
-</div>
+            <h3>
+                <button class="toggle-btn" onclick="toggleBreakdown()">Detailed Question Breakdown <i class="fas fa-chevron-down"></i></button>
+            </h3>
+            <div id="breakdown-content" style="display: none;">
+                {% if score_data.responses and score_data.questions %}
+                    {% for response in score_data.responses %}
+                        {% set question = score_data.questions[loop.index0] %}
+                        <div class="question-item {% if response.correct %}correct{% else %}incorrect{% endif %}">
+                            <p><strong>Question {{ loop.index }}:</strong> {{ question.question }}</p>
+                            <p><strong>Your Answer:</strong> <span class="user-answer">{{ question.options[response.answer] }}</span></p>
+                            <p><strong>Correct Answer:</strong> <span class="correct-answer">{{ question.options[question.correct_answer] }}</span></p>
+                            <p><strong>Result:</strong> 
+                                {% if response.correct %}
+                                    <span class="correct-text">Correct</span>
+                                {% else %}
+                                    <span class="incorrect-text">Incorrect</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Time Spent:</strong> {{ response.time_spent }} seconds</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No detailed response data available.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {% else %}
     <div class="no-results">
@@ -101,27 +117,29 @@
         <a href="{{ url_for('test', type='personality') }}" class="btn btn-option">Take Personality Test</a>
         {% endif %}
         <a href="{{ url_for('career_match') }}" class="btn btn-primary">Proceed to Career Match</a>
+        <a href="{{ url_for('degree') }}" class="btn btn-option">Explore Degrees</a>
         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
 </div>
 
 <script>
     function toggleBreakdown() {
-    const content = document.getElementById('breakdown-content');
-    const icon = document.querySelector('.toggle-btn i');
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
-    } else {
-        content.style.display = 'none';
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
+        const content = document.getElementById('breakdown-content');
+        const icon = document.querySelector('.toggle-btn i');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
     }
-}
 </script>
 
 <style>
+/* Existing styles remain unchanged */
 .results-container {
     max-width: 800px;
     margin: 2rem auto;
@@ -224,6 +242,30 @@
     color: #6366f1;
 }
 
+.career-suggestions {
+    margin: 2rem 0;
+}
+
+.career-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.career-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.career-label {
+    display: block;
+    font-size: 1rem;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
 .question-breakdown {
     margin: 2rem 0;
     text-align: left;
@@ -236,6 +278,12 @@
     font-size: 1.5rem;
     cursor: pointer;
     padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn i {
+    margin-left: 0.5rem;
 }
 
 .toggle-btn:hover {
@@ -331,25 +379,6 @@
         flex-direction: column;
     }
     @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
-
-.toggle-btn {
-    background: none;
-    border: none;
-    color: #6366f1;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-}
-
-.toggle-btn i {
-    margin-left: 0.5rem;
-}
-
-.toggle-btn:hover {
-    color: #4f46e5;
-}
 }
 </style>
 {% endblock %}

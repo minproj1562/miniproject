@@ -1,20 +1,22 @@
-{% extends 'base.html' %}
-
-{% block title %}Resources{% endblock %}
-
+{% extends "base.html" %}
+{% block title %}Career Resources{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Resources for {{ career_path }}</h2>
-    <p>Explore these tutorials, courses, and articles to help you on your career journey!</p>
-    {% if resources %}
-        <ul>
+<div class="container my-5">
+    <h1 class="text-center mb-4">Career Development Resources</h1>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for resource in resources %}
-            <li><a href="{{ resource.link }}" target="_blank">{{ resource.name }}</a></li>
+        <div class="col">
+            <div class="card h-100 shadow">
+                <div class="card-body">
+                    <h5 class="card-title">{{ resource.name }}</h5>
+                    <p class="card-text">{{ resource.description }}</p>
+                    <a href="{{ resource.url }}" target="_blank" class="btn btn-primary">
+                        Access Resource
+                    </a>
+                </div>
+            </div>
+        </div>
         {% endfor %}
-        </ul>
-    {% else %}
-        <p>No resources available for this career path at the moment.</p>
-    {% endif %}
-    <a href="{{ url_for('roadmap') }}" class="btn btn-primary mt-3">Back to Roadmap</a>
+    </div>
 </div>
 {% endblock %}
