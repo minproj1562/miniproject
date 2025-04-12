@@ -465,9 +465,9 @@
                 </li>
                 <li>
                     {% if current_user.is_authenticated %}
-                        <a class="dropdown-item test-link {% if active_page == 'interest_test' %}active{% endif %}" href="{{ url_for('test',type='interest_test') }}"><i class="fas fa-tools"></i> Skill Gap Test</a>
+                        <a class="dropdown-item test-link {% if active_page == 'interest_test' %}active{% endif %}" href="{{ url_for('interest_test') }}"><i class="fas fa-tools"></i> Skill Gap Test</a>
                     {% else %}
-                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('test',type='interest_test')) }}"><i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span></a>
+                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('interest_test')) }}"><i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span></a>
                     {% endif %}
                 </li>
             </ul>
