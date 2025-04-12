@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Blueprint
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Blueprint, send_from_directory, abort, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,6 +22,8 @@ import json
 from PIL import Image
 from datetime import datetime, timezone
 import numpy as np
+import pdfkit
+
 import requests
 # Import question data
 from questions import (
@@ -49,6 +51,10 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 app.config['WTF_CSRF_HEADERS'] = ['X-CSRF-Token']
+app.config['PDFKIT_CONFIG'] = {
+    'wkhtmltopdf': 'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  
+}
+app.config['HTML2PDF_API_KEY'] = 'L5zgjIt6LMDfgCdiz5AziCtzkyvbRoiDjtwfYwa67ZqTtCJMV6hHp98QsqZyzLeC'
 mail = Mail(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 login_manager = LoginManager()
@@ -110,6 +116,15 @@ class CareerMatchForm(FlaskForm):
     global_opportunities = BooleanField('Show Global Opportunities')
     region = HiddenField()
     submit = SubmitField('Update')
+    
+# models.py (add Resume model)
+class Resume(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    resume_data = db.Column(db.JSON)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -148,7 +163,9 @@ class User(UserMixin, db.Model):
     personality_scores = db.Column(db.JSON, default="{}", nullable=False)  # Changed to string default
     skill_gap_scores = db.Column(db.JSON, default="{}", nullable=False)  # Added field with default
     skill_gap_completed_at = db.Column(db.DateTime)
-    top_careers = db.Column(db.JSON, default=lambda: [], nullable=False)
+    top_careers = db.Column(db.Text)  # Add this line
+    resumes = db.relationship('Resume', backref='user', lazy=True)
+
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -444,73 +461,59 @@ def generate_questions(test_type):
             {"id": "q9", "question": "What’s your approach to learning new skills required for your job?", "options": ["Proactively seek training", "Learn on the job as needed", "Wait for company-provided training", "Rely on colleagues to teach me"]},
             {"id": "q10", "question": "How do you ensure your work maintains high quality under pressure?", "options": ["Double-check everything", "Stick to a proven process", "Focus on speed over perfection", "Ask for feedback before submission"]}
         ]
-    elif test_type == 'aptitude':
-        available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        used_questions = session.get('used_aptitude', [])
-        questions = []
-    # Use initial difficulty from ADAPTIVE_TEST_SETTINGS
-        current_difficulty = ADAPTIVE_TEST_SETTINGS['initial_difficulty']  # 'easy'
     
-    # Ensure we have enough questions
-        total_available = sum(
-            sum(len(questions) for difficulty, questions in category.items())
-            for category in available_questions.values()
-        )
-        if total_available < 20:
-            raise ValueError(f"Not enough questions available. Required: 20, Available: {total_available}")
-
-    # Generate 10 questions
-        for _ in range(20):
-        # Choose a category randomly
-            category = random.choice(list(available_questions.keys()))
-        # Filter questions by current difficulty and exclude used questions
-            difficulty_questions = [
-               q for q in available_questions[category][current_difficulty]
-               if q['id'] not in used_questions
-            ]
-        # If no questions at current difficulty, try other difficulties
-            if not difficulty_questions:
-                for diff in ['easy', 'moderate', 'hard']:
-                    if diff != current_difficulty:
-                        difficulty_questions = [
-                            q for q in available_questions[category][diff]
-                            if q['id'] not in used_questions
-                        ]
-                        if difficulty_questions:
-                            current_difficulty = diff
-                            break
-        # If still no questions, use any available question from the category
-            if not difficulty_questions:
-                difficulty_questions = [
-                    q for q in (
-                        available_questions[category]['easy'] +
-                        available_questions[category]['moderate'] +
-                        available_questions[category]['hard']
-                    )
-                    if q['id'] not in used_questions
-                ]
-                if not difficulty_questions:
-                # If no questions are available in this category, remove it and try again
-                    del available_questions[category]
-                    if not available_questions:
-                        raise ValueError("Ran out of questions to select.")
-                    continue
-        # Select a question
-            question = random.choice(difficulty_questions)
-            question['time_limit'] = question.get('time_limit', 60)
-            questions.append(question)
-            used_questions.append(question['id'])
-
+    elif test_type == 'aptitude':
+        # Retrieve used questions from session to avoid repeats
+        used_questions = session.get('used_aptitude', [])
+        
+        # Collect all questions by difficulty across categories
+        all_easy = []
+        all_moderate = []
+        all_hard = []
+        for category in APTITUDE_QUESTIONS.keys():
+            for q in APTITUDE_QUESTIONS[category]['easy']:
+                if q['id'] not in used_questions:
+                    all_easy.append(q)
+            for q in APTITUDE_QUESTIONS[category]['moderate']:
+                if q['id'] not in used_questions:
+                    all_moderate.append(q)
+            for q in APTITUDE_QUESTIONS[category]['hard']:
+                if q['id'] not in used_questions:
+                    all_hard.append(q)
+        
+        # Validate sufficient questions are available
+        if len(all_easy) < 5:
+            raise ValueError(f"Not enough easy questions available. Required: 5, Found: {len(all_easy)}")
+        if len(all_moderate) < 7:
+            raise ValueError(f"Not enough moderate questions available. Required: 7, Found: {len(all_moderate)}")
+        if len(all_hard) < 8:
+            raise ValueError(f"Not enough hard questions available. Required: 8, Found: {len(all_hard)}")
+        
+        # Randomly select questions
+        selected_easy = random.sample(all_easy, 5)
+        selected_moderate = random.sample(all_moderate, 7)
+        selected_hard = random.sample(all_hard, 8)
+        
+        # Combine in the specified order
+        questions = selected_easy + selected_moderate + selected_hard
+        
+        # Ensure time_limit is set
+        for q in questions:
+            q['time_limit'] = q.get('time_limit', 60)
+        
+        # Update session data
         session['aptitude_questions'] = questions
-        session['used_aptitude'] = used_questions
+        session['used_aptitude'] = [q['id'] for q in questions]
+        session['aptitude_responses'] = []
+        session['ability_estimate'] = 0.0
         session['aptitude_correct'] = 0
         session['aptitude_total'] = 0
-        session['aptitude_category_scores'] = defaultdict(int)
-        session['aptitude_category_counts'] = defaultdict(int)
-        for category in APTITUDE_QUESTIONS.keys():
-           session['aptitude_category_counts'][category] = 0
-           session['aptitude_category_scores'][category] = 0
-        return questions[:20]
+        
+        # Initialize category counts and scores for all categories
+        session['aptitude_category_counts'] = {cat: 0 for cat in APTITUDE_QUESTIONS.keys()}
+        session['aptitude_category_scores'] = {cat: 0 for cat in APTITUDE_QUESTIONS.keys()}
+        
+        return questions
     
     elif test_type == 'personality':
         questions = random.sample(PERSONALITY_QUESTIONS, min(10, len(PERSONALITY_QUESTIONS)))
@@ -622,6 +625,7 @@ def compare_degrees():
         flash('User not found.', 'danger')
         return redirect(url_for('degree'))
 
+    # Fetch user's aptitude scores to suggest relevant degrees
     aptitude_scores = json.loads(user.aptitude_scores) if user.aptitude_scores else {}
     top_careers = json.loads(user.top_careers) if user.top_careers else []
 
@@ -629,16 +633,17 @@ def compare_degrees():
         flash('Please complete an aptitude test to get personalized degree recommendations.', 'warning')
         return redirect(url_for('degree'))
 
+    # Fetch degree data based on top careers or aptitude
     degree_data = {}
     onet_api = ONetAPI()
     selected_degrees = request.form.getlist('degree_select') if request.method == 'POST' else []
 
     if request.method == 'POST' and selected_degrees:
-        for soc_code in selected_degrees[:3]:  # Limit to 3
+        for soc_code in selected_degrees[:3]:  # Limit to 3 for comparison
             details = onet_api.get_occupation_summary(soc_code)
-            if details:
-                education = onet_api.get_education(soc_code)
-                skills = onet_api.get_skills(soc_code)
+            education = onet_api.get_education(soc_code)
+            skills = onet_api.get_skills(soc_code)
+            if details and education:
                 degree_data[soc_code] = {
                     'title': details.get('title', 'Unknown'),
                     'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
@@ -646,32 +651,19 @@ def compare_degrees():
                     'description': details.get('description', 'No description available')
                 }
     else:
-        # Use aptitude scores to suggest careers if top_careers is empty
-        if not top_careers and aptitude_scores:
-            career_codes = [CAREERS[career] for career in CAREER_MAPPING.keys()[:3]]  # Default to first 3 careers
-            for soc_code in career_codes:
-                details = onet_api.get_occupation_summary(soc_code)
-                if details:
-                    education = onet_api.get_education(soc_code)
-                    skills = onet_api.get_skills(soc_code)
-                    degree_data[soc_code] = {
-                        'title': details.get('title', 'Unknown'),
-                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
-                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
-                        'description': details.get('description', 'No description available')
-                    }
-        elif top_careers:
-            for soc_code in top_careers[:3]:
-                details = onet_api.get_occupation_summary(soc_code)
-                if details:
-                    education = onet_api.get_education(soc_code)
-                    skills = onet_api.get_skills(soc_code)
-                    degree_data[soc_code] = {
-                        'title': details.get('title', 'Unknown'),
-                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
-                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
-                        'description': details.get('description', 'No description available')
-                    }
+        # Default to top careers from aptitude if available
+        career_codes = top_careers[:3] if top_careers else ['15-1252.00', '15-2051.01', '27-1024.00']  # Default SOC codes
+        for soc_code in career_codes:
+            details = onet_api.get_occupation_summary(soc_code)
+            education = onet_api.get_education(soc_code)
+            skills = onet_api.get_skills(soc_code)
+            if details and education:
+                degree_data[soc_code] = {
+                    'title': details.get('title', 'Unknown'),
+                    'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
+                    'required_skills': [skill.get('name', 'N/A') for skill in skills],
+                    'description': details.get('description', 'No description available')
+                }
 
     # Match degrees with aptitude scores for recommendation
     recommendations = []
@@ -1119,7 +1111,6 @@ def career_assessment():
 @login_required
 def submit_aptitude():
     data = request.get_json()
-    logger.debug(f"Received data: {data}")
     if not data or 'responses' not in data:
         return jsonify({'error': 'No data provided'}), 400
 
@@ -1129,84 +1120,75 @@ def submit_aptitude():
 
     questions = session.get('aptitude_questions', [])
     user_responses = session.get('aptitude_responses', [])
-    ability_estimate = session.get('ability_estimate', 0.0)
-    used_questions = session.get('used_aptitude', [])
-
+    
     if not questions or current_question_index >= len(questions):
         return jsonify({'error': 'No more questions available'}), 400
 
     current_response = responses[-1]
     question_id = current_response['questionId']
     
-    if 'answer' not in current_response or current_response['answer'] is None:
-        return jsonify({'error': 'Answer is missing or invalid'}), 400
-    
     try:
-        user_answer = int(current_response['answer'])
+        answer = int(current_response['answer'])
     except (ValueError, TypeError):
-        return jsonify({'error': 'Answer must be a valid integer'}), 400
+        return jsonify({'error': 'Invalid answer format'}), 400
 
     current_question = next((q for q in questions if q['id'] == question_id), None)
     if not current_question:
         return jsonify({'error': 'Question not found'}), 400
 
-    # Check if the answer is correct
-    is_correct = user_answer == current_question['correct']
-
-    # Update category-based scoring
-    category = next(
-        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
-            current_question['id'] in [q['id'] for q in level] for level in levels.values()
-        )), "Unknown"
-    )
-    session['aptitude_total'] = session.get('aptitude_total', 0) + 1
-    session['aptitude_correct'] = session.get('aptitude_correct', 0) + (1 if is_correct else 0)
-    session['aptitude_category_counts'][category] = session.get('aptitude_category_counts', {}).get(category, 0) + 1
-    session['aptitude_category_scores'][category] = session.get('aptitude_category_scores', {}).get(category, 0) + (1 if is_correct else 0)
-    session.modified = True
-
-    # Bayesian ability estimation
-    scaling_factors = ADAPTIVE_TEST_SETTINGS['scaling_factors']
-    irt_params = current_question['irt_params']
-    difficulty = irt_params['difficulty']
-    discrimination = irt_params['discrimination']
-    expected_prob = 1 / (1 + np.exp(-discrimination * (ability_estimate - difficulty)))
-    if is_correct:
-        ability_estimate += scaling_factors['correct_answer'] * (1 - expected_prob)
-    else:
-        ability_estimate += scaling_factors['wrong_answer'] * expected_prob
-    time_limit = current_question['time_limit']
-    if time_spent > time_limit:
-        excess_time = time_spent - time_limit
-        time_penalty = (excess_time / time_limit) * scaling_factors['time_penalty']
-        ability_estimate += time_penalty
-
+    is_correct = answer == current_question['correct']
     user_responses.append({
         'question_id': question_id,
-        'answer': user_answer,
+        'answer': answer,
         'correct': is_correct,
         'time_spent': time_spent
     })
     session['aptitude_responses'] = user_responses
-    session['ability_estimate'] = ability_estimate
 
-    # Check if the test is complete
-    if current_question_index + 1 >= len(questions):
-        overall_score = (session['aptitude_correct'] / session['aptitude_total']) * 100
+    # Update category-based scoring
+    category = next(
+        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
+            question_id in [q['id'] for q in level] for level in levels.values()
+        )),
+        "Unknown"
+    )
+    
+    # Ensure category exists in dictionaries (safeguard)
+    if category not in session['aptitude_category_counts']:
+        session['aptitude_category_counts'][category] = 0
+        session['aptitude_category_scores'][category] = 0
+
+    session['aptitude_total'] += 1
+    if is_correct:
+        session['aptitude_correct'] += 1
+    session['aptitude_category_counts'][category] += 1
+    if is_correct:
+        session['aptitude_category_scores'][category] += 1
+    session.modified = True
+
+    # Proceed to next question or complete test
+    if current_question_index + 1 < len(questions):
+        next_question = questions[current_question_index + 1]
+        return jsonify({
+            'question': next_question,
+            'current_question_index': current_question_index + 1
+        })
+    else:
+        # Test complete - calculate and save results
+        overall_score = (session['aptitude_correct'] / session['aptitude_total']) * 100 if session['aptitude_total'] > 0 else 0
         detailed_scores = {
-            cat: (session['aptitude_category_scores'].get(cat, 0) / session['aptitude_category_counts'][cat]) * 100
+            cat: (session['aptitude_category_scores'][cat] / session['aptitude_category_counts'][cat]) * 100
             for cat in session['aptitude_category_counts'] if session['aptitude_category_counts'][cat] > 0
         }
         result = TestResult(
             user_id=current_user.id,
             test_type='aptitude',
             score=overall_score,
-            time_spent=time_spent,
+            time_spent=sum(r['time_spent'] for r in user_responses),
             details=json.dumps(detailed_scores)
         )
         current_user.aptitude_scores = json.dumps(detailed_scores)
         db.session.add(result)
-        db.session.commit()
 
         # Award badges
         if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
@@ -1226,11 +1208,25 @@ def submit_aptitude():
         db.session.add(notification)
         db.session.commit()
 
+        # Update completed tests
         completed_tests = session.get('completed_tests', [])
         if 'aptitude' not in completed_tests:
             completed_tests.append('aptitude')
             session['completed_tests'] = completed_tests
 
+        # Store results in session for display
+        session['test_results'] = session.get('test_results', {})
+        session['test_results']['aptitude'] = {
+            'score': overall_score,
+            'correct': session['aptitude_correct'],
+            'total': session['aptitude_total'],
+            'time_spent': sum(r['time_spent'] for r in user_responses),
+            'detailed_scores': detailed_scores,
+            'responses': user_responses,
+            'questions': questions
+        }
+
+        # Clear session data
         session.pop('aptitude_questions', None)
         session.pop('aptitude_responses', None)
         session.pop('ability_estimate', None)
@@ -1239,49 +1235,8 @@ def submit_aptitude():
         session.pop('aptitude_total', None)
         session.pop('aptitude_category_scores', None)
         session.pop('aptitude_category_counts', None)
+
         return jsonify({'redirect': url_for('aptitude_results')})
-
-    # Determine next difficulty and select next question (unchanged)
-    category_performance = {
-        cat: (session['aptitude_category_scores'].get(cat, 0) / session['aptitude_category_counts'][cat]) * 100
-        for cat in session['aptitude_category_counts'] if session['aptitude_category_counts'][cat] > 0
-    }
-    thresholds = ADAPTIVE_TEST_SETTINGS['proficiency_levels'].get(category, {"thresholds": [40, 70]})
-    performance = category_performance.get(category, 0)
-    next_difficulty = 'easy' if performance < thresholds['thresholds'][0] else 'moderate' if performance < thresholds['thresholds'][1] else 'hard'
-
-    remaining_questions = [q for q in questions[current_question_index + 1:] if q['id'] not in [r['question_id'] for r in user_responses]]
-    if not remaining_questions:
-        available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        next_questions = [q for cat in available_questions for q in available_questions[cat][next_difficulty] if q['id'] not in used_questions]
-        if not next_questions:
-            for diff in ['moderate', 'hard', 'easy']:
-                if diff != next_difficulty:
-                    next_questions = [q for cat in available_questions for q in available_questions[cat][diff] if q['id'] not in used_questions]
-                    if next_questions:
-                        next_difficulty = diff
-                        break
-        if not next_questions:
-            return jsonify({'error': 'No more questions available'}), 400
-        next_question = random.choice(next_questions)
-        questions[current_question_index + 1] = next_question
-        used_questions.append(next_question['id'])
-    else:
-        next_question = remaining_questions[0]
-
-    next_question['category'] = next(
-        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
-            next_question['id'] in [q['id'] for q in level] for level in levels.values()
-        )), "Unknown"
-    )
-
-    session['aptitude_questions'] = questions
-    session['used_aptitude'] = used_questions
-
-    return jsonify({
-        'question': next_question,
-        'current_question_index': current_question_index + 1
-    })
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -1627,51 +1582,33 @@ def submit_career_assessment():
 @app.route('/aptitude_results')
 @login_required
 def aptitude_results():
-    # Fetch the latest aptitude test result
-    latest_test = TestResult.query.filter_by(
-        user_id=current_user.id,
-        test_type='aptitude'
-    ).order_by(TestResult.completed_at.desc()).first()
-
-    if not latest_test:
-        flash('No aptitude test results found. Please complete the test first.', 'warning')
-        return redirect(url_for('dashboard'))
-
-    # Load detailed scores
-    detailed_scores = json.loads(latest_test.details) if latest_test.details else {}
-    aptitude_scores = {APTITUDE_TO_ONET.get(k, k): v for k, v in detailed_scores.items()}
-    user_scores = {'aptitude': aptitude_scores}
-
-    # Calculate top career matches
-    top_careers = []
-    for career_name, career_data in CAREER_MAPPING.items():
-        soc_code = CAREERS.get(career_name, "15-1252.00")
-        match_score = calculate_match(user_scores, career_data)
-        top_careers.append({'name': career_name, 'soc_code': soc_code, 'score': match_score})
-
-    # Sort by match score and take top 3
-    top_careers.sort(key=lambda x: x['score'], reverse=True)
-    top_careers = [career['soc_code'] for career in top_careers[:3]]
-
-    # Update user's top_careers
-    current_user.top_careers = json.dumps(top_careers)
-    db.session.commit()
-
-    # Prepare score data for display
-    score_data = {
-        'test_type': 'aptitude',
-        'score': latest_test.score,
-        'correct': int(latest_test.score / 10) if latest_test.score else 0,  # Assuming percentage-based scoring
-        'total': 10,
-        'time_spent': latest_test.time_spent or 0,
-        'detailed_scores': detailed_scores,
-        'responses': session.get('aptitude_responses', []),
-        'questions': session.get('aptitude_questions', [])
-    }
-
+    test_results = session.get('test_results', {})
+    score_data = test_results.get('aptitude', None)
     has_personality = 'personality' in session.get('completed_tests', [])
     has_aptitude = 'aptitude' in session.get('completed_tests', [])
 
+    if not score_data:
+        # Fallback to latest TestResult if session data is missing
+        latest_test = TestResult.query.filter_by(
+            user_id=current_user.id,
+            test_type='aptitude'
+        ).order_by(TestResult.completed_at.desc()).first()
+        if not latest_test:
+            flash('No aptitude test results found. Please complete the test first.', 'warning')
+            return redirect(url_for('dashboard'))
+        
+        detailed_scores = json.loads(latest_test.details) if latest_test.details else {}
+        score_data = {
+            'test_type': 'aptitude',
+            'score': latest_test.score,
+            'correct': int((latest_test.score / 100) * 20),  # Adjusted calculation
+            'total': 20,
+            'time_spent': latest_test.time_spent or 0,
+            'detailed_scores': detailed_scores
+        }
+
+    # Ensure test_type is set
+    score_data['test_type'] = 'aptitude'
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
 
     return render_template(
@@ -1680,8 +1617,7 @@ def aptitude_results():
         has_personality=has_personality,
         has_aptitude=has_aptitude,
         active_page='results',
-        notifications=notifications,
-        top_careers=top_careers
+        notifications=notifications
     )
 
 @app.route('/personality_results')
@@ -1807,36 +1743,55 @@ def personality_results():
     )
     
 def calculate_career_fit(user_scores, career_requirements, test_types_completed):
-    """Determine qualitative career fit based on user strengths"""
     fit_reasons = []
+    total_match_score = 0
+    max_possible_score = 0
 
     # Aptitude fit
     if 'aptitude' in test_types_completed and user_scores['aptitude']:
-        strong_aptitudes = {k: v for k, v in user_scores['aptitude'].items() if v >= 70}  # Threshold for strength
-        for apt, level in career_requirements['aptitude'].items():
-            if apt in strong_aptitudes and strong_aptitudes[apt] >= level * 0.8:  # 80% of required level
-                fit_reasons.append(f"Strong {apt} aptitude")
+        for apt, user_score in user_scores['aptitude'].items():
+            required_score = career_requirements['aptitude'].get(apt, 0)
+            if required_score > 0:  # Only consider aptitudes required by the career
+                max_possible_score += 100  # Each aptitude contributes up to 100 points
+                match_percentage = min(user_score / required_score, 1.0) * 100
+                total_match_score += match_percentage
+                if user_score >= required_score * 0.8:  # 80% threshold
+                    fit_reasons.append(f"High {apt} aptitude ({user_score}%)")
 
     # Personality fit
     if 'personality' in test_types_completed and user_scores['personality']:
-        strong_traits = {k: v for k, v in user_scores['personality'].items() if v >= 70}
-        for trait, level in career_requirements['personality'].items():
-            if trait in strong_traits and strong_traits[trait] >= level * 0.8:
-                fit_reasons.append(f"High {trait} personality trait")
+        for trait, user_score in user_scores['personality'].items():
+            required_score = career_requirements['personality'].get(trait, 0)
+            if required_score > 0:  # Only consider traits required by the career
+                max_possible_score += 100
+                match_percentage = min(user_score / required_score, 1.0) * 100 if required_score > 50 else (100 - user_score) / (100 - required_score) * 100
+                total_match_score += match_percentage
+                if user_score >= required_score * 0.8 and required_score > 50:
+                    fit_reasons.append(f"High {trait} personality ({user_score}%)")
+                elif user_score <= required_score * 1.2 and required_score < 50:
+                    fit_reasons.append(f"Low {trait} personality ({user_score}%)")
 
-    # Skill fit
+    # Skill fit (optional)
     if 'skill_gap' in test_types_completed and user_scores['skill_gap']:
         required_skill = career_requirements['skills']['required']
         user_skill = user_scores['skill_gap'].get('score', 0)
+        max_possible_score += 100
+        match_percentage = min(user_skill / required_skill, 1.0) * 100
+        total_match_score += match_percentage
         if user_skill >= required_skill * 0.8:
-            fit_reasons.append("Strong skill proficiency")
+            fit_reasons.append(f"Strong skill proficiency ({user_skill}%)")
 
-    # Return fit level and reasons
-    if len(fit_reasons) >= 2:
-        return {"fit_level": "Highly Suitable", "reasons": fit_reasons}
-    elif len(fit_reasons) == 1:
-        return {"fit_level": "Moderately Suitable", "reasons": fit_reasons}
-    return {"fit_level": "Not Assessed", "reasons": ["Complete more tests to assess fit"]}
+    # Calculate overall fit level
+    overall_score = (total_match_score / max_possible_score * 100) if max_possible_score > 0 else 0
+    if overall_score >= 75:
+        fit_level = "Highly Suitable"
+    elif overall_score >= 50:
+        fit_level = "Moderately Suitable"
+    else:
+        fit_level = "Not Assessed"
+        fit_reasons = ["Complete more tests for a better assessment"] if not fit_reasons else fit_reasons
+
+    return {"fit_level": fit_level, "score": overall_score, "reasons": fit_reasons}
 
 # Rename the two-parameter version for static career data (e.g., used in career_details)
 def normalize_score(score, max_score=100):
@@ -1902,7 +1857,7 @@ def career_match():
     region = get_region_from_pin(current_user.pin_code) if current_user.pin_code else 'US'
     show_global = form.global_opportunities.data if form.validate_on_submit() else False
 
-    # Fetch completed tests and user scores
+    # Fetch user test scores
     completed_tests = session.get('completed_tests', [t.test_type for t in TestResult.query.filter_by(user_id=current_user.id).all()])
     try:
         aptitude_scores = json.loads(current_user.aptitude_scores) if current_user.aptitude_scores else {}
@@ -1912,37 +1867,46 @@ def career_match():
         aptitude_scores, personality_scores, skill_gap_scores = {}, {}, {}
 
     user_scores = {
-        'aptitude': {APTITUDE_TO_ONET.get(k, k): v for k, v in aptitude_scores.items()},
-        'personality': {PERSONALITY_TO_ONET.get(k, k): v for k, v in personality_scores.items()},
+        'aptitude': aptitude_scores,
+        'personality': personality_scores,
         'skill_gap': skill_gap_scores
     }
 
     matches = []
     onet_api = ONetAPI()
 
-    for career_name, soc_code in CAREERS.items():
-        career_data = onet_api.get_occupation_summary(soc_code) or {'title': career_name, 'description': 'No description available'}
-        abilities = onet_api.get_abilities(soc_code) or []
-        work_styles = onet_api.get_work_styles(soc_code) or []
+    for career_name, career_data in CAREER_MAPPING.items():
+        soc_code = CAREERS.get(career_name, "15-1252.00")
+        onet_summary = onet_api.get_occupation_summary(soc_code) or {}
 
-        requirements = {
-            'aptitude': {a['name']: float(a.get('level', 50)) for a in abilities} if abilities else {k: 50 for k in APTITUDE_TO_ONET.values()},
-            'personality': {ws['name']: 50 for ws in work_styles} if work_styles else {k: 50 for k in PERSONALITY_TO_ONET.values()},
-            'skills': {'required': career_data.get('skill_level', 70)}
-        }
+        # Calculate fit using CAREER_MAPPING requirements
+        fit = calculate_career_fit(user_scores, career_data, completed_tests)
 
-        fit = calculate_career_fit(user_scores, requirements, completed_tests)
         if fit['fit_level'] in ['Highly Suitable', 'Moderately Suitable']:
+            # Fetch O*NET details
+            median_wage = onet_summary.get('wages', {}).get('median', 100000)
+            growth_rate = onet_summary.get('outlook', {}).get('growth_rate', 0)
+            currency = 'USD' if show_global or region != 'IN' else 'INR'
+            if region == 'IN' and not show_global:
+                median_wage = convert_salary(median_wage, region, 'USD')
+
             matches.append({
                 'name': career_name,
-                'description': career_data.get('description', 'No description available'),
+                'description': onet_summary.get('description', career_data.get('description', '')),
                 'fit_level': fit['fit_level'],
-                'fit_reasons': fit['reasons']
+                'fit_reasons': fit['reasons'],
+                'score': fit['score'],
+                'median_wage': median_wage,
+                'currency': currency,
+                'growth_rate': growth_rate
             })
 
-    matches.sort(key=lambda x: x['fit_level'] == 'Highly Suitable', reverse=True)
+    # Sort by score and limit to top 5
+    matches.sort(key=lambda x: x['score'], reverse=True)
+    top_matches = matches[:5]
+
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('career_match.html', matches=matches[:5], form=form, completed_tests=completed_tests, active_page='career_match', notifications=notifications)
+    return render_template('career_match.html', matches=top_matches, form=form, completed_tests=completed_tests, active_page='career_match', notifications=notifications)
 
 def get_recommendations(missing_skills):
     """Get real courses from EdX API based on missing skills"""
@@ -2058,14 +2022,23 @@ def career_details(career_name):
 @app.route('/resources')
 @login_required
 def resources():
+    # Determine the user's career path
     career_path = session.get('selected_field', 'Software Development')
+    if career_path not in CAREER_MAPPING:
+        career_path = 'Software Development'
+    
+    # Fetch resources for the career path
     resources = LEARNING_RESOURCES.get(career_path, [])
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).all()
+    
+    # Fetch notifications
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     
     return render_template('resources.html',
-                         active_page='resources',
-                         notifications=notifications,
-                         resources=resources)
+                          user=current_user,
+                          career_path=career_path,
+                          resources=resources,
+                          active_page='resources',
+                          notifications=notifications)
     
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -2533,6 +2506,85 @@ def roadmap():
                           animations_enabled=current_user.animations_enabled,
                           active_page='roadmap',
                           notifications=notifications)
+
+@app.route('/resume', methods=['GET', 'POST'])
+@login_required
+def resume_builder():
+    if request.method == 'POST':
+        resume_data = {
+            'personal_info': {
+                'name': request.form.get('name'),
+                'email': request.form.get('email'),
+                'phone': request.form.get('phone', ''),
+                'linkedin': request.form.get('linkedin', '')
+            },
+            'education': [{
+                'degree': edu,
+                'institution': request.form.getlist('institution[]')[i],
+                'date': request.form.getlist('education_date[]')[i] or ''
+            } for i, edu in enumerate(request.form.getlist('education[]')) if edu],
+            'experience': [{
+                'position': pos,
+                'company': request.form.getlist('company[]')[i] or '',
+                'description': request.form.getlist('description[]')[i] or '',
+                'date': request.form.getlist('experience_date[]')[i] or ''
+            } for i, pos in enumerate(request.form.getlist('position[]')) if pos],
+            'skills': json.loads(request.form.get('skills', '[]')),
+            'summary': request.form.get('summary', ''),
+            'template': request.form.get('template', 'modern'),  # Default to 'modern'
+            'photo': ''  # Will be set if a photo is uploaded
+        }
+
+        # Handle photo upload
+        if 'photo' in request.files:
+            file = request.files['photo']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user.id}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                # Resize photo to 150x150
+                img = Image.open(filepath)
+                img = img.resize((150, 150), Image.LANCZOS)
+                img.save(filepath)
+                resume_data['photo'] = url_for('static', filename=f'uploads/{filename}')
+
+        new_resume = Resume(user_id=current_user.id, resume_data=resume_data)
+        db.session.add(new_resume)
+        db.session.commit()
+        return jsonify({'success': True, 'resume_id': new_resume.id})
+    
+    return render_template('resume.html')
+
+@app.route('/api/career-suggestions', methods=['GET'])
+def career_suggestions():
+    query = request.args.get('skills', '').lower()
+    all_skills = [
+        "Python", "JavaScript", "Java", "C++", "SQL", "HTML", "CSS",
+        "Project Management", "Data Analysis", "Machine Learning",
+        "Cloud Computing", "Cybersecurity", "Graphic Design", "Marketing",
+        "Leadership", "Communication", "Problem Solving", "Teamwork"
+    ]
+    suggestions = [skill for skill in all_skills if query in skill.lower()]
+    return jsonify(suggestions[:5])
+
+@app.route('/export-resume/<int:resume_id>')
+@login_required
+def export_resume(resume_id):
+    resume = Resume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        abort(403)
+    
+    # Select the template based on resume_data
+    template_name = resume.resume_data.get('template', 'modern')
+    template_file = f'resume_{template_name}.html'
+    
+    html_content = render_template(template_file, resume=resume.resume_data)
+    pdf = pdfkit.from_string(html_content, False, options={'page-size': 'Letter', 'margin-top': '0.75in', 'margin-right': '0.75in', 'margin-bottom': '0.75in', 'margin-left': '0.75in'})
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename={current_user.username}_resume.pdf'
+    return response
 
 @app.route('/search', methods=['GET'])
 def search():

@@ -2,28 +2,28 @@
 {% block title %}Career Advice and Resources{% endblock %}
 {% block extra_head %}
 <style>
-  /* Existing std CSS */
-  h1 {
-      color: #0a1e3b;
-      font-size: 2.8rem;
-      margin-bottom: 20px;
-  }
-
-  /* Add new card styles here */
   .card {
       transition: transform 0.3s ease;
       border-radius: 15px;
       overflow: hidden;
+      margin-bottom: 1.5rem;
   }
 
   .card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
   }
 
   .card-img-top {
       height: 200px;
       object-fit: cover;
+  }
+  
+  .resource-filter {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 10px;
   }
 </style>
 {% endblock %}
@@ -31,52 +31,77 @@
 {% block content %}
 <div class="container py-5">
     <h1 class="text-center mb-5">Latest Career Resources</h1>
+    
+    <div class="resource-filter">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search resources...">
+            </div>
+            <div class="col-md-4 mb-3">
+                <select class="form-select" id="categorySelect">
+                    <option value="">All Categories</option>
+                    <option value="interview">Interview Tips</option>
+                    <option value="resume">Resume Building</option>
+                    <option value="skills">Skill Development</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div id="resourcesGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <!-- Resources will be loaded here by JavaScript -->
+        <!-- Resources loaded by JavaScript -->
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
+{% block extra_scripts %}
 <script>
-// Fetch data from News API (replace with your API key)
-const API_KEY = '2145c991da0d47689be9cd4739e4cd86';
-const API_URL = `https://newsapi.org/v2/everything?q=career+advice&sortBy=publishedAt&apiKey=${API_KEY}`;
+// Local career resources data
+const localResources = [
+    {
+        title: "Top Interview Questions",
+        description: "Master common interview questions and answers",
+        category: "interview",
+        url: "/interview",
+        date: "2024-05-01"
+    },
+    {
+        title: "Resume Writing Guide",
+        description: "Step-by-step resume building tutorial",
+        category: "resume",
+        url: "/resume",
+        date: "2024-05-02"
+    },
+    {
+        title: "Skill Development Roadmap",
+        description: "Learn in-demand skills for 2024",
+        category: "skills",
+        url: "/skills",
+        date: "2024-05-03"
+    }
+];
 
-function createResourceCard(article) {
-    return `
+function loadResources() {
+    const grid = document.getElementById('resourcesGrid');
+    grid.innerHTML = localResources.map(article => `
         <div class="col">
-            <div class="card h-100 shadow">
-                <img src="${article.urlToImage || 'https://via.placeholder.com/300'}" class="card-img-top" alt="${article.title}">
+            <div class="card h-100">
+                <img src="https://via.placeholder.com/300" class="card-img-top" alt="${article.title}">
                 <div class="card-body">
                     <h5 class="card-title">${article.title}</h5>
-                    <p class="card-text">${article.description || ''}</p>
-                    <a href="${article.url}" target="_blank" class="btn btn-primary">Read More</a>
+                    <p class="card-text">${article.description}</p>
+                    <div class="badge bg-primary">${article.category}</div>
+                    <a href="${article.url}" class="btn btn-primary mt-2">Read More</a>
                 </div>
                 <div class="card-footer">
-                    <small class="text-muted">${new Date(article.publishedAt).toLocaleDateString()}</small>
+                    <small class="text-muted">${new Date(article.date).toLocaleDateString()}</small>
                 </div>
             </div>
         </div>
-    `;
+    `).join('');
 }
 
-async function loadResources() {
-    try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        const grid = document.getElementById('resourcesGrid');
-        
-        grid.innerHTML = data.articles.slice(0, 9).map(article => 
-            createResourceCard(article)
-        ).join('');
-    } catch (error) {
-        console.error('Error loading resources:', error);
-        grid.innerHTML = '<p class="text-center">Unable to load resources at this time.</p>';
-    }
-}
-
-// Load resources when page loads
 document.addEventListener('DOMContentLoaded', loadResources);
 </script>
 {% endblock %}

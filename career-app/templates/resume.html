@@ -2,22 +2,403 @@
 {% block title %}Enhanced Resume Builder{% endblock %}
 {% block extra_head %}
 <style>
-  /* Insert your existing resume.css content here */
-  h1 {
-      text-align: center;
-      color: #1e3c72;
-  }
-  /* ... Additional styles for resume builder ... */
+.resume-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    min-height: 100vh;
+}
+.builder-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    transition: transform 0.2s;
+}
+.builder-section:hover {
+    transform: translateY(-5px);
+}
+.preview-section {
+    background: white;
+    padding: 2rem;
+    border-left: 6px solid #1e3c72;
+    border-radius: 0 15px 15px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+.form-control {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 10px;
+}
+.btn-add {
+    background: #28a745;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin-top: 1rem;
+    transition: background 0.3s;
+}
+.btn-add:hover {
+    background: #218838;
+}
+.btn-primary {
+    background: #1e3c72;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+}
+.skill-tag {
+    background: #1e3c72;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+.skill-tag button {
+    background: transparent;
+    border: none;
+    color: white;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+#suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+}
+.suggestion-item:hover {
+    background: #e9ecef;
+}
+.preview-content h1 { color: #1e3c72; margin-bottom: 1.5rem; }
+.preview-content h3 { color: #2c5282; border-bottom: 2px solid #1e3c72; padding-bottom: 5px; }
+.preview-content .education-item, .preview-content .experience-item {
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 3px solid #1e3c72;
+}
+.photo-preview img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+}
 </style>
 {% endblock %}
+
 {% block content %}
-<main>
-    <h1>Enhanced Resume Builder</h1>
-    <!-- Insert your existing resume builder form/preview code here -->
-</main>
+<div class="resume-builder">
+    <div class="builder-form">
+        <form id="resumeForm" method="POST" action="{{ url_for('resume_builder') }}" enctype="multipart/form-data">
+            <!-- Template Selection -->
+            <div class="builder-section">
+                <h2>Choose a Template</h2>
+                <select name="template" class="form-control">
+                    <option value="modern">Modern</option>
+                    <option value="classic">Classic</option>
+                    <option value="creative">Creative</option>
+                </select>
+            </div>
+
+            <!-- Photo Upload -->
+            <div class="builder-section">
+                <h2>Profile Photo</h2>
+                <input type="file" name="photo" accept="image/*" class="form-control">
+                <small>Upload a professional photo (optional).</small>
+            </div>
+
+            <!-- Personal Information -->
+            <div class="builder-section">
+                <h2>Personal Information</h2>
+                <input type="text" class="form-control" name="name" placeholder="Full Name" required>
+                <input type="email" class="form-control" name="email" placeholder="Email" required>
+                <input type="tel" class="form-control" name="phone" placeholder="Phone Number">
+                <input type="url" class="form-control" name="linkedin" placeholder="LinkedIn Profile">
+                <small>Use a professional email and ensure your LinkedIn is up-to-date.</small>
+            </div>
+
+            <!-- Education -->
+            <div class="builder-section" id="educationSection">
+                <h2>Education</h2>
+                <div id="educationFields">
+                    <div class="dynamic-section">
+                        <input type="text" class="form-control" name="education[]" placeholder="Degree" required>
+                        <input type="text" class="form-control" name="institution[]" placeholder="Institution" required>
+                        <input type="month" class="form-control" name="education_date[]" placeholder="Graduation Date">
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addEducation()">+ Add Education</button>
+                <small>List your most recent education first; include certifications.</small>
+            </div>
+
+            <!-- Experience -->
+            <div class="builder-section" id="experienceSection">
+                <h2>Work Experience</h2>
+                <div id="experienceFields">
+                    <div class="dynamic-section">
+                        <input type="text" class="form-control" name="position[]" placeholder="Position" required>
+                        <input type="text" class="form-control" name="company[]" placeholder="Company">
+                        <textarea class="form-control" name="description[]" placeholder="Job Description"></textarea>
+                        <input type="month" class="form-control" name="experience_date[]" placeholder="Employment Dates">
+                    </div>
+                </div>
+                <button type="button" class="btn-add" onclick="addExperience()">+ Add Experience</button>
+                <small>Use action verbs and quantify achievements (e.g., "Led a team of 5").</small>
+            </div>
+
+            <!-- Skills -->
+            <div class="builder-section" id="skillsSection">
+                <h2>Skills</h2>
+                <div id="skillsContainer" class="mb-3">
+                    <div class="skill-input-group position-relative">
+                        <input type="text" class="form-control skill-input" placeholder="Type skill and press Enter" id="skillInput">
+                        <div id="suggestions" class="suggestions-dropdown"></div>
+                    </div>
+                    <div id="selectedSkills" class="mt-2"></div>
+                    <input type="hidden" name="skills" id="hiddenSkills">
+                </div>
+                <small>Mix technical (e.g., "JavaScript") and soft skills (e.g., "Problem Solving").</small>
+            </div>
+
+            <!-- Summary -->
+            <div class="builder-section">
+                <h2>Professional Summary</h2>
+                <textarea class="form-control" name="summary" rows="4" placeholder="E.g., Detail-oriented developer with expertise in Python and team leadership."></textarea>
+                <small>Keep it concise (2-3 sentences) and highlight key strengths.</small>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Resume</button>
+        </form>
+    </div>
+
+    <!-- Live Preview -->
+    <div class="preview-section">
+        <div class="preview-content" id="resumePreview">
+            <div class="photo-preview"><img id="previewPhoto" src="" alt="Profile Photo" style="display: none;"></div>
+            <h1 id="previewName">Your Name</h1>
+            <div class="contact-info">
+                <p id="previewEmail">Email: your.email@example.com</p>
+                <p id="previewPhone">Phone: (123) 456-7890</p>
+                <p id="previewLinkedIn">LinkedIn: linkedin.com/in/yourprofile</p>
+            </div>
+            <div class="summary-preview section">
+                <h3>Professional Summary</h3>
+                <p id="previewSummary">Your professional summary will appear here.</p>
+            </div>
+            <div class="education-preview section" id="previewEducation">
+                <h3>Education</h3>
+            </div>
+            <div class="experience-preview section" id="previewExperience">
+                <h3>Experience</h3>
+            </div>
+            <div class="skills-preview section" id="previewSkills">
+                <h3>Skills</h3>
+            </div>
+        </div>
+        <button class="btn-add" onclick="exportPDF()">Export as PDF</button>
+    </div>
+</div>
 {% endblock %}
+
 {% block extra_scripts %}
 <script>
-  // Insert your existing resume builder JavaScript code here
+let skills = [];
+let photoPreview = document.getElementById('previewPhoto');
+
+document.addEventListener('DOMContentLoaded', function() {
+    const skillInput = document.getElementById('skillInput');
+    const suggestionsDiv = document.getElementById('suggestions');
+    const selectedSkillsDiv = document.getElementById('selectedSkills');
+    const hiddenSkills = document.getElementById('hiddenSkills');
+
+    // Photo upload preview
+    document.querySelector('[name="photo"]').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                photoPreview.src = e.target.result;
+                photoPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Real-time preview updates
+    document.querySelectorAll('input, textarea').forEach(element => {
+        element.addEventListener('input', updatePreview);
+    });
+
+    // Skill input with debouncing
+    let timeout;
+    skillInput.addEventListener('input', function(e) {
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            const value = e.target.value.trim();
+            if (value.length < 2) {
+                suggestionsDiv.innerHTML = '';
+                return;
+            }
+            const response = await fetch(`/api/career-suggestions?skills=${encodeURIComponent(value)}`);
+            const suggestions = await response.json();
+            suggestionsDiv.innerHTML = suggestions.map(skill => `
+                <div class="suggestion-item" onclick="addSkill('${skill}')">${skill}</div>
+            `).join('');
+        }, 300);
+    });
+
+    skillInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && skillInput.value.trim()) {
+            e.preventDefault();
+            addSkill(skillInput.value.trim());
+        }
+    });
+
+    // Form submission
+    document.getElementById('resumeForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hiddenSkills.value = JSON.stringify(skills);
+        const formData = new FormData(this);
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert('Resume saved successfully!');
+            window.location.href = `/export-resume/${result.resume_id}`;
+        } else {
+            alert('Failed to save resume.');
+        }
+    });
+
+    updatePreview();
+});
+
+function addEducation() {
+    const fields = document.getElementById('educationFields');
+    const newEdu = document.createElement('div');
+    newEdu.className = 'dynamic-section mt-2';
+    newEdu.innerHTML = `
+        <input type="text" class="form-control" name="education[]" placeholder="Degree" required>
+        <input type="text" class="form-control" name="institution[]" placeholder="Institution" required>
+        <input type="month" class="form-control" name="education_date[]" placeholder="Graduation Date">
+        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
+    `;
+    fields.appendChild(newEdu);
+    newEdu.querySelectorAll('input').forEach(input => input.addEventListener('input', updatePreview));
+}
+
+function addExperience() {
+    const fields = document.getElementById('experienceFields');
+    const newExp = document.createElement('div');
+    newExp.className = 'dynamic-section mt-2';
+    newExp.innerHTML = `
+        <input type="text" class="form-control" name="position[]" placeholder="Position" required>
+        <input type="text" class="form-control" name="company[]" placeholder="Company">
+        <textarea class="form-control" name="description[]" placeholder="Job Description"></textarea>
+        <input type="month" class="form-control" name="experience_date[]" placeholder="Employment Dates">
+        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
+    `;
+    fields.appendChild(newExp);
+    newExp.querySelectorAll('input, textarea').forEach(input => input.addEventListener('input', updatePreview));
+}
+
+function addSkill(skill) {
+    if (!skill || skills.includes(skill)) return;
+    skills.push(skill);
+    updateSkillsDisplay();
+    document.getElementById('skillInput').value = '';
+    document.getElementById('suggestions').innerHTML = '';
+    updatePreview();
+}
+
+function removeSkill(skill) {
+    skills = skills.filter(s => s !== skill);
+    updateSkillsDisplay();
+    updatePreview();
+}
+
+function updateSkillsDisplay() {
+    document.getElementById('selectedSkills').innerHTML = skills.map(skill => `
+        <span class="skill-tag">${skill} <button type="button" onclick="removeSkill('${skill}')">×</button></span>
+    `).join('');
+}
+
+function updatePreview() {
+    document.getElementById('previewName').textContent = document.querySelector('[name="name"]').value || 'Your Name';
+    document.getElementById('previewEmail').textContent = 'Email: ' + (document.querySelector('[name="email"]').value || 'your.email@example.com');
+    document.getElementById('previewPhone').textContent = 'Phone: ' + (document.querySelector('[name="phone"]').value || '(123) 456-7890');
+    document.getElementById('previewLinkedIn').textContent = 'LinkedIn: ' + (document.querySelector('[name="linkedin"]').value || 'linkedin.com/in/yourprofile');
+    document.getElementById('previewSummary').textContent = document.querySelector('[name="summary"]').value || 'Your professional summary will appear here.';
+
+    const eduPreview = document.getElementById('previewEducation');
+    eduPreview.innerHTML = '<h3>Education</h3>' + Array.from(document.querySelectorAll('#educationFields .dynamic-section'))
+        .map(section => {
+            const degree = section.querySelector('[name="education[]"]').value;
+            const institution = section.querySelector('[name="institution[]"]').value;
+            const date = section.querySelector('[name="education_date[]"]').value;
+            return degree && institution ? `
+                <div class="education-item">
+                    <h4>${degree}</h4>
+                    <p>${institution} - ${date}</p>
+                </div>
+            ` : '';
+        }).join('');
+
+    const expPreview = document.getElementById('previewExperience');
+    expPreview.innerHTML = '<h3>Experience</h3>' + Array.from(document.querySelectorAll('#experienceFields .dynamic-section'))
+        .map(section => {
+            const position = section.querySelector('[name="position[]"]').value;
+            const company = section.querySelector('[name="company[]"]').value;
+            const desc = section.querySelector('[name="description[]"]').value;
+            const date = section.querySelector('[name="experience_date[]"]').value;
+            return position ? `
+                <div class="experience-item">
+                    <h4>${position}</h4>
+                    <p>${company} - ${date}</p>
+                    <p>${desc}</p>
+                </div>
+            ` : '';
+        }).join('');
+
+    document.getElementById('previewSkills').innerHTML = '<h3>Skills</h3>' + skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('');
+}
+
+async function exportPDF() {
+    document.getElementById('hiddenSkills').value = JSON.stringify(skills);
+    const formData = new FormData(document.getElementById('resumeForm'));
+    const response = await fetch('/resume', {
+        method: 'POST',
+        body: formData
+    });
+    const result = await response.json();
+    if (result.success) {
+        window.location.href = `/export-resume/${result.resume_id}`;
+    } else {
+        alert('Failed to generate PDF.');
+    }
+}
 </script>
 {% endblock %}

@@ -476,8 +476,9 @@
     <i class="fas fa-book-open"></i> Resources
 </a></li>
         <li><a class="dropdown-item {% if active_page == 'degree' %}active{% endif %}" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
-    </ul>
-</li>
+</li><li><a class="dropdown-item {% if active_page == 'resume' %}active{% endif %}" href="{{ url_for('resume_builder') }}">
+    <i class="fas fa-file-alt"></i> Resume Builder
+</a></li></ul>
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
