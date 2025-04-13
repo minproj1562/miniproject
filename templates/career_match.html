@@ -7,10 +7,6 @@
         <div class="star-field"></div>
     </div>
 
-    <div id="loading-spinner" class="spinner animate__animated animate__fadeIn">
-        <div class="spinner-inner"></div>
-    </div>
-
     <form method="POST" class="toggle-form animate__animated animate__zoomIn">
         {{ form.hidden_tag() }}
         <div class="form-check">
@@ -28,6 +24,8 @@
                         <h2 class="career-title">{{ career.name }}</h2>
                         <p class="career-desc">{{ career.description }}</p>
                         <p class="fit-level"><strong>Why It Fits:</strong> {{ career.fit_reasons|join(', ') }}</p>
+                        <p class="career-info"><strong>Median Salary:</strong> {{ career.currency }} {{ career.median_wage|format_number }}</p>
+                        <p class="career-info"><strong>Growth Rate:</strong> {{ career.growth_rate }}%</p>
                     </div>
                     <div class="planet-glow"></div>
                 </div>
@@ -36,12 +34,13 @@
         <div class="cta-constellation">
             <a href="{{ url_for('dashboard') }}" class="btn btn-galaxy">Back to Dashboard</a>
             <a href="{{ url_for('full_analysis') }}" class="btn btn-nebula">Full Analysis</a>
-            <a href="{{ url_for('test', type='interest_test') }}" class="btn btn-nebula">Skill Gap Test</a>
+            <a href="{{ url_for('interest_test') }}" class="btn btn-nebula">Skill Gap Test</a>
         </div>
     {% else %}
         <div class="no-matches animate__animated animate__pulse">
-            <p>No matches yet! Ignite your journey with a test.</p>
+            <p>No matches yet! Complete more tests to discover your cosmic career.</p>
             <a href="{{ url_for('test', type='aptitude') }}" class="btn btn-gradient">Take Aptitude Test</a>
+            <a href="{{ url_for('test', type='personality') }}" class="btn btn-gradient">Take Personality Test</a>
         </div>
     {% endif %}
 </div>

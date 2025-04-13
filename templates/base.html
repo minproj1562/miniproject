@@ -465,9 +465,9 @@
                 </li>
                 <li>
                     {% if current_user.is_authenticated %}
-                        <a class="dropdown-item test-link {% if active_page == 'interest_test' %}active{% endif %}" href="{{ url_for('test',type='interest_test') }}"><i class="fas fa-tools"></i> Skill Gap Test</a>
+                        <a class="dropdown-item test-link {% if active_page == 'interest_test' %}active{% endif %}" href="{{ url_for('interest_test') }}"><i class="fas fa-tools"></i> Skill Gap Test</a>
                     {% else %}
-                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('test',type='interest_test')) }}"><i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span></a>
+                        <a class="dropdown-item test-link login-required" href="{{ url_for('login', next=url_for('interest_test')) }}"><i class="fas fa-tools"></i> Skill Gap Test <span class="login-required-text">(Login Required)</span></a>
                     {% endif %}
                 </li>
             </ul>
@@ -476,8 +476,9 @@
     <i class="fas fa-book-open"></i> Resources
 </a></li>
         <li><a class="dropdown-item {% if active_page == 'degree' %}active{% endif %}" href="{{ url_for('degree') }}"><i class="fas fa-graduation-cap"></i> Degrees</a></li>
-    </ul>
-</li>
+</li><li><a class="dropdown-item {% if active_page == 'resume' %}active{% endif %}" href="{{ url_for('resume_builder') }}">
+    <i class="fas fa-file-alt"></i> Resume Builder
+</a></li></ul>
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>

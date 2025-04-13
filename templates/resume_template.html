@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .resume-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .photo {
+            float: right;
+            margin-left: 20px;
+        }
+        .photo img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        h1 {
+            color: #1e3c72;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #1e3c72;
+            padding-bottom: 10px;
+        }
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            font-size: 0.95em;
+            color: #555;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 5px;
+        }
+        .section { margin-bottom: 25px; }
+        .section h2 {
+            color: #1e3c72;
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .education-item, .experience-item {
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid #1e3c72;
+        }
+        .skill-tag {
+            display: inline-block;
+            background: #1e3c72;
+            color: white;
+            padding: 6px 15px;
+            border-radius: 25px;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="resume-container">
+        {% if resume.photo %}
+        <div class="photo">
+            <img src="{{ resume.photo }}" alt="Profile Photo">
+        </div>
+        {% endif %}
+        <h1>{{ resume.personal_info.name }}</h1>
+        <div class="contact-info">
+            <p>Email: {{ resume.personal_info.email }}</p>
+            <p>Phone: {{ resume.personal_info.phone }}</p>
+            <p>LinkedIn: {{ resume.personal_info.linkedin }}</p>
+        </div>
+        <div class="section">
+            <h2>Professional Summary</h2>
+            <p>{{ resume.summary }}</p>
+        </div>
+        <div class="section">
+            <h2>Education</h2>
+            {% for edu in resume.education %}
+            <div class="education-item">
+                <h3>{{ edu.degree }}</h3>
+                <p>{{ edu.institution }} - {{ edu.date }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="section">
+            <h2>Experience</h2>
+            {% for exp in resume.experience %}
+            <div class="experience-item">
+                <h3>{{ exp.position }}</h3>
+                <p>{{ exp.company }} - {{ exp.date }}</p>
+                <p>{{ exp.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="section">
+            <h2>Skills</h2>
+            {% for skill in resume.skills %}
+            <span class="skill-tag">{{ skill }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

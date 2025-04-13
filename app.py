@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Blueprint
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Blueprint, send_from_directory, abort, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,6 +22,8 @@ import json
 from PIL import Image
 from datetime import datetime, timezone
 import numpy as np
+import pdfkit
+
 import requests
 # Import question data
 from questions import (
@@ -29,8 +31,13 @@ from questions import (
     CAREER_MAPPING, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES, ADAPTIVE_TEST_SETTINGS
 )
 from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
+from jinja2 import Environment
 
 app = Flask(__name__)
+def zfill_filter(value, width=2):
+    return str(value).zfill(width)
+
+app.jinja_env.filters['zfill'] = zfill_filter
 app.config['SECRET_KEY'] = '033dc7a2f8382c4dd7bd18a473e24db20b088146eb846900'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///career_analytics.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -49,6 +56,10 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 app.config['WTF_CSRF_HEADERS'] = ['X-CSRF-Token']
+app.config['PDFKIT_CONFIG'] = {
+    'wkhtmltopdf': 'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  
+}
+app.config['HTML2PDF_API_KEY'] = 'L5zgjIt6LMDfgCdiz5AziCtzkyvbRoiDjtwfYwa67ZqTtCJMV6hHp98QsqZyzLeC'
 mail = Mail(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 login_manager = LoginManager()
@@ -110,6 +121,15 @@ class CareerMatchForm(FlaskForm):
     global_opportunities = BooleanField('Show Global Opportunities')
     region = HiddenField()
     submit = SubmitField('Update')
+    
+# models.py (add Resume model)
+class Resume(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    resume_data = db.Column(db.JSON)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -148,7 +168,9 @@ class User(UserMixin, db.Model):
     personality_scores = db.Column(db.JSON, default="{}", nullable=False)  # Changed to string default
     skill_gap_scores = db.Column(db.JSON, default="{}", nullable=False)  # Added field with default
     skill_gap_completed_at = db.Column(db.DateTime)
-    top_careers = db.Column(db.JSON, default=lambda: [], nullable=False)
+    top_careers = db.Column(db.Text)  # Add this line
+    resumes = db.relationship('Resume', backref='user', lazy=True)
+
 class TestResult(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -179,10 +201,14 @@ with app.app_context():
     db.create_all()
 
 def convert_salary(salary, region, currency):
-    """Dynamic conversion using real exchange rates"""
     if region == 'IN' and currency == 'USD':
-        response = requests.get('https://api.exchangerate-api.com/v4/latest/USD')
-        return salary * response.json()['rates']['INR']
+        try:
+            response = requests.get('https://api.exchangerate-api.com/v4/latest/USD', timeout=5)
+            rate = response.json()['rates']['INR']
+            return salary * rate
+        except Exception as e:
+            logger.error(f"Currency conversion failed: {e}")
+            return salary * 83  # Fallback rate
     return salary
 
 
@@ -235,24 +261,46 @@ class ONetAPI:
     def get_occupation_summary(self, soc_code):
         url = f"{self.base_url}occupations/{soc_code}/summary"
         response = requests.get(url, auth=self.auth, timeout=10)
-        logger.debug(f"Response status: {response.status_code}, Content: {response.text[:500]}...")  # Log first 500 chars
+        logger.debug(f"Fetching summary for SOC {soc_code}. Status: {response.status_code}, Response: {response.text[:1000]}")
+    
         if response.status_code == 200:
             try:
-                root = ET.fromstring(response.content)
-                title = root.find(".//title").text if root.find(".//title") is not None else soc_code
-                description = root.find(".//description").text if root.find(".//description") is not None else "No description"
+               root = ET.fromstring(response.content)
+               title = root.find(".//title").text if root.find(".//title") is not None else soc_code
+               description = root.find(".//description").text if root.find(".//description") is not None else "No description available"
+            
+            # Extract wage data
+               wages_elem = root.find(".//wages/national/annual/median")
+               median_wage = float(wages_elem.text) if wages_elem is not None and wages_elem.text else 100000
+            
+            # Extract outlook data (growth category or rate)
+               outlook_elem = root.find(".//outlook/category/value")
+               growth_rate = int(outlook_elem.text) if outlook_elem is not None and outlook_elem.text else 0
+            
+               return {
+                "title": title,
+                "description": description,
+                "wages": {"median": median_wage},
+                "currency": "USD",
+                "outlook": {"growth_rate": growth_rate}
+                      }
+            except (ET.ParseError, ValueError) as e:
+                logger.error(f"Error parsing XML for {soc_code}: {e}, Response: {response.text}")
                 return {
-                    "title": title,
-                    "description": description,
-                    "wages": {"median": 100000},  # Fallback, adjust based on actual data if available
-                    "currency": "USD",
-                    "outlook": {"growth_rate": 0}  # Fallback, adjust if growth data exists
-                }
-            except ET.ParseError as e:
-                logger.error(f"XML parse error for {soc_code}: {e}, Response: {response.text}")
-                return {"title": soc_code, "wages": {"median": 100000}, "currency": "USD", "outlook": {"growth_rate": 0}}
-        logger.error(f"API request failed with status {response.status_code} for {soc_code}")
-        return None
+                "title": soc_code,
+                "description": "Error retrieving data",
+                "wages": {"median": 100000},
+                "currency": "USD",
+                "outlook": {"growth_rate": 0}
+                 }
+        logger.error(f"API request failed for {soc_code} with status {response.status_code}")
+        return {
+        "title": soc_code,
+        "description": "Data unavailable",
+        "wages": {"median": 100000},
+        "currency": "USD",
+        "outlook": {"growth_rate": 0}
+         }
 
     def get_abilities(self, soc_code):
         url = f"{self.base_url}occupations/{soc_code}/details/abilities"
@@ -342,11 +390,7 @@ def get_region_from_pin(pin_code):
         return 'US'
     except Exception:
         return 'US'  # Default to US if geolocation fails
-        
-def get_onet_api():
-    """Return instances of ONetAPI and EdxAPI."""
-    return ONetAPI(), EdxAPI()
-
+ 
 # Mappings for aptitude and personality to O*NET
 APTITUDE_TO_ONET = {
     "math": "Mathematical Reasoning",
@@ -444,73 +488,59 @@ def generate_questions(test_type):
             {"id": "q9", "question": "What’s your approach to learning new skills required for your job?", "options": ["Proactively seek training", "Learn on the job as needed", "Wait for company-provided training", "Rely on colleagues to teach me"]},
             {"id": "q10", "question": "How do you ensure your work maintains high quality under pressure?", "options": ["Double-check everything", "Stick to a proven process", "Focus on speed over perfection", "Ask for feedback before submission"]}
         ]
-    elif test_type == 'aptitude':
-        available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        used_questions = session.get('used_aptitude', [])
-        questions = []
-    # Use initial difficulty from ADAPTIVE_TEST_SETTINGS
-        current_difficulty = ADAPTIVE_TEST_SETTINGS['initial_difficulty']  # 'easy'
     
-    # Ensure we have enough questions
-        total_available = sum(
-            sum(len(questions) for difficulty, questions in category.items())
-            for category in available_questions.values()
-        )
-        if total_available < 20:
-            raise ValueError(f"Not enough questions available. Required: 20, Available: {total_available}")
-
-    # Generate 10 questions
-        for _ in range(20):
-        # Choose a category randomly
-            category = random.choice(list(available_questions.keys()))
-        # Filter questions by current difficulty and exclude used questions
-            difficulty_questions = [
-               q for q in available_questions[category][current_difficulty]
-               if q['id'] not in used_questions
-            ]
-        # If no questions at current difficulty, try other difficulties
-            if not difficulty_questions:
-                for diff in ['easy', 'moderate', 'hard']:
-                    if diff != current_difficulty:
-                        difficulty_questions = [
-                            q for q in available_questions[category][diff]
-                            if q['id'] not in used_questions
-                        ]
-                        if difficulty_questions:
-                            current_difficulty = diff
-                            break
-        # If still no questions, use any available question from the category
-            if not difficulty_questions:
-                difficulty_questions = [
-                    q for q in (
-                        available_questions[category]['easy'] +
-                        available_questions[category]['moderate'] +
-                        available_questions[category]['hard']
-                    )
-                    if q['id'] not in used_questions
-                ]
-                if not difficulty_questions:
-                # If no questions are available in this category, remove it and try again
-                    del available_questions[category]
-                    if not available_questions:
-                        raise ValueError("Ran out of questions to select.")
-                    continue
-        # Select a question
-            question = random.choice(difficulty_questions)
-            question['time_limit'] = question.get('time_limit', 60)
-            questions.append(question)
-            used_questions.append(question['id'])
-
+    elif test_type == 'aptitude':
+        # Retrieve used questions from session to avoid repeats
+        used_questions = session.get('used_aptitude', [])
+        
+        # Collect all questions by difficulty across categories
+        all_easy = []
+        all_moderate = []
+        all_hard = []
+        for category in APTITUDE_QUESTIONS.keys():
+            for q in APTITUDE_QUESTIONS[category]['easy']:
+                if q['id'] not in used_questions:
+                    all_easy.append(q)
+            for q in APTITUDE_QUESTIONS[category]['moderate']:
+                if q['id'] not in used_questions:
+                    all_moderate.append(q)
+            for q in APTITUDE_QUESTIONS[category]['hard']:
+                if q['id'] not in used_questions:
+                    all_hard.append(q)
+        
+        # Validate sufficient questions are available
+        if len(all_easy) < 5:
+            raise ValueError(f"Not enough easy questions available. Required: 5, Found: {len(all_easy)}")
+        if len(all_moderate) < 7:
+            raise ValueError(f"Not enough moderate questions available. Required: 7, Found: {len(all_moderate)}")
+        if len(all_hard) < 8:
+            raise ValueError(f"Not enough hard questions available. Required: 8, Found: {len(all_hard)}")
+        
+        # Randomly select questions
+        selected_easy = random.sample(all_easy, 5)
+        selected_moderate = random.sample(all_moderate, 7)
+        selected_hard = random.sample(all_hard, 8)
+        
+        # Combine in the specified order
+        questions = selected_easy + selected_moderate + selected_hard
+        
+        # Ensure time_limit is set
+        for q in questions:
+            q['time_limit'] = q.get('time_limit', 60)
+        
+        # Update session data
         session['aptitude_questions'] = questions
-        session['used_aptitude'] = used_questions
+        session['used_aptitude'] = [q['id'] for q in questions]
+        session['aptitude_responses'] = []
+        session['ability_estimate'] = 0.0
         session['aptitude_correct'] = 0
         session['aptitude_total'] = 0
-        session['aptitude_category_scores'] = defaultdict(int)
-        session['aptitude_category_counts'] = defaultdict(int)
-        for category in APTITUDE_QUESTIONS.keys():
-           session['aptitude_category_counts'][category] = 0
-           session['aptitude_category_scores'][category] = 0
-        return questions[:20]
+        
+        # Initialize category counts and scores for all categories
+        session['aptitude_category_counts'] = {cat: 0 for cat in APTITUDE_QUESTIONS.keys()}
+        session['aptitude_category_scores'] = {cat: 0 for cat in APTITUDE_QUESTIONS.keys()}
+        
+        return questions
     
     elif test_type == 'personality':
         questions = random.sample(PERSONALITY_QUESTIONS, min(10, len(PERSONALITY_QUESTIONS)))
@@ -522,10 +552,13 @@ def generate_questions(test_type):
     elif test_type == 'skill_gap':
         field = session.get('selected_field', 'Software Development')
         available_questions = copy.deepcopy(SKILL_GAP_QUESTIONS.get(field, []))
-        questions = random.sample(available_questions, min(10, len(available_questions)))
+        if len(available_questions) < 10:
+            flash(f'Insufficient questions available for {field}. Please contact support.', "danger")
+            return []  # Return empty list to trigger an error response
+        questions = random.sample(available_questions, 10)  # Always select exactly 10
         for q in questions:
             q['time_limit'] = q.get('time_limit', 60)
-        session['skill_gap_questions'] = questions
+        session['skill_gap_questions'] = questions  # Store only the selected 10 questions
         session['skill_gap_correct'] = 0
         session['skill_gap_total'] = 0
         return questions
@@ -622,6 +655,7 @@ def compare_degrees():
         flash('User not found.', 'danger')
         return redirect(url_for('degree'))
 
+    # Fetch user's aptitude scores to suggest relevant degrees
     aptitude_scores = json.loads(user.aptitude_scores) if user.aptitude_scores else {}
     top_careers = json.loads(user.top_careers) if user.top_careers else []
 
@@ -629,16 +663,17 @@ def compare_degrees():
         flash('Please complete an aptitude test to get personalized degree recommendations.', 'warning')
         return redirect(url_for('degree'))
 
+    # Fetch degree data based on top careers or aptitude
     degree_data = {}
     onet_api = ONetAPI()
     selected_degrees = request.form.getlist('degree_select') if request.method == 'POST' else []
 
     if request.method == 'POST' and selected_degrees:
-        for soc_code in selected_degrees[:3]:  # Limit to 3
+        for soc_code in selected_degrees[:3]:  # Limit to 3 for comparison
             details = onet_api.get_occupation_summary(soc_code)
-            if details:
-                education = onet_api.get_education(soc_code)
-                skills = onet_api.get_skills(soc_code)
+            education = onet_api.get_education(soc_code)
+            skills = onet_api.get_skills(soc_code)
+            if details and education:
                 degree_data[soc_code] = {
                     'title': details.get('title', 'Unknown'),
                     'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
@@ -646,32 +681,19 @@ def compare_degrees():
                     'description': details.get('description', 'No description available')
                 }
     else:
-        # Use aptitude scores to suggest careers if top_careers is empty
-        if not top_careers and aptitude_scores:
-            career_codes = [CAREERS[career] for career in CAREER_MAPPING.keys()[:3]]  # Default to first 3 careers
-            for soc_code in career_codes:
-                details = onet_api.get_occupation_summary(soc_code)
-                if details:
-                    education = onet_api.get_education(soc_code)
-                    skills = onet_api.get_skills(soc_code)
-                    degree_data[soc_code] = {
-                        'title': details.get('title', 'Unknown'),
-                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
-                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
-                        'description': details.get('description', 'No description available')
-                    }
-        elif top_careers:
-            for soc_code in top_careers[:3]:
-                details = onet_api.get_occupation_summary(soc_code)
-                if details:
-                    education = onet_api.get_education(soc_code)
-                    skills = onet_api.get_skills(soc_code)
-                    degree_data[soc_code] = {
-                        'title': details.get('title', 'Unknown'),
-                        'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
-                        'required_skills': [skill.get('name', 'N/A') for skill in skills],
-                        'description': details.get('description', 'No description available')
-                    }
+        # Default to top careers from aptitude if available
+        career_codes = top_careers[:3] if top_careers else ['15-1252.00', '15-2051.01', '27-1024.00']  # Default SOC codes
+        for soc_code in career_codes:
+            details = onet_api.get_occupation_summary(soc_code)
+            education = onet_api.get_education(soc_code)
+            skills = onet_api.get_skills(soc_code)
+            if details and education:
+                degree_data[soc_code] = {
+                    'title': details.get('title', 'Unknown'),
+                    'education': education.get('level_required', [{'name': 'Not specified', 'score': 0}]),
+                    'required_skills': [skill.get('name', 'N/A') for skill in skills],
+                    'description': details.get('description', 'No description available')
+                }
 
     # Match degrees with aptitude scores for recommendation
     recommendations = []
@@ -904,14 +926,21 @@ def test():
                               test_type='personality',
                               notifications=notifications)
 
-    elif test_type == 'skill_gap':
-        selected_field = request.args.get('field', session.get('selected_field', None))
+    elif test_type == 'interest_test':
+        selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
         if not selected_field:
-            return redirect(url_for('test',type='interest_test'))
+            return redirect(url_for('interest_test'))
         session['selected_field'] = selected_field
         questions = session.get('skill_gap_questions')
         if not questions or request.method == 'GET':
             questions = generate_questions('skill_gap')
+            if not questions:
+                flash('No skill gap questions available at this time.', 'danger')
+                return redirect(url_for('dashboard'))
+            session['skill_gap_questions'] = questions
+            session['skill_gap_correct'] = 0
+            session['skill_gap_total'] = 0
+
         current_question_index = int(request.args.get('q', 0))
         if current_question_index >= len(questions):
             return redirect(url_for('skill_gap_results'))
@@ -919,7 +948,7 @@ def test():
         notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/interest_test.html',
                               selected_field=selected_field,
-                              questions=questions,
+                              questions=[question],
                               total_questions=len(questions),
                               completed_questions=current_question_index,
                               current_question_index=current_question_index,
@@ -1119,7 +1148,6 @@ def career_assessment():
 @login_required
 def submit_aptitude():
     data = request.get_json()
-    logger.debug(f"Received data: {data}")
     if not data or 'responses' not in data:
         return jsonify({'error': 'No data provided'}), 400
 
@@ -1129,84 +1157,75 @@ def submit_aptitude():
 
     questions = session.get('aptitude_questions', [])
     user_responses = session.get('aptitude_responses', [])
-    ability_estimate = session.get('ability_estimate', 0.0)
-    used_questions = session.get('used_aptitude', [])
-
+    
     if not questions or current_question_index >= len(questions):
         return jsonify({'error': 'No more questions available'}), 400
 
     current_response = responses[-1]
     question_id = current_response['questionId']
     
-    if 'answer' not in current_response or current_response['answer'] is None:
-        return jsonify({'error': 'Answer is missing or invalid'}), 400
-    
     try:
-        user_answer = int(current_response['answer'])
+        answer = int(current_response['answer'])
     except (ValueError, TypeError):
-        return jsonify({'error': 'Answer must be a valid integer'}), 400
+        return jsonify({'error': 'Invalid answer format'}), 400
 
     current_question = next((q for q in questions if q['id'] == question_id), None)
     if not current_question:
         return jsonify({'error': 'Question not found'}), 400
 
-    # Check if the answer is correct
-    is_correct = user_answer == current_question['correct']
-
-    # Update category-based scoring
-    category = next(
-        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
-            current_question['id'] in [q['id'] for q in level] for level in levels.values()
-        )), "Unknown"
-    )
-    session['aptitude_total'] = session.get('aptitude_total', 0) + 1
-    session['aptitude_correct'] = session.get('aptitude_correct', 0) + (1 if is_correct else 0)
-    session['aptitude_category_counts'][category] = session.get('aptitude_category_counts', {}).get(category, 0) + 1
-    session['aptitude_category_scores'][category] = session.get('aptitude_category_scores', {}).get(category, 0) + (1 if is_correct else 0)
-    session.modified = True
-
-    # Bayesian ability estimation
-    scaling_factors = ADAPTIVE_TEST_SETTINGS['scaling_factors']
-    irt_params = current_question['irt_params']
-    difficulty = irt_params['difficulty']
-    discrimination = irt_params['discrimination']
-    expected_prob = 1 / (1 + np.exp(-discrimination * (ability_estimate - difficulty)))
-    if is_correct:
-        ability_estimate += scaling_factors['correct_answer'] * (1 - expected_prob)
-    else:
-        ability_estimate += scaling_factors['wrong_answer'] * expected_prob
-    time_limit = current_question['time_limit']
-    if time_spent > time_limit:
-        excess_time = time_spent - time_limit
-        time_penalty = (excess_time / time_limit) * scaling_factors['time_penalty']
-        ability_estimate += time_penalty
-
+    is_correct = answer == current_question['correct']
     user_responses.append({
         'question_id': question_id,
-        'answer': user_answer,
+        'answer': answer,
         'correct': is_correct,
         'time_spent': time_spent
     })
     session['aptitude_responses'] = user_responses
-    session['ability_estimate'] = ability_estimate
 
-    # Check if the test is complete
-    if current_question_index + 1 >= len(questions):
-        overall_score = (session['aptitude_correct'] / session['aptitude_total']) * 100
+    # Update category-based scoring
+    category = next(
+        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
+            question_id in [q['id'] for q in level] for level in levels.values()
+        )),
+        "Unknown"
+    )
+    
+    # Ensure category exists in dictionaries (safeguard)
+    if category not in session['aptitude_category_counts']:
+        session['aptitude_category_counts'][category] = 0
+        session['aptitude_category_scores'][category] = 0
+
+    session['aptitude_total'] += 1
+    if is_correct:
+        session['aptitude_correct'] += 1
+    session['aptitude_category_counts'][category] += 1
+    if is_correct:
+        session['aptitude_category_scores'][category] += 1
+    session.modified = True
+
+    # Proceed to next question or complete test
+    if current_question_index + 1 < len(questions):
+        next_question = questions[current_question_index + 1]
+        return jsonify({
+            'question': next_question,
+            'current_question_index': current_question_index + 1
+        })
+    else:
+        # Test complete - calculate and save results
+        overall_score = (session['aptitude_correct'] / session['aptitude_total']) * 100 if session['aptitude_total'] > 0 else 0
         detailed_scores = {
-            cat: (session['aptitude_category_scores'].get(cat, 0) / session['aptitude_category_counts'][cat]) * 100
+            cat: (session['aptitude_category_scores'][cat] / session['aptitude_category_counts'][cat]) * 100
             for cat in session['aptitude_category_counts'] if session['aptitude_category_counts'][cat] > 0
         }
         result = TestResult(
             user_id=current_user.id,
             test_type='aptitude',
             score=overall_score,
-            time_spent=time_spent,
+            time_spent=sum(r['time_spent'] for r in user_responses),
             details=json.dumps(detailed_scores)
         )
         current_user.aptitude_scores = json.dumps(detailed_scores)
         db.session.add(result)
-        db.session.commit()
 
         # Award badges
         if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
@@ -1226,11 +1245,25 @@ def submit_aptitude():
         db.session.add(notification)
         db.session.commit()
 
+        # Update completed tests
         completed_tests = session.get('completed_tests', [])
         if 'aptitude' not in completed_tests:
             completed_tests.append('aptitude')
             session['completed_tests'] = completed_tests
 
+        # Store results in session for display
+        session['test_results'] = session.get('test_results', {})
+        session['test_results']['aptitude'] = {
+            'score': overall_score,
+            'correct': session['aptitude_correct'],
+            'total': session['aptitude_total'],
+            'time_spent': sum(r['time_spent'] for r in user_responses),
+            'detailed_scores': detailed_scores,
+            'responses': user_responses,
+            'questions': questions
+        }
+
+        # Clear session data
         session.pop('aptitude_questions', None)
         session.pop('aptitude_responses', None)
         session.pop('ability_estimate', None)
@@ -1239,49 +1272,8 @@ def submit_aptitude():
         session.pop('aptitude_total', None)
         session.pop('aptitude_category_scores', None)
         session.pop('aptitude_category_counts', None)
+
         return jsonify({'redirect': url_for('aptitude_results')})
-
-    # Determine next difficulty and select next question (unchanged)
-    category_performance = {
-        cat: (session['aptitude_category_scores'].get(cat, 0) / session['aptitude_category_counts'][cat]) * 100
-        for cat in session['aptitude_category_counts'] if session['aptitude_category_counts'][cat] > 0
-    }
-    thresholds = ADAPTIVE_TEST_SETTINGS['proficiency_levels'].get(category, {"thresholds": [40, 70]})
-    performance = category_performance.get(category, 0)
-    next_difficulty = 'easy' if performance < thresholds['thresholds'][0] else 'moderate' if performance < thresholds['thresholds'][1] else 'hard'
-
-    remaining_questions = [q for q in questions[current_question_index + 1:] if q['id'] not in [r['question_id'] for r in user_responses]]
-    if not remaining_questions:
-        available_questions = copy.deepcopy(APTITUDE_QUESTIONS)
-        next_questions = [q for cat in available_questions for q in available_questions[cat][next_difficulty] if q['id'] not in used_questions]
-        if not next_questions:
-            for diff in ['moderate', 'hard', 'easy']:
-                if diff != next_difficulty:
-                    next_questions = [q for cat in available_questions for q in available_questions[cat][diff] if q['id'] not in used_questions]
-                    if next_questions:
-                        next_difficulty = diff
-                        break
-        if not next_questions:
-            return jsonify({'error': 'No more questions available'}), 400
-        next_question = random.choice(next_questions)
-        questions[current_question_index + 1] = next_question
-        used_questions.append(next_question['id'])
-    else:
-        next_question = remaining_questions[0]
-
-    next_question['category'] = next(
-        (cat for cat, levels in APTITUDE_QUESTIONS.items() if any(
-            next_question['id'] in [q['id'] for q in level] for level in levels.values()
-        )), "Unknown"
-    )
-
-    session['aptitude_questions'] = questions
-    session['used_aptitude'] = used_questions
-
-    return jsonify({
-        'question': next_question,
-        'current_question_index': current_question_index + 1
-    })
 
 @app.route('/submit_assessment', methods=['POST'])
 @login_required
@@ -1385,6 +1377,526 @@ def submit_assessment():
     session.pop('personality_questions', None)
     return jsonify({'redirect': url_for('personality_results')})
 
+from collections import defaultdict
+
+def identify_weaknesses(questions, responses, correct_count):
+    """
+    Identifies significant weaknesses based on incorrect responses.
+    
+    Args:
+        questions (list): List of question dictionaries from SKILL_GAP_QUESTIONS.
+        responses (list): List of user responses with 'questionId' and 'answer'.
+        correct_count (int): Number of correct answers.
+    
+    Returns:
+        dict or None: Dictionary of significant weaknesses or None if none found.
+    """
+    weaknesses = defaultdict(lambda: {"count": 0, "description": "", "tips": [], "resources": []})
+    total_questions = len(questions)
+    total_wrong = total_questions - correct_count
+
+    for response in responses:
+        question_id = response['questionId']
+        answer = int(response['answer'])
+        question = next((q for q in questions if q['id'] == question_id), None)
+        if question and answer != question.get('correct', -1):
+            text = question['text'].lower()
+            # Software Development
+            if "python" in text:
+                topic = "Python Programming"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding Python syntax and concepts",
+                    "tips": ["Practice coding exercises", "Review Python tutorials"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["basic"]
+                })
+            elif "inheritance" in text or "object-oriented" in text:
+                topic = "Object-Oriented Programming"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "grasping OOP concepts like inheritance",
+                    "tips": ["Study class hierarchies", "Implement small OOP projects"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["intermediate"]
+                })
+            elif "git" in text:
+                topic = "Version Control"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "using Git for version control",
+                    "tips": ["Practice Git commands", "Explore Git workflows"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["basic"]
+                })
+            elif "http" in text or "restful" in text:
+                topic = "RESTful APIs"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding HTTP status codes and API design",
+                    "tips": ["Study API basics", "Test APIs with Postman"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["intermediate"]
+                })
+            elif "time complexity" in text or "algorithm" in text:
+                topic = "Algorithms"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "analyzing time complexity and algorithm efficiency",
+                    "tips": ["Solve algorithm problems", "Review Big O notation"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["advanced"]
+                })
+            elif "sql" in text or "database" in text:
+                topic = "SQL"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "writing efficient database queries",
+                    "tips": ["Practice SQL joins", "Learn indexing"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["intermediate"]
+                })
+            elif "docker" in text or "container" in text:
+                topic = "Containerization"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "using Docker for application deployment",
+                    "tips": ["Build Docker images", "Learn Docker Compose"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["advanced"]
+                })
+            elif "testing" in text and "unit" not in text:
+                topic = "Software Testing"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "implementing regression and integration tests",
+                    "tips": ["Write test cases", "Automate testing"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["intermediate"]
+                })
+            elif "ci/cd" in text or "devops" in text:
+                topic = "DevOps"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding CI/CD pipelines",
+                    "tips": ["Set up a CI/CD tool", "Learn Jenkins or GitHub Actions"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["advanced"]
+                })
+            elif "unit testing" in text or "unittest" in text:
+                topic = "Unit Testing"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "writing unit tests in Python",
+                    "tips": ["Use unittest or pytest", "Practice TDD"],
+                    "resources": LEARNING_RESOURCES["Software Development"]["intermediate"]
+                })
+            # Data Science
+            elif "pandas" in text or "data manipulation" in text:
+                topic = "Data Manipulation"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "manipulating data with Pandas",
+                    "tips": ["Learn DataFrame operations", "Practice with datasets"],
+                    "resources": LEARNING_RESOURCES["Data Science"]["basic"]
+                })
+            elif "p-value" in text or "hypothesis" in text:
+                topic = "Statistics"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "applying statistical tests",
+                    "tips": ["Review hypothesis testing", "Learn p-values"],
+                    "resources": LEARNING_RESOURCES["Data Science"]["intermediate"]
+                })
+            elif "supervised" in text or "logistic regression" in text:
+                topic = "Machine Learning"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding supervised learning algorithms",
+                    "tips": ["Study logistic regression", "Implement classifiers"],
+                    "resources": LEARNING_RESOURCES["Data Science"]["advanced"]
+                })
+            elif "matplotlib" in text or "bar chart" in text:
+                topic = "Data Visualization"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "creating effective charts with Matplotlib",
+                    "tips": ["Explore Seaborn", "Practice plotting"],
+                    "resources": LEARNING_RESOURCES["Data Science"]["basic"]
+                })
+            # Graphic Design
+            elif "photoshop" in text:
+                topic = "Photoshop Skills"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "using Photoshop for image editing",
+                    "tips": ["Learn tool functionalities", "Practice photo retouching"],
+                    "resources": LEARNING_RESOURCES["Graphic Design"]["basic"]
+                })
+            elif "illustrator" in text:
+                topic = "Illustrator Skills"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "creating vector graphics with Illustrator",
+                    "tips": ["Master the Pen Tool", "Design simple logos"],
+                    "resources": LEARNING_RESOURCES["Graphic Design"]["intermediate"]
+                })
+            elif "color theory" in text:
+                topic = "Color Theory"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding color relationships",
+                    "tips": ["Study the color wheel", "Experiment with palettes"],
+                    "resources": LEARNING_RESOURCES["Graphic Design"]["basic"]
+                })
+            # Business Management
+            elif "swot" in text:
+                topic = "Strategic Planning"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "developing strategic plans",
+                    "tips": ["Practice SWOT analysis", "Study business cases"],
+                    "resources": LEARNING_RESOURCES["Business Management"]["intermediate"]
+                })
+            elif "financial forecasting" in text:
+                topic = "Financial Forecasting"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "predicting financial performance",
+                    "tips": ["Learn financial modeling", "Analyze historical data"],
+                    "resources": LEARNING_RESOURCES["Business Management"]["advanced"]
+                })
+            elif "leadership style" in text:
+                topic = "Leadership"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding leadership styles",
+                    "tips": ["Study leadership theories", "Practice team management"],
+                    "resources": LEARNING_RESOURCES["Business Management"]["intermediate"]
+                })
+            elif "gantt chart" in text:
+                topic = "Project Management"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "visualizing project timelines",
+                    "tips": ["Use project management tools", "Plan a small project"],
+                    "resources": LEARNING_RESOURCES["Business Management"]["basic"]
+                })
+            # Scientific
+            elif "scientific method" in text:
+                topic = "Research Methodology"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "applying the scientific method",
+                    "tips": ["Formulate hypotheses", "Design experiments"],
+                    "resources": LEARNING_RESOURCES["Scientific"]["basic"]
+                })
+            elif "p-value" in text or "anova" in text:
+                topic = "Statistics"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "interpreting statistical results",
+                    "tips": ["Study statistical tests", "Practice data analysis"],
+                    "resources": LEARNING_RESOURCES["Scientific"]["intermediate"]
+                })
+            elif "control group" in text or "confounding variable" in text:
+                topic = "Experimental Design"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "designing controlled experiments",
+                    "tips": ["Identify variables", "Minimize bias"],
+                    "resources": LEARNING_RESOURCES["Scientific"]["advanced"]
+                })
+            elif "literature review" in text or "citation style" in text:
+                topic = "Academic Writing"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "writing and citing research",
+                    "tips": ["Read academic papers", "Practice proper citation"],
+                    "resources": LEARNING_RESOURCES["Scientific"]["basic"]
+                })
+            # Cybersecurity
+            elif "firewall" in text or "phishing" in text or "https" in text or "two-factor" in text:
+                topic = "Network Security"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "protecting networks and web applications",
+                    "tips": ["Learn about firewalls", "Understand phishing tactics"],
+                    "resources": LEARNING_RESOURCES["Cybersecurity"]["basic"]
+                })
+            elif "wireshark" in text or "packet sniffer" in text:
+                topic = "Packet Analysis"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "analyzing network traffic",
+                    "tips": ["Use Wireshark", "Study network protocols"],
+                    "resources": LEARNING_RESOURCES["Cybersecurity"]["intermediate"]
+                })
+            elif "encryption" in text or "vpn" in text:
+                topic = "Encryption and Privacy"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "securing data transmission",
+                    "tips": ["Learn about AES", "Set up a VPN"],
+                    "resources": LEARNING_RESOURCES["Cybersecurity"]["advanced"]
+                })
+            elif "zero-day" in text or "penetration testing" in text:
+                topic = "Advanced Threats"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "identifying and mitigating advanced threats",
+                    "tips": ["Study vulnerability research", "Practice pen testing"],
+                    "resources": LEARNING_RESOURCES["Cybersecurity"]["advanced"]
+                })
+            # Environmental Engineering
+            elif "wastewater" in text or "stormwater" in text:
+                topic = "Water Management"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "managing water resources and treatment",
+                    "tips": ["Study treatment processes", "Learn about runoff control"],
+                    "resources": LEARNING_RESOURCES["Environmental Engineering"]["basic"]
+                })
+            elif "global warming" in text or "air pollution" in text:
+                topic = "Climate Science"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding environmental impacts",
+                    "tips": ["Read about carbon footprints", "Study pollution control"],
+                    "resources": LEARNING_RESOURCES["Environmental Engineering"]["intermediate"]
+                })
+            elif "renewable energy" in text:
+                topic = "Energy Systems"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "implementing renewable energy solutions",
+                    "tips": ["Learn about solar and wind", "Study energy storage"],
+                    "resources": LEARNING_RESOURCES["Environmental Engineering"]["advanced"]
+                })
+            # Ethical Hacking
+            elif "ethical hacking" in text or "vulnerability scanning" in text:
+                topic = "Ethical Hacking Goals"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding ethical hacking principles",
+                    "tips": ["Study ethical guidelines", "Learn about legal implications"],
+                    "resources": LEARNING_RESOURCES["Ethical Hacking"]["basic"]
+                })
+            elif "sql injection" in text or "brute force" in text:
+                topic = "Attack Methods"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "identifying and preventing common attacks",
+                    "tips": ["Learn about OWASP Top 10", "Practice secure coding"],
+                    "resources": LEARNING_RESOURCES["Ethical Hacking"]["intermediate"]
+                })
+            elif "man-in-the-middle" in text or "social engineering" in text:
+                topic = "Advanced Attacks"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "defending against sophisticated attack vectors",
+                    "tips": ["Study attack simulations", "Learn mitigation techniques"],
+                    "resources": LEARNING_RESOURCES["Ethical Hacking"]["advanced"]
+                })
+            # Urban Planning
+            elif "urban planning" in text or "gis" in text:
+                topic = "Planning Tools"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "using GIS and planning software",
+                    "tips": ["Learn ArcGIS", "Practice spatial analysis"],
+                    "resources": LEARNING_RESOURCES["Urban Planning"]["basic"]
+                })
+            elif "mixed-use" in text or "zoning" in text:
+                topic = "Land Use"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding land use regulations",
+                    "tips": ["Study zoning laws", "Analyze case studies"],
+                    "resources": LEARNING_RESOURCES["Urban Planning"]["intermediate"]
+                })
+            elif "transit-oriented" in text or "walkability" in text:
+                topic = "Transportation Planning"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "designing sustainable urban transport",
+                    "tips": ["Study urban design", "Plan transit routes"],
+                    "resources": LEARNING_RESOURCES["Urban Planning"]["advanced"]
+                })
+            # Voice Acting
+            elif "voice actor" in text or "diction" in text:
+                topic = "Vocal Skills"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "improving vocal performance",
+                    "tips": ["Practice enunciation", "Record and review performances"],
+                    "resources": LEARNING_RESOURCES["Voice Acting"]["basic"]
+                })
+            elif "adr" in text or "demo reel" in text:
+                topic = "Industry Knowledge"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding voice acting industry terms",
+                    "tips": ["Research industry standards", "Create a demo reel"],
+                    "resources": LEARNING_RESOURCES["Voice Acting"]["intermediate"]
+                })
+            elif "convey emotion" in text or "pacing" in text:
+                topic = "Performance Skills"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "delivering emotional and paced performances",
+                    "tips": ["Practice script reading", "Work on timing"],
+                    "resources": LEARNING_RESOURCES["Voice Acting"]["advanced"]
+                })
+            # Astronomy
+            elif "light-year" in text or "supernova" in text:
+                topic = "Basic Astronomy"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding fundamental astronomy concepts",
+                    "tips": ["Read introductory books", "Use astronomy apps"],
+                    "resources": LEARNING_RESOURCES["Astronomy"]["basic"]
+                })
+            elif "doppler effect" in text or "redshift" in text:
+                topic = "Observational Astronomy"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "interpreting astronomical observations",
+                    "tips": ["Study spectroscopy", "Analyze real data"],
+                    "resources": LEARNING_RESOURCES["Astronomy"]["intermediate"]
+                })
+            elif "black hole" in text or "kepler’s first law" in text:
+                topic = "Advanced Astrophysics"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "grasping complex astronomical phenomena",
+                    "tips": ["Study orbital mechanics", "Explore cosmology"],
+                    "resources": LEARNING_RESOURCES["Astronomy"]["advanced"]
+                })
+            # Wildlife Conservation
+            elif "wildlife conservation" in text or "endangered species" in text:
+                topic = "Conservation Biology"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding conservation principles",
+                    "tips": ["Study ecology", "Volunteer with conservation groups"],
+                    "resources": LEARNING_RESOURCES["Wildlife Conservation"]["basic"]
+                })
+            elif "habitat fragmentation" in text or "biodiversity hotspot" in text:
+                topic = "Environmental Impact"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "assessing human impact on ecosystems",
+                    "tips": ["Read about habitat loss", "Study conservation strategies"],
+                    "resources": LEARNING_RESOURCES["Wildlife Conservation"]["intermediate"]
+                })
+            elif "keystone species" in text or "ecological data" in text:
+                topic = "Ecosystem Analysis"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "analyzing ecological relationships",
+                    "tips": ["Study food webs", "Practice data collection"],
+                    "resources": LEARNING_RESOURCES["Wildlife Conservation"]["advanced"]
+                })
+            # Medicine
+            elif "red blood cells" in text or "cpr" in text:
+                topic = "Basic Physiology"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding human body functions",
+                    "tips": ["Study anatomy", "Practice first aid"],
+                    "resources": LEARNING_RESOURCES["Medicine"]["basic"]
+                })
+            elif "hypoglycemia" in text or "ecg" in text:
+                topic = "Clinical Knowledge"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "diagnosing and treating medical conditions",
+                    "tips": ["Review medical textbooks", "Shadow healthcare professionals"],
+                    "resources": LEARNING_RESOURCES["Medicine"]["intermediate"]
+                })
+            elif "differential diagnosis" in text or "antibiotic" in text:
+                topic = "Advanced Diagnostics"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "performing complex medical assessments",
+                    "tips": ["Practice case studies", "Learn pharmacology"],
+                    "resources": LEARNING_RESOURCES["Medicine"]["advanced"]
+                })
+            # Education
+            elif "formative assessment" in text or "scaffolding" in text:
+                topic = "Teaching Strategies"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "implementing effective teaching methods",
+                    "tips": ["Plan lessons", "Use diverse assessment tools"],
+                    "resources": LEARNING_RESOURCES["Education"]["basic"]
+                })
+            elif "learning theory" in text:
+                topic = "Educational Psychology"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding how students learn",
+                    "tips": ["Study cognitive development", "Apply learning theories"],
+                    "resources": LEARNING_RESOURCES["Education"]["intermediate"]
+                })
+            elif "lesson plan" in text or "interactive quizzes" in text:
+                topic = "Classroom Management"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "organizing and engaging classroom activities",
+                    "tips": ["Develop lesson plans", "Use educational tech"],
+                    "resources": LEARNING_RESOURCES["Education"]["advanced"]
+                })
+            # Law
+            elif "source of law" in text or "habeas corpus" in text:
+                topic = "Legal Fundamentals"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding legal systems and terms",
+                    "tips": ["Read legal texts", "Study case law"],
+                    "resources": LEARNING_RESOURCES["Law"]["basic"]
+                })
+            elif "tort" in text or "cross-examination" in text:
+                topic = "Civil and Criminal Law"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "applying legal principles in practice",
+                    "tips": ["Mock trials", "Legal research"],
+                    "resources": LEARNING_RESOURCES["Law"]["intermediate"]
+                })
+            elif "pro bono" in text:
+                topic = "Legal Practice"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding legal service delivery",
+                    "tips": ["Study ethics", "Volunteer legal aid"],
+                    "resources": LEARNING_RESOURCES["Law"]["advanced"]
+                })
+            # Mechanical Engineering
+            elif "gear" in text or "cad" in text:
+                topic = "Mechanical Design"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "designing mechanical systems",
+                    "tips": ["Practice CAD software", "Study mechanical components"],
+                    "resources": LEARNING_RESOURCES["Mechanical Engineering"]["basic"]
+                })
+            elif "stress" in text or "force, mass, acceleration" in text:
+                topic = "Mechanics"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "applying principles of mechanics",
+                    "tips": ["Solve physics problems", "Review Newton's laws"],
+                    "resources": LEARNING_RESOURCES["Mechanical Engineering"]["intermediate"]
+                })
+            elif "bearing" in text:
+                topic = "Friction and Wear"
+                weaknesses[topic]["count"] += 1
+                weaknesses[topic].update({
+                    "description": "understanding mechanical friction",
+                    "tips": ["Study tribology", "Analyze bearing designs"],
+                    "resources": LEARNING_RESOURCES["Mechanical Engineering"]["advanced"]
+                })
+
+    # Filter significant weaknesses (more than 20% of wrong answers)
+    significant_weaknesses = {
+        area: data for area, data in weaknesses.items()
+        if data["count"] > 0 and (data["count"] / total_wrong) > 0.2
+    }
+    return significant_weaknesses if significant_weaknesses else None
+
 @app.route('/submit_skill_gap', methods=['POST'])
 @login_required
 def submit_skill_gap():
@@ -1402,7 +1914,7 @@ def submit_skill_gap():
     selected_field = session.get('selected_field', 'Software Development')
 
     if not questions or current_question_index >= len(questions):
-        return jsonify({'error': 'Invalid session data'}), 400
+        return jsonify({'error': 'Invalid session data or no more questions'}), 400
 
     current_response = responses[-1]
     question_id = current_response['questionId']
@@ -1417,14 +1929,23 @@ def submit_skill_gap():
         return jsonify({'error': 'Question not found'}), 400
 
     session['skill_gap_total'] += 1
-    if answer == question['correct']:
+    if answer == question.get('correct', -1):
         session['skill_gap_correct'] += 1
 
     session.modified = True
 
     if current_question_index + 1 >= len(questions):
-        score = (session['skill_gap_correct'] / session['skill_gap_total']) * 100
+        score = (session['skill_gap_correct'] / session['skill_gap_total']) * 100 if session['skill_gap_total'] > 0 else 0
         detailed_scores = {selected_field: score}
+        
+        # Identify weaknesses
+        correct_count = session['skill_gap_correct']
+        weaknesses = identify_weaknesses(questions, responses, correct_count)
+        if weaknesses:
+            session['weaknesses'] = weaknesses
+        else:
+            session.pop('weaknesses', None)
+
         result = TestResult(
             user_id=current_user.id,
             test_type='skill_gap',
@@ -1436,7 +1957,7 @@ def submit_skill_gap():
         db.session.add(result)
         db.session.commit()
 
-        # Award badges
+        # Award badges and notifications
         if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
             badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first skill gap test!", icon="fas fa-trophy")
             db.session.add(badge)
@@ -1445,44 +1966,12 @@ def submit_skill_gap():
                 badge = Badge(user_id=current_user.id, name="Skill Expert", description="Scored 80% or higher in skill gap test!", icon="fas fa-star")
                 db.session.add(badge)
 
-        # Send notification
         notification = Notification(
             user_id=current_user.id,
             message=f"Skill Gap Test for {selected_field} completed! Score: {score:.1f}%",
             type="test_result"
         )
         db.session.add(notification)
-        db.session.commit()
-
-        # Fetch courses based on location and degree level
-        region = get_region_from_pin(current_user.pin_code) if current_user.pin_code else 'US'
-        courses = []
-        if region == 'IN':
-            courses = get_indian_courses(field_of_study=selected_field, degree_level='Bachelor', limit=3)
-        else:
-            # Mock Class Central API call (replace with real API key)
-            try:
-                response = requests.get(f"https://api.classcentral.com/v1/courses?subject={selected_field}&limit=3", timeout=10)
-                if response.status_code == 200:
-                    courses_data = response.json().get('results', [])
-                    courses = [
-                        {
-                            'title': c.get('title', 'Unknown Course'),
-                            'university': c.get('institution', 'Unknown Institution'),
-                            'duration': c.get('duration', 'Self-paced'),
-                            'description': c.get('description', 'No description available'),
-                            'degree_level': c.get('level', 'Beginner'),
-                            'country': c.get('country', 'USA')
-                        } for c in courses_data
-                    ]
-                else:
-                    courses = EdxAPI().search_courses(subject=selected_field, limit=3)
-            except requests.RequestException as e:
-                logger.error(f"Failed to fetch courses: {e}")
-                courses = EdxAPI().search_courses(subject=selected_field, limit=3)
-
-        # Store courses in session or result for display
-        result.details = json.dumps({**detailed_scores, 'courses': courses})
         db.session.commit()
 
         completed_tests = session.get('completed_tests', [])
@@ -1496,14 +1985,14 @@ def submit_skill_gap():
             'correct': session['skill_gap_correct'],
             'total': session['skill_gap_total'],
             'time_spent': time_spent,
-            'detailed_scores': detailed_scores,
-            'courses': courses
+            'detailed_scores': detailed_scores
         }
         session['test_results'] = test_results
 
         session.pop('skill_gap_questions', None)
         session.pop('skill_gap_correct', None)
         session.pop('skill_gap_total', None)
+
         return jsonify({'redirect': url_for('skill_gap_results')})
 
     next_question = questions[current_question_index + 1]
@@ -1513,47 +2002,136 @@ def submit_skill_gap():
 @login_required
 def interest_test():
     selected_field = request.args.get('field', session.get('selected_field', None))
-    if selected_field:
-        session['selected_field'] = selected_field
-        return redirect(url_for('test', type='skill_gap', field=selected_field))
+    if not selected_field:
+        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+        return render_template('assessments/interest_test.html', 
+                              selected_field=None, 
+                              questions=[], 
+                              total_questions=0,
+                              completed_questions=0, 
+                              current_question_index=0, 
+                              initial_time=60, 
+                              active_page='interest_test',
+                              notifications=notifications)
+
+    # Check prerequisites
+    completed_tests = session.get('completed_tests', [t.test_type for t in TestResult.query.filter_by(user_id=current_user.id).all()])
+    if 'aptitude' not in completed_tests or 'personality' not in completed_tests:
+        flash('Please complete both the Aptitude and Personality Tests before taking the Skill Gap Test.', 'warning')
+        return redirect(url_for('dashboard'))
+
+    session['selected_field'] = selected_field
+    questions = session.get('skill_gap_questions')
+    if not questions or session.get('skill_gap_field', '') != selected_field:
+        # Clear existing questions if field has changed
+        session.pop('skill_gap_questions', None)
+        session.pop('skill_gap_correct', None)
+        session.pop('skill_gap_total', None)
+        questions = generate_questions('skill_gap')
+        if not questions:
+            flash('No skill gap questions available at this time.', 'danger')
+            return redirect(url_for('dashboard'))
+        session['skill_gap_questions'] = questions
+        session['skill_gap_correct'] = 0
+        session['skill_gap_total'] = 0
+        session['skill_gap_field'] = selected_field  # Track the field used
+
+    current_question_index = int(request.args.get('q', 0))
+    if current_question_index >= len(questions):
+        return redirect(url_for('skill_gap_results'))
+    question = questions[current_question_index]
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('assessments/interest_test.html', selected_field=None, questions=[], total_questions=0,
-                          completed_questions=0, current_question_index=0, initial_time=60, active_page='interest_test',
+    return render_template('assessments/interest_test.html',
+                          selected_field=selected_field,
+                          questions=[question],
+                          total_questions=len(questions),
+                          completed_questions=current_question_index,
+                          current_question_index=current_question_index,
+                          initial_time=question['time_limit'],
+                          active_page='interest_test',
+                          test_type='skill_gap',
                           notifications=notifications)
+
+@app.route('/interest_test/next', methods=['POST'])
+@login_required
+def interest_test_next():
+    data = request.get_json()
+    if not data or 'current_question_index' not in data or 'responses' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    current_question_index = int(data['current_question_index'])
+    responses = data['responses']
+    time_spent = data.get('time_spent', 0)
+    questions = session.get('skill_gap_questions', [])
+    total_questions = 10  # Fixed total questions
+    selected_field = session.get('selected_field', 'Software Development')
+
+    # Ensure questions exist and are sufficient
+    if not questions or len(questions) < total_questions:
+        # Regenerate questions if session data is corrupted
+        questions = generate_questions('skill_gap')
+        if len(questions) < total_questions:
+            return jsonify({'error': 'Not enough questions available'}), 500
+        session['skill_gap_questions'] = questions
+        session['skill_gap_correct'] = 0
+        session['skill_gap_total'] = 0
+
+    # Check if test should end
+    if current_question_index >= total_questions - 1 or len(responses) == 0:
+        # Calculate final score and save results
+        score = (session.get('skill_gap_correct', 0) / session.get('skill_gap_total', 1)) * 100
+        detailed_scores = {selected_field: score}
+        result = TestResult(
+            user_id=current_user.id,
+            test_type='skill_gap',
+            score=score,
+            time_spent=time_spent,
+            details=json.dumps(detailed_scores)
+        )
+        current_user.skill_gap_scores = json.dumps(detailed_scores)
+        db.session.add(result)
+        db.session.commit()
+        session.pop('skill_gap_questions', None)
+        session.pop('skill_gap_correct', None)
+        session.pop('skill_gap_total', None)
+        return jsonify({'redirect': url_for('skill_gap_results')})
+
+    # Process the current answer
+    answer = int(responses[0]['answer'])
+    question_id = responses[0]['questionId']
+    question = next((q for q in questions if q['id'] == question_id), None)
+    if question and answer == question.get('correct', -1):
+        session['skill_gap_correct'] = session.get('skill_gap_correct', 0) + 1
+    session['skill_gap_total'] = session.get('skill_gap_total', 0) + 1
+    session.modified = True
+
+    # Move to the next question
+    next_index = current_question_index + 1
+    if next_index < total_questions:
+        next_question = questions[next_index]
+        return jsonify({
+            'question': next_question,
+            'current_question_index': next_index,
+            'initial_time': next_question.get('time_limit', 60)
+        })
+    else:
+        return jsonify({'redirect': url_for('skill_gap_results')})
 
 @app.route('/skill_gap_results')
 @login_required
 def skill_gap_results():
-    result = TestResult.query.filter_by(
-        user_id=current_user.id, 
-        test_type='skill_gap'
-    ).order_by(TestResult.completed_at.desc()).first()
+    field = session.get('selected_field', 'Software Development')
+    score = (session.get('skill_gap_correct', 0) / session.get('skill_gap_total', 1)) * 100 if session.get('skill_gap_total', 0) > 0 else 0
+    has_aptitude = 'aptitude' in session.get('completed_tests', [])
+    has_personality = 'personality' in session.get('completed_tests', [])
+    weaknesses = session.get('weaknesses', {})
     
-    if not result:
-        flash('No skill gap results found', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    details = json.loads(result.details)
-    field = list(details.keys())[0]
-    score = result.score
-    
-    recommendations = get_recommendations(field, score)
-    
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template('skill_gap_results.html',
                           field=field,
                           score=score,
-                          recommendations=recommendations,
-                          has_aptitude=TestResult.query.filter_by(
-                              user_id=current_user.id,
-                              test_type='aptitude'
-                          ).count() > 0,
-                          has_personality=TestResult.query.filter_by(
-                              user_id=current_user.id,
-                              test_type='personality'
-                          ).count() > 0,
-                          active_page='results',
-                          notifications=notifications)
+                          has_aptitude=has_aptitude,
+                          has_personality=has_personality,
+                          weaknesses=weaknesses)
 # Three-tiered matching algorithm
 
 
@@ -1627,51 +2205,33 @@ def submit_career_assessment():
 @app.route('/aptitude_results')
 @login_required
 def aptitude_results():
-    # Fetch the latest aptitude test result
-    latest_test = TestResult.query.filter_by(
-        user_id=current_user.id,
-        test_type='aptitude'
-    ).order_by(TestResult.completed_at.desc()).first()
-
-    if not latest_test:
-        flash('No aptitude test results found. Please complete the test first.', 'warning')
-        return redirect(url_for('dashboard'))
-
-    # Load detailed scores
-    detailed_scores = json.loads(latest_test.details) if latest_test.details else {}
-    aptitude_scores = {APTITUDE_TO_ONET.get(k, k): v for k, v in detailed_scores.items()}
-    user_scores = {'aptitude': aptitude_scores}
-
-    # Calculate top career matches
-    top_careers = []
-    for career_name, career_data in CAREER_MAPPING.items():
-        soc_code = CAREERS.get(career_name, "15-1252.00")
-        match_score = calculate_match(user_scores, career_data)
-        top_careers.append({'name': career_name, 'soc_code': soc_code, 'score': match_score})
-
-    # Sort by match score and take top 3
-    top_careers.sort(key=lambda x: x['score'], reverse=True)
-    top_careers = [career['soc_code'] for career in top_careers[:3]]
-
-    # Update user's top_careers
-    current_user.top_careers = json.dumps(top_careers)
-    db.session.commit()
-
-    # Prepare score data for display
-    score_data = {
-        'test_type': 'aptitude',
-        'score': latest_test.score,
-        'correct': int(latest_test.score / 10) if latest_test.score else 0,  # Assuming percentage-based scoring
-        'total': 10,
-        'time_spent': latest_test.time_spent or 0,
-        'detailed_scores': detailed_scores,
-        'responses': session.get('aptitude_responses', []),
-        'questions': session.get('aptitude_questions', [])
-    }
-
+    test_results = session.get('test_results', {})
+    score_data = test_results.get('aptitude', None)
     has_personality = 'personality' in session.get('completed_tests', [])
     has_aptitude = 'aptitude' in session.get('completed_tests', [])
 
+    if not score_data:
+        # Fallback to latest TestResult if session data is missing
+        latest_test = TestResult.query.filter_by(
+            user_id=current_user.id,
+            test_type='aptitude'
+        ).order_by(TestResult.completed_at.desc()).first()
+        if not latest_test:
+            flash('No aptitude test results found. Please complete the test first.', 'warning')
+            return redirect(url_for('dashboard'))
+        
+        detailed_scores = json.loads(latest_test.details) if latest_test.details else {}
+        score_data = {
+            'test_type': 'aptitude',
+            'score': latest_test.score,
+            'correct': int((latest_test.score / 100) * 20),  # Adjusted calculation
+            'total': 20,
+            'time_spent': latest_test.time_spent or 0,
+            'detailed_scores': detailed_scores
+        }
+
+    # Ensure test_type is set
+    score_data['test_type'] = 'aptitude'
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
 
     return render_template(
@@ -1680,8 +2240,7 @@ def aptitude_results():
         has_personality=has_personality,
         has_aptitude=has_aptitude,
         active_page='results',
-        notifications=notifications,
-        top_careers=top_careers
+        notifications=notifications
     )
 
 @app.route('/personality_results')
@@ -1807,41 +2366,55 @@ def personality_results():
     )
     
 def calculate_career_fit(user_scores, career_requirements, test_types_completed):
-    """Determine qualitative career fit based on user strengths"""
     fit_reasons = []
+    total_match_score = 0
+    max_possible_score = 0
 
     # Aptitude fit
     if 'aptitude' in test_types_completed and user_scores['aptitude']:
-        strong_aptitudes = {k: v for k, v in user_scores['aptitude'].items() if v >= 70}  # Threshold for strength
-        for apt, level in career_requirements['aptitude'].items():
-            if apt in strong_aptitudes and strong_aptitudes[apt] >= level * 0.8:  # 80% of required level
-                fit_reasons.append(f"Strong {apt} aptitude")
+        for apt, user_score in user_scores['aptitude'].items():
+            required_score = career_requirements['aptitude'].get(apt, 0)
+            if required_score > 0:  # Only consider aptitudes required by the career
+                max_possible_score += 100  # Each aptitude contributes up to 100 points
+                match_percentage = min(user_score / required_score, 1.0) * 100
+                total_match_score += match_percentage
+                if user_score >= required_score * 0.8:  # 80% threshold
+                    fit_reasons.append(f"High {apt} aptitude ({user_score}%)")
 
     # Personality fit
     if 'personality' in test_types_completed and user_scores['personality']:
-        strong_traits = {k: v for k, v in user_scores['personality'].items() if v >= 70}
-        for trait, level in career_requirements['personality'].items():
-            if trait in strong_traits and strong_traits[trait] >= level * 0.8:
-                fit_reasons.append(f"High {trait} personality trait")
+        for trait, user_score in user_scores['personality'].items():
+            required_score = career_requirements['personality'].get(trait, 0)
+            if required_score > 0:  # Only consider traits required by the career
+                max_possible_score += 100
+                match_percentage = min(user_score / required_score, 1.0) * 100 if required_score > 50 else (100 - user_score) / (100 - required_score) * 100
+                total_match_score += match_percentage
+                if user_score >= required_score * 0.8 and required_score > 50:
+                    fit_reasons.append(f"High {trait} personality ({user_score}%)")
+                elif user_score <= required_score * 1.2 and required_score < 50:
+                    fit_reasons.append(f"Low {trait} personality ({user_score}%)")
 
-    # Skill fit
+    # Skill fit (optional)
     if 'skill_gap' in test_types_completed and user_scores['skill_gap']:
         required_skill = career_requirements['skills']['required']
         user_skill = user_scores['skill_gap'].get('score', 0)
+        max_possible_score += 100
+        match_percentage = min(user_skill / required_skill, 1.0) * 100
+        total_match_score += match_percentage
         if user_skill >= required_skill * 0.8:
-            fit_reasons.append("Strong skill proficiency")
+            fit_reasons.append(f"Strong skill proficiency ({user_skill}%)")
 
-    # Return fit level and reasons
-    if len(fit_reasons) >= 2:
-        return {"fit_level": "Highly Suitable", "reasons": fit_reasons}
-    elif len(fit_reasons) == 1:
-        return {"fit_level": "Moderately Suitable", "reasons": fit_reasons}
-    return {"fit_level": "Not Assessed", "reasons": ["Complete more tests to assess fit"]}
+    # Calculate overall fit level
+    overall_score = (total_match_score / max_possible_score * 100) if max_possible_score > 0 else 0
+    if overall_score >= 75:
+        fit_level = "Highly Suitable"
+    elif overall_score >= 50:
+        fit_level = "Moderately Suitable"
+    else:
+        fit_level = "Not Assessed"
+        fit_reasons = ["Complete more tests for a better assessment"] if not fit_reasons else fit_reasons
 
-# Rename the two-parameter version for static career data (e.g., used in career_details)
-def normalize_score(score, max_score=100):
-    """Normalize score to 0-100 range with a fallback."""
-    return max(0, min(100, float(score) if score is not None else 0))
+    return {"fit_level": fit_level, "score": overall_score, "reasons": fit_reasons}
 
 def get_precise_career_matches(user_scores, region, show_global):
     """Get top 5 career matches based on user scores and O*NET data."""
@@ -1902,7 +2475,7 @@ def career_match():
     region = get_region_from_pin(current_user.pin_code) if current_user.pin_code else 'US'
     show_global = form.global_opportunities.data if form.validate_on_submit() else False
 
-    # Fetch completed tests and user scores
+    # Fetch user test scores
     completed_tests = session.get('completed_tests', [t.test_type for t in TestResult.query.filter_by(user_id=current_user.id).all()])
     try:
         aptitude_scores = json.loads(current_user.aptitude_scores) if current_user.aptitude_scores else {}
@@ -1912,37 +2485,43 @@ def career_match():
         aptitude_scores, personality_scores, skill_gap_scores = {}, {}, {}
 
     user_scores = {
-        'aptitude': {APTITUDE_TO_ONET.get(k, k): v for k, v in aptitude_scores.items()},
-        'personality': {PERSONALITY_TO_ONET.get(k, k): v for k, v in personality_scores.items()},
+        'aptitude': aptitude_scores,
+        'personality': personality_scores,
         'skill_gap': skill_gap_scores
     }
 
     matches = []
     onet_api = ONetAPI()
 
-    for career_name, soc_code in CAREERS.items():
-        career_data = onet_api.get_occupation_summary(soc_code) or {'title': career_name, 'description': 'No description available'}
-        abilities = onet_api.get_abilities(soc_code) or []
-        work_styles = onet_api.get_work_styles(soc_code) or []
+    for career_name, career_data in CAREER_MAPPING.items():
+        soc_code = CAREERS.get(career_name, "15-1252.00")
+        onet_summary = onet_api.get_occupation_summary(soc_code) or {}
 
-        requirements = {
-            'aptitude': {a['name']: float(a.get('level', 50)) for a in abilities} if abilities else {k: 50 for k in APTITUDE_TO_ONET.values()},
-            'personality': {ws['name']: 50 for ws in work_styles} if work_styles else {k: 50 for k in PERSONALITY_TO_ONET.values()},
-            'skills': {'required': career_data.get('skill_level', 70)}
-        }
+        fit = calculate_career_fit(user_scores, career_data, completed_tests)
 
-        fit = calculate_career_fit(user_scores, requirements, completed_tests)
         if fit['fit_level'] in ['Highly Suitable', 'Moderately Suitable']:
+            median_wage = onet_summary.get('wages', {}).get('median', 100000)
+            growth_rate = onet_summary.get('outlook', {}).get('growth_rate', 0)
+            currency = 'USD' if show_global or region != 'IN' else 'INR'
+            if region == 'IN' and not show_global and median_wage:
+                median_wage = convert_salary(median_wage, region, 'USD')
+
             matches.append({
                 'name': career_name,
-                'description': career_data.get('description', 'No description available'),
+                'description': onet_summary.get('description', career_data.get('description', '')),
                 'fit_level': fit['fit_level'],
-                'fit_reasons': fit['reasons']
+                'fit_reasons': fit['reasons'],
+                'score': fit['score'],
+                'median_wage': median_wage,
+                'currency': currency,
+                'growth_rate': growth_rate
             })
 
-    matches.sort(key=lambda x: x['fit_level'] == 'Highly Suitable', reverse=True)
+    matches.sort(key=lambda x: x['score'], reverse=True)
+    top_matches = matches[:5]
+
     notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    return render_template('career_match.html', matches=matches[:5], form=form, completed_tests=completed_tests, active_page='career_match', notifications=notifications)
+    return render_template('career_match.html', matches=top_matches, form=form, completed_tests=completed_tests, active_page='career_match', notifications=notifications)
 
 def get_recommendations(missing_skills):
     """Get real courses from EdX API based on missing skills"""
@@ -2058,14 +2637,23 @@ def career_details(career_name):
 @app.route('/resources')
 @login_required
 def resources():
+    # Determine the user's career path
     career_path = session.get('selected_field', 'Software Development')
+    if career_path not in CAREER_MAPPING:
+        career_path = 'Software Development'
+    
+    # Fetch resources for the career path
     resources = LEARNING_RESOURCES.get(career_path, [])
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).all()
+    
+    # Fetch notifications
+    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     
     return render_template('resources.html',
-                         active_page='resources',
-                         notifications=notifications,
-                         resources=resources)
+                          user=current_user,
+                          career_path=career_path,
+                          resources=resources,
+                          active_page='resources',
+                          notifications=notifications)
     
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -2533,6 +3121,86 @@ def roadmap():
                           animations_enabled=current_user.animations_enabled,
                           active_page='roadmap',
                           notifications=notifications)
+
+@app.route('/resume', methods=['GET', 'POST'])
+@login_required
+def resume_builder():
+    if request.method == 'POST':
+        resume_data = {
+            'personal_info': {
+                'name': request.form.get('name'),
+                'email': request.form.get('email'),
+                'phone': request.form.get('phone', ''),
+                'linkedin': request.form.get('linkedin', '')
+            },
+            'education': [{
+                'degree': edu,
+                'institution': request.form.getlist('institution[]')[i],
+                'date': request.form.getlist('education_date[]')[i] or ''
+            } for i, edu in enumerate(request.form.getlist('education[]')) if edu],
+            'experience': [{
+                'position': pos,
+                'company': request.form.getlist('company[]')[i] or '',
+                'description': request.form.getlist('description[]')[i] or '',
+                'date': request.form.getlist('experience_date[]')[i] or ''
+            } for i, pos in enumerate(request.form.getlist('position[]')) if pos],
+            'skills': json.loads(request.form.get('skills', '[]')),
+            'summary': request.form.get('summary', ''),
+            'template': request.form.get('template', 'modern'),
+            'photo': ''
+        }
+
+        if 'photo' in request.files:
+            file = request.files['photo']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(f"{current_user.id}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                img = Image.open(file)
+                img = img.resize((150, 150), Image.LANCZOS)
+                img.save(filepath)
+                resume_data['photo'] = url_for('static', filename=f'uploads/{filename}')
+
+        new_resume = Resume(user_id=current_user.id, resume_data=resume_data)
+        db.session.add(new_resume)
+        db.session.commit()
+        flash('Resume saved successfully!', 'success')
+        return redirect(url_for('resume_builder'))  # Redirect to re-render
+
+    # GET request: Fetch latest resume
+    resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.updated_at.desc()).first()
+    resume_data = resume.resume_data if resume else {}
+    return render_template('resume.html', resume=resume_data)
+
+@app.route('/api/career-suggestions', methods=['GET'])
+def career_suggestions():
+    query = request.args.get('skills', '').lower()
+    all_skills = [
+        "Python", "JavaScript", "Java", "C++", "SQL", "HTML", "CSS",
+        "Project Management", "Data Analysis", "Machine Learning",
+        "Cloud Computing", "Cybersecurity", "Graphic Design", "Marketing",
+        "Leadership", "Communication", "Problem Solving", "Teamwork"
+    ]
+    suggestions = [skill for skill in all_skills if query in skill.lower()]
+    return jsonify(suggestions[:5])
+
+@app.route('/export-resume/<int:resume_id>')
+@login_required
+def export_resume(resume_id):
+    resume = Resume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        abort(403)
+    
+    # Select the template based on resume_data
+    template_name = resume.resume_data.get('template', 'modern')
+    template_file = f'resume_{template_name}.html'
+    
+    html_content = render_template(template_file, resume=resume.resume_data)
+    pdf = pdfkit.from_string(html_content, False, options={'page-size': 'Letter', 'margin-top': '0.75in', 'margin-right': '0.75in', 'margin-bottom': '0.75in', 'margin-left': '0.75in'})
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename={current_user.username}_resume.pdf'
+    return response
 
 @app.route('/search', methods=['GET'])
 def search():
