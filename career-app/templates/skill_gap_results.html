@@ -3,320 +3,163 @@
 
 {% block extra_head %}
 <style>
-    /* Cosmic Theme Background */
-    body {
-        background: linear-gradient(135deg, #2a0047 0%, #4b0082 100%);
-        color: #fff;
-        font-family: 'Arial', sans-serif;
-    }
-
-    /* Enhanced Container Styling */
     .results-container {
-        max-width: 800px;
-        margin: 4rem auto;
-        padding: 2.5rem;
-        background: rgba(255, 255, 255, 0.1);
+        max-width: 900px;
+        margin: 50px auto;
+        padding: 30px;
+        background: linear-gradient(135deg, #2c2e4a, #1a001a, #4b0082);
+        color: #fff;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         animation: fadeIn 1s ease-in-out;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.2);
     }
-
-    /* Animation for Fade In */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
-
-    /* Header Styling */
-    .results-container h1 {
-        font-size: 2.5rem;
-        color: #00ffff;
-        text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffcc;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-
-    /* Skill Level Display */
     .skill-level {
         font-size: 1.8rem;
-        color: #fff;
-        background: linear-gradient(135deg, #4b0082 0%, #6a0dad 100%);
-        padding: 1.5rem 2.5rem;
+        text-align: center;
+        padding: 20px;
+        background: rgba(0, 255, 204, 0.1);
         border-radius: 15px;
-        display: inline-block;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        transition: transform 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .score-display {
+        font-size: 3rem;
+        font-weight: bold;
+        background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         animation: pulse 2s infinite;
     }
-    .skill-level:hover {
-        transform: scale(1.05);
-    }
-
     @keyframes pulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
+        50% { transform: scale(1.05); }
         100% { transform: scale(1); }
     }
-
-    /* Zero Skill Gap Breakdown */
-    .zero-gap-breakdown {
-        margin-top: 1.5rem;
-        padding: 1.5rem;
-        background: rgba(0, 255, 204, 0.1);
-        border-radius: 10px;
-        color: #00ffcc;
-        font-size: 1.1rem;
-        line-height: 1.6;
-    }
-
-    /* Areas for Improvement Section */
-    .results-container h3 {
-        font-size: 1.6rem;
-        color: #00ffff;
-        margin-top: 2rem;
-        border-bottom: 2px solid #00ffff;
-        display: inline-block;
-        padding-bottom: 5px;
-        text-shadow: 0 0 5px #00ffff;
-    }
-
-    .weakness-item {
-        margin: 1.5rem 0;
-        padding: 1.5rem;
+    .breakdown-section {
         background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
         border-radius: 10px;
-        color: #fff;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin: 20px 0;
         animation: slideUp 0.5s ease-out;
     }
-
+    .zero-gap-breakdown {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(135deg, #00ffcc, #4b0082);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+        animation: glow 2s infinite;
+    }
+    @keyframes glow {
+        0% { box-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+        50% { box-shadow: 0 0 25px rgba(0, 255, 204, 1); }
+        100% { box-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+    }
+    .weakness-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 10px;
+        animation: slideUp 0.5s ease-out;
+        transition: transform 0.3s ease;
+    }
+    .weakness-item:hover {
+        transform: scale(1.02);
+    }
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
-
-    .weakness-item strong {
-        color: #00ffcc;
+    .recommendation-tier {
+        background: rgba(0, 255, 204, 0.1);
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 10px;
     }
-
-    .weakness-item ul {
-        list-style: none;
-        padding-left: 0;
-        text-align: left;
-        margin-top: 1rem;
-    }
-
-    .weakness-item ul li {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-        position: relative;
-    }
-
-    .weakness-item ul li:before {
-        content: "★";
-        color: #00ffff;
-        position: absolute;
-        left: 0;
-    }
-
-    .resource-list {
-        list-style: none;
-        padding: 0;
-        margin-top: 1rem;
-    }
-
-    .resource-list li {
-        margin: 0.5rem 0;
-    }
-
-    .resource-list a {
-        color: #00ffcc;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s ease;
-    }
-
-    .resource-list a:hover {
-        color: #00ffff;
-        text-decoration: underline;
-    }
-
-    /* Button Styling */
-    .btn-option {
-        padding: 0.9rem 2rem;
-        font-size: 1.2rem;
-        background: linear-gradient(135deg, #6a0dad 0%, #00ffcc 100%);
+    .btn-primary {
+        display: block;
+        margin: 20px auto;
+        padding: 12px 25px;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        color: #fff;
         border: none;
         border-radius: 50px;
-        color: #fff;
+        font-size: 1.2rem;
         cursor: pointer;
         transition: all 0.3s ease;
-        margin: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     }
-
-    .btn-option:hover {
-        background: linear-gradient(135deg, #4b0082 0%, #00cccc 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 7px 20px rgba(0, 255, 204, 0.5);
-    }
-
-    /* Footer Styling */
-    .footer {
-        margin-top: 2rem;
-        padding: 1rem;
-        background: #4b0082;
-        color: #fff;
-        font-size: 0.9rem;
-        border-radius: 0 0 20px 20px;
-        text-align: center;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .results-container {
-            margin: 2rem;
-            padding: 1.5rem;
-        }
-        .results-container h1 {
-            font-size: 2rem;
-        }
-        .skill-level {
-            font-size: 1.5rem;
-            padding: 0.8rem 1.5rem;
-        }
-        .btn-option {
-            width: 100%;
-            margin: 0.5rem 0;
-        }
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        background: linear-gradient(45deg, #4ecdc4, #ff6b6b);
+        box-shadow: 0 7px 20px rgba(0, 0, 0, 0.5);
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="results-container">
-    <h1>Skill Gap Test Results</h1>
+    <h1 style="text-align: center; font-size: 2.5rem; text-shadow: 0 0 10px #00ffcc;">Skill Gap Test Results</h1>
     <div class="skill-level">
-        Your skill level in <strong>{{ field or session.get('selected_field', 'Unknown') }}</strong>: <span id="score-display">{{ score|default(0)|round(2) }}%</span>
+        Your skill level in <strong>{{ field }}</strong>: <span class="score-display">{{ score|round(2) }}%</span>
     </div>
 
-    <!-- Zero Skill Gap Breakdown -->
-    {% if weaknesses is none or weaknesses|length == 0 %}
+    <div class="breakdown-section">
+        <h3>Score Breakdown</h3>
+        <p>Total Questions: {{ session.get('skill_gap_total', 10) }}</p>
+        <p>Correct Answers: {{ session.get('skill_gap_correct', 0) }}</p>
+        <p>Incorrect Answers: {{ session.get('skill_gap_total', 10) - session.get('skill_gap_correct', 0) }}</p>
+        <p>{{ feedback_message }}</p>
+    </div>
+
+    {% if score >= 80 %}
         <div class="zero-gap-breakdown">
-            <p>Congratulations! 🎉 Your skill gap is <strong>0%</strong>, indicating mastery across all assessed areas. Your score of {{ score|default(0)|round(2) }}% reflects:</p>
-            <ul>
-                <li>Exceptional performance in all test categories.</li>
-                <li>Complete alignment with the required skills for {{ field or session.get('selected_field', 'this field') }}.</li>
-                <li>No areas requiring improvement—you're a stellar talent!</li>
-            </ul>
+            <h2>Congratulations! 🎉</h2>
+            <p>Your skill gap is minimal, showcasing mastery across all assessed areas in {{ field }}!</p>
         </div>
     {% endif %}
 
-    <!-- Weak Areas and Recommendations -->
-    <h3 class="mt-4">Areas for Improvement</h3>
-    <div id="weaknesses">
-        {% if weaknesses and weaknesses|length > 0 %}
-            {% for area, details in weaknesses.items() %}
-                <div class="weakness-item">
-                    <p><strong>{{ area }}</strong>: You struggled with {{ details.description }}. Consider focusing on:</p>
-                    <ul>
-                        {% for tip in details.tips %}
-                            <li>{{ tip }}</li>
-                        {% endfor %}
-                    </ul>
-                    <h4>Recommended Courses:</h4>
-                    <ul class="resource-list">
-                        {% for resource in details.resources %}
-                            <li><a href="{{ resource.url }}" target="_blank">{{ resource.name }}</a></li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p style="color: #00ffcc; font-size: 1.2rem;">No specific weaknesses identified! Great job! 🎉</p>
-        {% endif %}
-    </div>
-
-    {% if not (has_aptitude and has_personality) %}
-    <p class="text-muted" style="color: #ccc; font-size: 1.1rem; margin-top: 1.5rem;">
-        Enhance your career match by completing the Aptitude and Personality tests.
-    </p>
-    <div class="d-flex justify-content-center flex-wrap">
-        {% if not has_aptitude %}
-        <a href="{{ url_for('test', type='aptitude') }}" class="btn-option">Take Aptitude Test</a>
-        {% endif %}
-        {% if not has_personality %}
-        <a href="{{ url_for('test', type='personality') }}" class="btn-option">Take Personality Test</a>
-        {% endif %}
-    </div>
+    {% if weaknesses %}
+        <h3 style="color: #00ffcc; margin-top: 20px;">Areas for Improvement</h3>
+        {% for topic, data in weaknesses.items() %}
+            <div class="weakness-item" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                <h4>{{ topic }} ({{ data.count }} errors)</h4>
+                <p>You struggled with {{ data.description }}.</p>
+                <h5>Tips:</h5>
+                <ul>
+                    {% for tip in data.tips %}
+                        <li>{{ tip }}</li>
+                    {% endfor %}
+                </ul>
+                <h5>Recommended Resources:</h5>
+                <ul>
+                    {% for resource in data.resources %}
+                        <li><a href="{{ resource.url }}" target="_blank" style="color: #4ecdc4;">{{ resource.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
     {% endif %}
 
-    <!-- Additional Interactive Buttons -->
-    <div class="d-flex justify-content-center flex-wrap">
-        <a href="{{ url_for('career_match') }}" class="btn-option">Proceed to Career Match</a>
-        <a href="{{ url_for('dashboard') }}" class="btn-option">Back to Dashboard</a>
-        <a href="{{ url_for('test', type='skill_gap') }}" class="btn-option">Retake Test</a>
-        <a href="#" class="btn-option">Share Results</a>
-        <a href="#" class="btn-option">Download Report</a>
-    </div>
+    <h3 style="color: #00ffcc; margin-top: 20px;">Personalized Recommendations</h3>
+    {% for tier, resources in match_recommendations.items() %}
+        <div class="recommendation-tier">
+            <h4>{{ tier }} Tier</h4>
+            {% if resources %}
+                <ul>
+                    {% for resource in resources %}
+                        <li><a href="{{ resource.url }}" target="_blank" style="color: #ff6b6b;">{{ resource.name }} - {{ resource.description|default('') }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No specific recommendations for this tier.</p>
+            {% endif %}
+        </div>
+    {% endfor %}
 
-    <div class="footer">
-        © 2025 Career Analytics. All rights reserved.
-    </div>
+    <button class="btn-primary" onclick="window.location.href='{{ url_for('dashboard') }}'">Back to Dashboard</button>
 </div>
-
-<!-- Include Confetti Library for Wow Effect -->
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('Weaknesses loaded:', {{ weaknesses|tojson|safe }});
-
-        // Animate Score Display
-        const score = {{ score|default(0)|round(2) }};
-        const scoreDisplay = document.getElementById('score-display');
-        let currentScore = 0;
-        const duration = 2000; // Animation duration in milliseconds
-        const increment = score / (duration / 20);
-        const startTime = performance.now();
-
-        function animateScore(currentTime) {
-            if (currentScore < score) {
-                const elapsed = currentTime - startTime;
-                currentScore = Math.min(score, currentScore + increment * (elapsed / 20));
-                scoreDisplay.textContent = Math.round(currentScore) + '%';
-                requestAnimationFrame(animateScore);
-            } else {
-                scoreDisplay.textContent = score + '%';
-            }
-        }
-        requestAnimationFrame(animateScore);
-
-        // Hover Effects for Weakness Items
-        const weaknessItems = document.querySelectorAll('.weakness-item');
-        weaknessItems.forEach(item => {
-            item.addEventListener('mouseover', () => {
-                item.style.transform = 'scale(1.02)';
-            });
-            item.addEventListener('mouseout', () => {
-                item.style.transform = 'scale(1)';
-            });
-        });
-
-        // Confetti Effect for Zero Skill Gap
-        if (!{{ weaknesses|tojson|safe }} || {{ weaknesses|tojson|safe }}.length === 0) {
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-        }
-    });
-</script>
 {% endblock %}

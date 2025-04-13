@@ -1,290 +1,274 @@
 {% extends "base.html" %}
 {% block title %}Degree Portal - Career Analytics{% endblock %}
 
+{% block styles %}
+<style>
+  .degree-main {
+    max-width: 1200px;
+    margin: 6rem auto 2rem;  /* pushed down for fixed navbar */
+    padding: 2rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  .degree-main h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .content-section {
+    margin-bottom: 2rem;
+  }
+  .search-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+    gap: 1rem;
+    align-items: end;
+  }
+  .search-form .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .search-form label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  .search-form select,
+  .search-form input {
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    font-size: 1rem;
+  }
+  .search-form button {
+    grid-column: span 2;
+    padding: 0.75rem;
+    background: #34495e;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .search-form button:hover {
+    background: #2c3e50;
+  }
+  .btn-group .btn {
+    border-radius: 6px;
+  }
+  #testRequirements {
+    background: #f0f4f8;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+  }
+  #testRequirements h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    color: #2c3e50;
+  }
+  #testRequirements ul {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+  .degree-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
+    gap: 1.5rem;
+  }
+  .degree-item {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    padding: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .degree-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  .degree-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+  }
+  .degree-details p {
+    margin: 0.3rem 0;
+    color: #555;
+    font-size: 0.95rem;
+  }
+  .no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #888;
+    font-size: 1.1rem;
+    padding: 2rem;
+    background: #fafafa;
+    border-radius: 6px;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-    <!-- Include Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<div class="degree-main">
+  <h1>Explore Degrees</h1>
 
-    <!-- Include Select2 for searchable dropdown -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <section class="content-section">
+    <h2><i class="fas fa-filter"></i> Filter Programs</h2>
+    <form id="degreeForm" class="search-form">
+      <!-- Location toggle -->
+      <div class="form-group">
+        <label>Location</label>
+        <div class="btn-group" role="group">
+          <input type="radio" class="btn-check" name="location" id="locIndia" value="India" autocomplete="off" checked>
+          <label class="btn btn-outline-primary" for="locIndia">India</label>
+          <input type="radio" class="btn-check" name="location" id="locAbroad" value="Abroad" autocomplete="off">
+          <label class="btn btn-outline-primary" for="locAbroad">Abroad</label>
+        </div>
+      </div>
 
-    <style>
-        .degree-main {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 15px;
-        }
-        .degree-main h1 {
-            font-size: 2.8rem;
-            font-weight: 800;
-            color: #2c3e50;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        .content-section {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            transition: transform 0.3s ease;
-        }
-        .content-section:hover {
-            transform: translateY(-5px);
-        }
-        .content-section h2 {
-            color: #34495e;
-            margin-top: 0;
-            font-size: 1.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .content-section p {
-            font-size: 1.1rem;
-            color: #555;
-            line-height: 1.7;
-        }
-        .search-form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.2rem;
-            margin-bottom: 2rem;
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        .search-form select, .search-form input {
-            padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            font-size: 1rem;
-            flex: 1;
-            min-width: 200px;
-            background: #fff;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .search-form select:focus, .search-form input:focus {
-            border-color: #34495e;
-            box-shadow: 0 0 8px rgba(52, 73, 94, 0.2);
-            outline: none;
-        }
-        .search-form button {
-            padding: 0.75rem 2rem;
-            background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s ease, background 0.3s ease;
-        }
-        .search-form button:hover {
-            transform: translateY(-2px);
-            background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%);
-        }
-        .search-form button i {
-            margin-right: 0.5rem;
-        }
-        .degree-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-        .degree-item {
-            background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-            border: none;
-            border-radius: 12px;
-            padding: 1.5rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        .degree-item:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-        }
-        .degree-title {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #34495e;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .degree-details {
-            font-size: 0.95rem;
-            color: #666;
-        }
-        .degree-details p {
-            margin: 0.3rem 0;
-        }
-        .career-outlook, .education-requirements, .skills-list {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e2e8f0;
-        }
-        .career-outlook h3, .education-requirements h3, .skills-list h3 {
-            font-size: 1.1rem;
-            color: #34495e;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .career-outlook p, .education-requirements p, .skills-list p {
-            font-size: 0.9rem;
-            color: #555;
-            margin: 0.2rem 0;
-        }
-        .skills-list ul {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-        }
-        .skills-list li {
-            font-size: 0.9rem;
-            color: #555;
-            margin: 0.2rem 0;
-        }
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(90deg, #34495e 0%, #2c3e50 100%);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-top: 1rem;
-            transition: transform 0.2s ease, background 0.3s ease;
-        }
-        .cta-button:hover {
-            transform: translateY(-3px);
-            background: linear-gradient(90deg, #2c3e50 0%, #34495e 100%);
-        }
-        .no-results {
-            font-size: 1.2rem;
-            color: #666;
-            text-align: center;
-            padding: 1.5rem;
-            background: #f8d7da;
-            border-radius: 8px;
-            border: 1px solid #f5c6cb;
-        }
-        .acknowledgment {
-            font-size: 0.9rem;
-            color: #666;
-            text-align: center;
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f0f4f8;
-            border-radius: 8px;
-        }
-        .select2-container {
-            width: 100% !important;
-            min-width: 200px;
-        }
-    </style>
+      <!-- Degree Level -->
+      <div class="form-group">
+        <label for="degreeLevel">Degree Level</label>
+        <select name="degree_level" id="degreeLevel">
+          <option value="">Any</option>
+          <option>Diploma</option>
+          <option>Bachelor</option>
+          <option>Master</option>
+          <option>PhD</option>
+        </select>
+      </div>
 
-    <div class="degree-main">
-        <h1>Explore Degrees</h1>
-        
-        <section class="content-section">
-            <h2><i class="fas fa-search"></i> Find Your Perfect Degree</h2>
-            <p>Discover degree programs and courses aligned with your interests and location.</p>
-            <form class="search-form" method="GET" action="{{ url_for('degree') }}">
-                <select name="degree_level">
-                    <option value="">Select Degree Level</option>
-                    {% for level in degree_levels %}
-                        <option value="{{ level }}" {% if selected_degree_level == level %}selected{% endif %}>{{ level }}</option>
-                    {% endfor %}
-                </select>
-                <select name="field_of_study">
-                    <option value="">Select Field of Study</option>
-                    {% for field in fields_of_study %}
-                        <option value="{{ field }}" {% if selected_field_of_study == field %}selected{% endif %}>{{ field }}</option>
-                    {% endfor %}
-                </select>
-                <select name="duration">
-                    <option value="">Select Duration</option>
-                    {% for dur in durations %}
-                        <option value="{{ dur }}" {% if selected_duration == dur %}selected{% endif %}>{{ dur }}</option>
-                    {% endfor %}
-                </select>
-                <select name="country" onchange="this.form.submit()">
-                    <option value="">Select Country</option>
-                    {% for country in countries %}
-                        <option value="{{ country }}" {% if selected_country == country %}selected{% endif %}>{{ country }}</option>
-                    {% endfor %}
-                </select>
-                <select name="university" class="university-select">
-                    <option value="">Select University</option>
-                    {% for uni in universities %}
-                        <option value="{{ uni }}" {% if selected_university == uni %}selected{% endif %}>{{ uni }}</option>
-                    {% endfor %}
-                </select>
-                <select name="sort_by">
-                    <option value="">Sort By</option>
-                    <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title</option>
-                    <option value="duration" {% if sort_by == 'duration' %}selected{% endif %}>Duration</option>
-                    <option value="university" {% if sort_by == 'university' %}selected{% endif %}>University</option>
-                </select>
-                <input type="text" name="keyword" placeholder="Search by keyword" value="{{ keyword }}">
-                <button type="submit"><i class="fas fa-search"></i> Search</button>
-            </form>
-        </section>
+      <!-- Field of Study -->
+      <div class="form-group">
+        <label for="fieldOfStudy">Field of Study</label>
+        <select name="field_of_study" id="fieldOfStudy">
+          <option value="">Any</option>
+          <option>Engineering</option>
+          <option>Medicine</option>
+          <option>Business</option>
+          <option>Arts</option>
+          <option>Science</option>
+          <option>Computer Science</option>
+        </select>
+      </div>
 
-        <section class="content-section">
-            <h2><i class="fas fa-graduation-cap"></i> Featured Degrees & Courses</h2>
-            {% if degrees %}
-                <div class="degree-list">
-                    {% for degree in degrees %}
-                        <div class="degree-item">
-                            <div class="degree-title">
-                                <i class="fas fa-book"></i> {{ degree.title }}
-                            </div>
-                            <div class="degree-details">
-                                <p><i class="fas fa-university"></i> {{ degree.university }}</p>
-                                <p><i class="fas fa-clock"></i> Duration: {{ degree.duration }}</p>
-                                <p><i class="fas fa-info-circle"></i> {{ degree.description | default('No description available') }}</p>
-                                {% if degree.degree_level %}
-                                    <p><i class="fas fa-school"></i> Level: {{ degree.degree_level }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="acknowledgment">
-                    <p>This site uses data from <a href="https://www.edx.org/api-docs" target="_blank">edX API</a> and other educational sources.</p>
-                </div>
-            {% else %}
-                <p class="no-results"><i class="fas fa-exclamation-circle"></i> No degrees or courses found matching your criteria.</p>
-                <div class="acknowledgment">
-                    <p>This site uses data from <a href="https://www.edx.org/api-docs" target="_blank">edX API</a> and other educational sources.</p>
-                </div>
-            {% endif %}
-        </section>
+      <!-- Duration -->
+      <div class="form-group">
+        <label for="duration">Duration</label>
+        <select name="duration" id="duration">
+          <option value="">Any</option>
+          <option>1-2 years</option>
+          <option>3-4 years</option>
+          <option>4+ years</option>
+        </select>
+      </div>
 
-        <section class="content-section">
-            <h2><i class="fas fa-balance-scale"></i> Degree Comparison Tool</h2>
-            <p>Compare different degree programs and courses side by side.</p>
-            <a href="{{ url_for('compare_degrees') }}" class="cta-button">Compare Degrees</a>
-        </section>
+      <!-- Country (only for Abroad) -->
+      <div class="form-group" id="countryGroup" style="display:none;">
+        <label for="country">Country</label>
+        <select name="country" id="country">
+          <option value="">Any</option>
+          <option>United States</option>
+          <option>United Kingdom</option>
+          <option>Canada</option>
+          <option>Australia</option>
+        </select>
+      </div>
+
+      <button type="submit"><i class="fas fa-search"></i> Search</button>
+    </form>
+
+    <div id="testRequirements">
+      <h3><i class="fas fa-vial"></i> Required Tests</h3>
+      <ul id="testList"></ul>
     </div>
+  </section>
 
-    <script>
-        $(document).ready(function() {
-            $('.university-select').select2({
-                placeholder: "Select University",
-                allowClear: true,
-                width: '100%'
-            });
-        });
-    </script>
+  <section class="content-section">
+    <h2><i class="fas fa-university"></i> Top Institutes</h2>
+    <div id="institutesList" class="degree-list">
+      <!-- JS will inject institute cards here -->
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('degreeForm');
+  const countryGroup = document.getElementById('countryGroup');
+  const testList = document.getElementById('testList');
+  const institutesList = document.getElementById('institutesList');
+
+  const testMap = {
+    India: ['JEE Main', 'NEET'],
+    Abroad: ['TOEFL', 'IELTS']
+  };
+
+  function updateLocationUI() {
+    const loc = form.location.value;
+    countryGroup.style.display = loc === 'Abroad' ? 'block' : 'none';
+    renderTests(loc);
+  }
+
+  function renderTests(loc) {
+    const tests = testMap[loc] || [];
+    testList.innerHTML = tests.map(t => `<li>${t}</li>`).join('');
+  }
+
+  function renderInstitutes(list) {
+    if (!list.length) {
+      institutesList.innerHTML = '<div class="no-results">No institutes found.</div>';
+      return;
+    }
+    institutesList.innerHTML = list.slice(0,10).map(inst => `
+      <div class="degree-item">
+        <div class="degree-title"><i class="fas fa-school"></i> ${inst.name}</div>
+        <div class="degree-details">
+          <p><i class="fas fa-map-marker-alt"></i> ${inst.country}${inst['state-province'] ? ', ' + inst['state-province'] : ''}</p>
+          <p><i class="fas fa-globe"></i> <a href="${inst.web_pages[0]}" target="_blank">Visit Website</a></p>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function fetchInstitutes(params) {
+    let url = 'https://universities.hipolabs.com/search?';
+    if (params.location === 'India') {
+      url += 'country=India';
+    } else if (params.country) {
+      url += 'country=' + encodeURIComponent(params.country);
+    }
+    if (params.field_of_study) {
+      url += '&name=' + encodeURIComponent(params.field_of_study);
+    }
+    fetch(url)
+      .then(r => r.json())
+      .then(data => renderInstitutes(data))
+      .catch(err => {
+        console.error(err);
+        institutesList.innerHTML = '<div class="no-results">Error loading institutes.</div>';
+      });
+  }
+
+  form.location.forEach(radio =>
+    radio.addEventListener('change', updateLocationUI)
+  );
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const params = Object.fromEntries(new FormData(form).entries());
+    fetchInstitutes(params);
+  });
+
+  // Initial load
+  updateLocationUI();
+  fetchInstitutes({ location: 'India' });
+});
+</script>
 {% endblock %}
