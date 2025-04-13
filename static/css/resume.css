@@ -1,0 +1,108 @@
+.resume-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    min-height: 100vh;
+}
+.builder-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    transition: transform 0.2s;
+}
+.builder-section:hover {
+    transform: translateY(-5px);
+}
+.preview-section {
+    background: white;
+    padding: 2rem;
+    border-left: 6px solid #1e3c72;
+    border-radius: 0 15px 15px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+}
+.form-control {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.btn-add {
+    background: #28a745;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin-top: 1rem;
+    transition: background 0.3s;
+    border: none;
+    cursor: pointer;
+}
+.btn-add:hover {
+    background: #218838;
+}
+.btn-primary {
+    background: #1e3c72;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    color: white;
+    cursor: pointer;
+}
+.skill-tag {
+    background: #1e3c72;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+.skill-tag button {
+    background: transparent;
+    border: none;
+    color: white;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+#suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+}
+.suggestion-item:hover {
+    background: #e9ecef;
+}
+.preview-content h1 { color: #1e3c72; margin-bottom: 1.5rem; }
+.preview-content h3 { color: #2c5282; border-bottom: 2px solid #1e3c72; padding-bottom: 5px; }
+.preview-content .education-item, .preview-content .experience-item {
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 3px solid #1e3c72;
+}
+.photo-preview img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+}

@@ -448,7 +448,7 @@
             </a>
             <ul class="dropdown-menu" aria-labelledby="testsDropdown">
                 <li><a class="dropdown-item test-link {% if active_page == 'career_assessment' %}active{% endif %}" href="{{ url_for('career_assessment') }}"><i class="fas fa-briefcase"></i> Career Assessment</a></li>
-                <li><a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'sample' %}active{% endif %}" href="{{ url_for('test', type='sample') }}"><i class="fas fa-flask"></i> Sample Test</a></li>
+                <li><a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'sample' %}active{% endif %}" href="{{ url_for('test', type='sample') }}"><i class="fas fa-flask"></i> Work Ethics Test</a></li>
                 <li>
                     {% if current_user.is_authenticated %}
                         <a class="dropdown-item test-link {% if active_page == 'test' and test_type == 'aptitude' %}active{% endif %}" href="{{ url_for('test', type='aptitude') }}"><i class="fas fa-brain"></i> Aptitude Test</a>
