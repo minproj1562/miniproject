@@ -1,223 +1,220 @@
-let skills = {{ resume.get('skills', [])|tojson|safe }};
-let photoPreview = document.getElementById('previewPhoto');
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded and JavaScript running');
-    updatePreview();
-    updateTemplatePreview(); // Initial template load
-    const skillInput = document.getElementById('skillInput');
-    const suggestionsDiv = document.getElementById('suggestions');
-    const selectedSkillsDiv = document.getElementById('selectedSkills');
-    const hiddenSkills = document.getElementById('hiddenSkills');
-
-    document.querySelector('[name="photo"]').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                photoPreview.src = e.target.result;
-                photoPreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-        updatePreview();
-    });
-
-    document.querySelectorAll('input, textarea').forEach(element => {
-        element.addEventListener('input', updatePreview);
-    });
-
+// Debounce function to limit frequent calls
+function debounce(func, wait) {
     let timeout;
-    skillInput.addEventListener('input', function(e) {
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
         clearTimeout(timeout);
-        timeout = setTimeout(async () => {
-            const value = e.target.value.trim();
-            if (value.length < 2) {
-                suggestionsDiv.innerHTML = '';
-                return;
-            }
-            const response = await fetch(`/api/career-suggestions?skills=${encodeURIComponent(value)}`);
-            const suggestions = await response.json();
-            suggestionsDiv.innerHTML = suggestions.map(skill => `
-                <div class="suggestion-item" onclick="addSkill('${skill}')">${skill}</div>
-            `).join('');
-        }, 300);
-    });
+        timeout = setTimeout(later, wait);
+    };
+}
 
-    skillInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && skillInput.value.trim()) {
-            e.preventDefault();
-            addSkill(skillInput.value.trim());
-        }
-    });
+// Update preview with debounced server call
+const updatePreview = debounce(() => {
+    const form = document.getElementById('resumeForm');
+    const formData = new FormData(form);
 
-    document.getElementById('resumeForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        hiddenSkills.value = JSON.stringify(skills);
-        const formData = new FormData(this);
-        const response = await fetch(this.action, {
-            method: 'POST',
-            body: formData
-        });
-        const result = await response.json();
-        if (result.success) {
+    fetch('/resume_builder', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            localStorage.setItem('lastResumeId', JSON.stringify(data.resume_id)); // Store resume ID
+            fetchResumePreview(data.resume_id);
             alert('Resume saved successfully!');
-            window.location.href = `/export-resume/${result.resume_id}`;
         } else {
-            alert('Failed to save resume.');
+            alert(`Error saving resume: ${data.error || 'Unknown error'}`);
         }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('An error occurred while updating the preview.');
     });
+}, 500); // 500ms debounce delay
 
-    updateSkillsDisplay();
-});
+function fetchResumePreview(resumeId) {
+    fetch(`/get-template-html?template=${document.getElementById('templateSelect').value}`)
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('resumePreview').innerHTML = html;
+
+        // Fetch latest resume data from server
+        fetch(`/resume_builder?resume_id=${resumeId}`, {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resume = data.resume || {};
+            localStorage.setItem('resumePreview', JSON.stringify(resume));
+
+            // Update preview elements
+            document.getElementById('previewName').textContent = resume.personal_info?.name || 'Your Name';
+            document.getElementById('previewEmail').textContent = `Email: ${resume.personal_info?.email || 'your.email@example.com'}`;
+            document.getElementById('previewPhone').textContent = `Phone: ${resume.personal_info?.phone || '(123) 456-7890'}`;
+            document.getElementById('previewLinkedIn').textContent = `LinkedIn: ${resume.personal_info?.linkedin || 'linkedin.com/in/yourprofile'}`;
+            document.getElementById('previewSummary').textContent = resume.summary || 'Your professional summary will appear here.';
+
+            // Update education
+            const educationPreview = document.getElementById('previewEducation');
+            educationPreview.innerHTML = '<h3>Education</h3>';
+            (resume.education || []).forEach(edu => {
+                const div = document.createElement('div');
+                div.className = 'education-item';
+                div.innerHTML = `<h4>${edu.degree || ''}</h4><p>${edu.institution || ''} - ${edu.date || ''}</p>`;
+                educationPreview.appendChild(div);
+            });
+
+            // Update experience
+            const experiencePreview = document.getElementById('previewExperience');
+            experiencePreview.innerHTML = '<h3>Experience</h3>';
+            (resume.experience || []).forEach(exp => {
+                const div = document.createElement('div');
+                div.className = 'experience-item';
+                div.innerHTML = `<h4>${exp.position || ''}</h4><p>${exp.company || ''} - ${exp.date || ''}</p><p>${exp.description || ''}</p>`;
+                experiencePreview.appendChild(div);
+            });
+
+            // Update skills
+            const skillsPreview = document.getElementById('previewSkills');
+            skillsPreview.innerHTML = '<h3>Skills</h3>';
+            (resume.skills || []).forEach(skill => {
+                const span = document.createElement('span');
+                span.className = 'skill-tag';
+                span.textContent = skill;
+                skillsPreview.appendChild(span);
+            });
+
+            // Update photo if present
+            const previewPhoto = document.getElementById('previewPhoto');
+            if (resume.photo) {
+                previewPhoto.src = resume.photo;
+                previewPhoto.style.display = 'block';
+            } else {
+                previewPhoto.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching resume data:', error);
+            alert('Failed to load preview data.');
+        });
+    })
+    .catch(error => {
+        console.error('Error loading template:', error);
+        alert('Failed to load resume template.');
+    });
+}
 
 function addEducation() {
-    const fields = document.getElementById('educationFields');
-    const newEdu = document.createElement('div');
-    newEdu.className = 'dynamic-section mt-2';
-    newEdu.innerHTML = `
+    const educationFields = document.getElementById('educationFields');
+    const existingFields = educationFields.getElementsByClassName('dynamic-section').length;
+    if (existingFields >= 5) { // Limit to 5 education entries
+        alert('Maximum 5 education entries allowed.');
+        return;
+    }
+
+    const newField = document.createElement('div');
+    newField.className = 'dynamic-section mt-2';
+    newField.innerHTML = `
         <input type="text" class="form-control" name="education[]" placeholder="Degree" required onchange="updatePreview()">
         <input type="text" class="form-control" name="institution[]" placeholder="Institution" required onchange="updatePreview()">
         <input type="month" class="form-control" name="education_date[]" onchange="updatePreview()">
         <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
     `;
-    fields.appendChild(newEdu);
+    educationFields.appendChild(newField);
 }
 
 function addExperience() {
-    const fields = document.getElementById('experienceFields');
-    const newExp = document.createElement('div');
-    newExp.className = 'dynamic-section mt-2';
-    newExp.innerHTML = `
-        <input type="text" class="form-control" name="position[]" placeholder="Position" required onchange="updatePreview()">
+    const experienceFields = document.getElementById('experienceFields');
+    const existingFields = experienceFields.getElementsByClassName('dynamic-section').length;
+    if (existingFields >= 5) { // Limit to 5 experience entries
+        alert('Maximum 5 experience entries allowed.');
+        return;
+    }
+
+    const newField = document.createElement('div');
+    newField.className = 'dynamic-section mt-2';
+    newField.innerHTML = `
+        <input type="text" class="form-control" name="position[]" placeholder="Position" onchange="updatePreview()">
         <input type="text" class="form-control" name="company[]" placeholder="Company" onchange="updatePreview()">
         <textarea class="form-control" name="description[]" placeholder="Job Description" onchange="updatePreview()"></textarea>
         <input type="month" class="form-control" name="experience_date[]" onchange="updatePreview()">
         <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
     `;
-    fields.appendChild(newExp);
-}
-
-function addSkill(skill) {
-    if (!skill || skills.includes(skill)) return;
-    skills.push(skill);
-    updateSkillsDisplay();
-    document.getElementById('skillInput').value = '';
-    document.getElementById('suggestions').innerHTML = '';
-    updatePreview();
+    experienceFields.appendChild(newField);
 }
 
 function removeSkill(skill) {
+    let skills = JSON.parse(document.getElementById('hiddenSkills').value || '[]');
     skills = skills.filter(s => s !== skill);
-    updateSkillsDisplay();
+    document.getElementById('hiddenSkills').value = JSON.stringify(skills);
+    document.getElementById('selectedSkills').innerHTML = skills.map(s => `<span class="skill-tag">${s} <button type="button" onclick="removeSkill('${s}'); updatePreview()">×</button></span>`).join('');
+    updatePreview(); // Ensure preview reflects change
+}
+
+function updateTemplatePreview() {
+    const template = document.getElementById('templateSelect').value;
+    document.getElementById('currentTemplate').value = template;
     updatePreview();
 }
 
-function updateSkillsDisplay() {
-    document.getElementById('selectedSkills').innerHTML = skills.map(skill => `
-        <span class="skill-tag">${skill} <button type="button" onclick="removeSkill('${skill}'); updatePreview()">×</button></span>
-    `).join('');
-}
-
-function updatePreview() {
-    const name = document.querySelector('[name="name"]').value || '{{ resume.get('personal_info', {}).get('name', 'Your Name') }}';
-    const email = document.querySelector('[name="email"]').value || '{{ resume.get('personal_info', {}).get('email', 'your.email@example.com') }}';
-    const phone = document.querySelector('[name="phone"]').value || '{{ resume.get('personal_info', {}).get('phone', '(123) 456-7890') }}';
-    const linkedin = document.querySelector('[name="linkedin"]').value || '{{ resume.get('personal_info', {}).get('linkedin', 'linkedin.com/in/yourprofile') }}';
-    const summary = document.querySelector('[name="summary"]').value || '{{ resume.get('summary', 'Your professional summary will appear here.') }}';
-
-    document.getElementById('previewName').textContent = name;
-    document.getElementById('previewEmail').textContent = `Email: ${email}`;
-    document.getElementById('previewPhone').textContent = `Phone: ${phone}`;
-    document.getElementById('previewLinkedIn').textContent = `LinkedIn: ${linkedin}`;
-    document.getElementById('previewSummary').textContent = summary;
-
-    const eduPreview = document.getElementById('previewEducation');
-    eduPreview.innerHTML = '<h3>Education</h3>' + Array.from(document.querySelectorAll('#educationFields .dynamic-section'))
-        .map(section => {
-            const degree = section.querySelector('[name="education[]"]').value;
-            const institution = section.querySelector('[name="institution[]"]').value;
-            const date = section.querySelector('[name="education_date[]"]').value;
-            return degree && institution ? `
-                <div class="education-item">
-                    <h4>${degree}</h4>
-                    <p>${institution} - ${date || ''}</p>
-                </div>
-            ` : '';
-        }).join('');
-
-    const expPreview = document.getElementById('previewExperience');
-    expPreview.innerHTML = '<h3>Experience</h3>' + Array.from(document.querySelectorAll('#experienceFields .dynamic-section'))
-        .map(section => {
-            const position = section.querySelector('[name="position[]"]').value;
-            const company = section.querySelector('[name="company[]"]').value;
-            const desc = section.querySelector('[name="description[]"]').value;
-            const date = section.querySelector('[name="experience_date[]"]').value;
-            return position ? `
-                <div class="experience-item">
-                    <h4>${position}</h4>
-                    <p>${company || ''} - ${date || ''}</p>
-                    <p>${desc || ''}</p>
-                </div>
-            ` : '';
-        }).join('');
-
-    document.getElementById('previewSkills').innerHTML = '<h3>Skills</h3>' + skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('');
-    updateTemplatePreview(); // Sync template with content changes
-}
-
-async function updateTemplatePreview() {
-    const templateSelect = document.getElementById('templateSelect');
-    const currentTemplate = templateSelect.value;
-    document.getElementById('currentTemplate').value = currentTemplate;
-
-    // Fetch the template HTML
-    const response = await fetch(`/get-template-html?template=${currentTemplate}`);
-    const templateHtml = await response.text();
-
-    // Inject the template HTML into the preview
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(templateHtml, 'text/html');
-    const resumeContainer = doc.querySelector('.resume-container');
-    const preview = document.getElementById('resumePreview');
-
-    // Preserve dynamic content
-    const photo = preview.querySelector('#previewPhoto');
-    const name = preview.querySelector('#previewName');
-    const contactInfo = preview.querySelector('.contact-info');
-    const summary = preview.querySelector('#previewSummary');
-    const education = preview.querySelector('#previewEducation');
-    const experience = preview.querySelector('#previewExperience');
-    const skills = preview.querySelector('#previewSkills');
-
-    // Replace preview content with template structure
-    preview.innerHTML = resumeContainer ? resumeContainer.innerHTML : templateHtml;
-    preview.querySelector('.photo-preview').appendChild(photo);
-    preview.querySelector('h1').replaceWith(name);
-    preview.querySelector('.contact-info').replaceWith(contactInfo);
-    preview.querySelector('.summary-preview p').replaceWith(summary);
-    preview.querySelector('#previewEducation').replaceWith(education);
-    preview.querySelector('#previewExperience').replaceWith(experience);
-    preview.querySelector('#previewSkills').replaceWith(skills);
-
-    // Apply template-specific styles (simplified approach)
-    const style = doc.querySelector('style').textContent;
-    const styleElement = document.createElement('style');
-    styleElement.textContent = style;
-    preview.appendChild(styleElement);
-}
-
-async function exportPDF() {
-    document.getElementById('hiddenSkills').value = JSON.stringify(skills);
-    const formData = new FormData(document.getElementById('resumeForm'));
-    const response = await fetch('/resume', {
-        method: 'POST',
-        body: formData
-    });
-    const result = await response.json();
-    if (result.success) {
-        window.location.href = `/export-resume/${result.resume_id}`;
+function exportPDF() {
+    const resumeId = JSON.parse(localStorage.getItem('lastResumeId'));
+    if (resumeId) {
+        window.location.href = `/export-resume/${resumeId}`;
     } else {
-        alert('Failed to generate PDF.');
+        alert('Please save your resume first!');
     }
 }
+
+// Suggestion dropdown
+document.getElementById('skillInput').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    if (query.length < 1) {
+        document.getElementById('suggestions').style.display = 'none';
+        return;
+    }
+    fetch(`/api/career-suggestions?skills=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(suggestions => {
+        const suggestionsDiv = document.getElementById('suggestions');
+        suggestionsDiv.innerHTML = suggestions.map(s => `<div class="suggestion-item" onclick="selectSuggestion('${s}')">${s}</div>`).join('');
+        suggestionsDiv.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error fetching suggestions:', error);
+        document.getElementById('suggestions').style.display = 'none';
+    });
+});
+
+function selectSuggestion(skill) {
+    let skills = JSON.parse(document.getElementById('hiddenSkills').value || '[]');
+    if (!skills.includes(skill)) {
+        skills.push(skill);
+        document.getElementById('hiddenSkills').value = JSON.stringify(skills);
+        document.getElementById('selectedSkills').innerHTML += `<span class="skill-tag">${skill} <button type="button" onclick="removeSkill('${skill}'); updatePreview()">×</button></span>`;
+    }
+    document.getElementById('skillInput').value = '';
+    document.getElementById('suggestions').style.display = 'none';
+    updatePreview();
+}
+
+// Close suggestions only when clicking outside the input
+document.addEventListener('click', function(e) {
+    const skillsContainer = document.getElementById('skillsContainer');
+    const skillInput = document.getElementById('skillInput');
+    if (!skillsContainer.contains(e.target) && e.target !== skillInput) {
+        document.getElementById('suggestions').style.display = 'none';
+    }
+});
+
+// Initialize preview on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const resumeId = JSON.parse(localStorage.getItem('lastResumeId'));
+    if (resumeId) {
+        fetchResumePreview(resumeId);
+    }
+});

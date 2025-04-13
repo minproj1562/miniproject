@@ -2,26 +2,78 @@
 {% block title %}Skill Gap Assessment{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/aptitude.css') }}?v={{ '20250412' }}"> <!-- Cache busting -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aptitude.css') }}?v={{ '20250412' }}">
 <style>
-    .instructions, .results { display: none; }
-    .assessment-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-    .progress-container { margin-bottom: 20px; }
-    .progress-bar { height: 20px; background-color: #4CAF50; }
-    .timer-alert { font-size: 1.2em; margin-bottom: 10px; }
-    .question-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .category-badge { background: #007bff; color: #fff; padding: 5px 10px; border-radius: 12px; }
-    .time-limit { float: right; color: #666; }
-    .options-grid { display: grid; gap: 10px; margin-top: 20px; }
-    .submit-btn { background-color: #007bff; color: #fff; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-    .submit-btn:hover { background-color: #0056b3; }
-    .assessment-controls { text-align: center; margin-top: 20px; }
+    .assessment-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: linear-gradient(135deg, #2c2e4a, #1a001a);
+        color: #fff;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    .progress-container {
+        margin-bottom: 20px;
+    }
+    .progress-bar {
+        height: 20px;
+        background: #4ecdc4;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+    .timer-alert {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        color: #ff6b6b;
+    }
+    .question-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+    }
+    .category-badge {
+        background: #00ffcc;
+        color: #1a001a;
+        padding: 5px 10px;
+        border-radius: 12px;
+    }
+    .time-limit {
+        float: right;
+        color: #fff;
+    }
+    .options-grid {
+        display: grid;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .submit-btn {
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .submit-btn:hover {
+        background: linear-gradient(45deg, #4ecdc4, #ff6b6b);
+        transform: scale(1.05);
+    }
+    .field-selection select {
+        background: #fff;
+        color: #1a001a;
+        padding: 10px;
+        border-radius: 5px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="assessment-container">
-    <h1 class="text-3xl font-bold mb-8 text-center">Skill Gap Assessment</h1>
+    <h1 class="text-3xl font-bold mb-8 text-center" style="color: #00ffcc;">Skill Gap Assessment</h1>
 
     <!-- Field Selection -->
     <div class="field-selection text-center mb-6">
@@ -30,91 +82,58 @@
             <label for="field" class="text-lg font-semibold">Select Field:</label>
             <select name="field" id="field" onchange="this.form.submit()" class="p-2 rounded border" required>
                 <option value="" disabled {% if not selected_field %}selected{% endif %}>-- Select a Field --</option>
-                <option value="Software Development" {% if selected_field == 'Software Development' %}selected{% endif %}>Software Development</option>
-                <option value="Data Science" {% if selected_field == 'Data Science' %}selected{% endif %}>Data Science</option>
-                <option value="Graphic Design" {% if selected_field == 'Graphic Design' %}selected{% endif %}>Graphic Design</option>
-                <option value="Business Management" {% if selected_field == 'Business Management' %}selected{% endif %}>Business Management</option>
-                <option value="Scientific" {% if selected_field == 'Scientific' %}selected{% endif %}>Scientific</option>
-                <option value="Cybersecurity" {% if selected_field == 'Cybersecurity' %}selected{% endif %}>Cybersecurity</option>
-                <option value="Environmental Engineering" {% if selected_field == 'Environmental Engineering' %}selected{% endif %}>Environmental Engineering</option>
-                <option value="Ethical Hacking" {% if selected_field == 'Ethical Hacking' %}selected{% endif %}>Ethical Hacking</option>
-                <option value="Urban Planning" {% if selected_field == 'Urban Planning' %}selected{% endif %}>Urban Planning</option>
-                <option value="Voice Acting" {% if selected_field == 'Voice Acting' %}selected{% endif %}>Voice Acting</option>
-                <option value="Astronomy" {% if selected_field == 'Astronomy' %}selected{% endif %}>Astronomy</option>
-                <option value="Wildlife Conservation" {% if selected_field == 'Wildlife Conservation' %}selected{% endif %}>Wildlife Conservation</option>
-                <option value="Medicine" {% if selected_field == 'Medicine' %}selected{% endif %}>Medicine</option>
-                <option value="Education" {% if selected_field == 'Education' %}selected{% endif %}>Education</option>
-                <option value="Law" {% if selected_field == 'Law' %}selected{% endif %}>Business Management</option>
-                <option value="Mechanical Engineering" {% if selected_field == 'Mechanical Engineering' %}selected{% endif %}>Mechanical Engineering</option>   
+                {% for field_option in ["Software Development", "Data Science", "Graphic Design", "Business Management", "Scientific", "Cybersecurity", "Environmental Engineering", "Ethical Hacking", "Urban Planning", "Voice Acting", "Astronomy", "Wildlife Conservation", "Medicine", "Education", "Law", "Mechanical Engineering"] %}
+                    <option value="{{ field_option }}" {% if selected_field == field_option %}selected{% endif %}>{{ field_option }}</option>
+                {% endfor %}
             </select>
         </form>
     </div>
 
     {% if selected_field %}
-    <!-- Instructions Section -->
-    <div class="instructions">
-        <h2 class="text-2xl font-semibold mb-4">Instructions</h2>
-        <ul class="list-disc pl-5 mb-6">
-            <li>You have {{ initial_time }} seconds per question.</li>
-            <li>Please answer honestly based on your current skill level.</li>
-            <li>Click "Next" to proceed after selecting an answer.</li>
-            <li>The test will end after {{ total_questions }} questions or when time runs out.</li>
-        </ul>
-    </div>
-
-    <!-- Progress and Timer -->
-    <div class="progress-container">
-        <div class="progress-bar" id="progress-bar" style="width: {{ (completed_questions / total_questions * 100) if total_questions > 0 else 0 }}%"></div>
-    </div>
-    <div class="timer-alert" id="timer">
-        <i class="bi bi-clock"></i>
-        Time Left: <span id="time-left">{{ (initial_time // 60) }}:{{ (initial_time % 60)|zfill(2) }}</span>
-    </div>
-    <div class="question-counter" id="question-counter">
-        Questions Answered: <span id="answered-count">{{ completed_questions }}</span> / {{ total_questions }}
-    </div>
-
-    <!-- Question Section -->
-    <div class="questions-wrapper" id="question-wrapper">
-        {% if questions and current_question_index < total_questions %}
-        <div class="question-card" data-question-id="{{ questions[current_question_index].id }}">
-            <div class="question-header">
-                <span class="category-badge">{{ selected_field }}</span>
-                <span class="time-limit">⏱ {{ questions[current_question_index].time_limit }}s</span>
-            </div>
-            <h3 class="question-text" id="question-text">{{ questions[current_question_index].text | safe }}</h3>
-            <div class="options-grid" id="options">
-                {% for option in questions[current_question_index].options %}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" 
-                           name="{{ questions[current_question_index].id }}" 
-                           value="{{ loop.index0 }}" 
-                           id="{{ questions[current_question_index].id }}-{{ loop.index0 }}"
-                           required>
-                    <label class="form-check-label" for="{{ questions[current_question_index].id }}-{{ loop.index0 }}">
-                        {{ option }}
-                    </label>
-                </div>
-                {% endfor %}
-            </div>
+        <!-- Progress and Timer -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar" style="width: {{ (completed_questions / total_questions * 100) if total_questions > 0 else 0 }}%"></div>
         </div>
-        {% else %}
-        <p>No questions available. Please select a field or try again later.</p>
-        {% endif %}
-    </div>
+        <div class="timer-alert" id="timer">
+            <i class="bi bi-clock"></i> Time Left: <span id="time-left">{{ (initial_time // 60) }}:{{ (initial_time % 60)|zfill(2) }}</span>
+        </div>
+        <div class="question-counter">
+            Questions Answered: <span id="answered-count">{{ completed_questions }}</span> / {{ total_questions }}
+        </div>
 
-    <!-- Assessment Controls -->
-    <div class="assessment-controls">
-        <button id="submit-btn" class="submit-btn">Next</button>
-    </div>
+        <!-- Question Section -->
+        <div class="questions-wrapper" id="question-wrapper">
+            {% if questions and current_question_index < total_questions %}
+                <div class="question-card" data-question-id="{{ questions[current_question_index].id }}">
+                    <div class="question-header">
+                        <span class="category-badge">{{ selected_field }}</span>
+                        <span class="time-limit">⏱ {{ questions[current_question_index].time_limit }}s</span>
+                    </div>
+                    <h3 class="question-text">{{ questions[current_question_index].text | safe }}</h3>
+                    <div class="options-grid">
+                        {% for option in questions[current_question_index].options %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="{{ questions[current_question_index].id }}" 
+                                       value="{{ loop.index0 }}" 
+                                       id="{{ questions[current_question_index].id }}-{{ loop.index0 }}"
+                                       required>
+                                <label class="form-check-label" for="{{ questions[current_question_index].id }}-{{ loop.index0 }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <p>No questions available. Please select a field or try again later.</p>
+            {% endif %}
+        </div>
 
-    <!-- Results Section (Hidden until test completion) -->
-    <div class="results" id="results" style="display: none;">
-        <h2 class="text-2xl font-semibold mb-4">Results</h2>
-        <p>Your score for {{ selected_field }}: <span id="result-score">0%</span></p>
-        <div id="weaknesses"></div>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
-    </div>
+        <!-- Assessment Controls -->
+        <div class="assessment-controls text-center">
+            <button id="submit-btn" class="submit-btn">Next</button>
+        </div>
     {% endif %}
 </div>
 
@@ -125,16 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('progress-bar');
     const submitBtn = document.getElementById('submit-btn');
     const questionWrapper = document.getElementById('question-wrapper');
-    const resultsDiv = document.getElementById('results');
-    const resultScore = document.getElementById('result-score');
-    const weaknessesDiv = document.getElementById('weaknesses');
     let timeLeft = {{ initial_time|default(60) }};
     let answeredCount = {{ completed_questions|default(0) }};
-    const totalQuestions = {{ total_questions|default(10) }}; // Ensure 10 questions
+    const totalQuestions = {{ total_questions|default(10) }};
     let timerInterval;
 
-    if (totalQuestions > 0 && timerElement && answeredCountElement && progressBar && submitBtn && questionWrapper) {
-        // Start timer
+    if (submitBtn && questionWrapper && totalQuestions > 0) {
         timerInterval = setInterval(() => {
             timeLeft--;
             const minutes = Math.floor(timeLeft / 60);
@@ -146,88 +161,62 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1000);
 
-        // Handle Next button click
         submitBtn.addEventListener('click', (e) => {
             e.preventDefault();
             submitAnswer();
         });
 
         async function submitAnswer() {
-    const questionId = questionWrapper.querySelector('.question-card')?.dataset.questionId;
-    if (!questionId) {
-        alert('No question available.');
-        return;
-    }
-    const selected = document.querySelector(`input[name="${questionId}"]:checked`);
-    if (!selected) {
-        alert('Please select an answer before proceeding.');
-        return;
-    }
+            const questionId = questionWrapper.querySelector('.question-card')?.dataset.questionId;
+            if (!questionId) return;
 
-    const timeSpent = {{ initial_time|default(60) }} - timeLeft;
-    const response = { questionId: questionId, answer: selected.value };
+            const selected = document.querySelector(`input[name="${questionId}"]:checked`);
+            if (!selected) {
+                alert('Please select an answer.');
+                return;
+            }
 
-    try {
-        const res = await fetch('{{ url_for("interest_test_next") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                responses: [response],
-                time_spent: timeSpent,
-                current_question_index: answeredCount
-            })
-        });
+            const response = { questionId: questionId, answer: selected.value };
+            try {
+                const res = await fetch('{{ url_for("interest_test_next") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        responses: [response],
+                        time_spent: {{ initial_time|default(60) }} - timeLeft,
+                        current_question_index: answeredCount
+                    })
+                });
 
-        if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`Server error: ${text}`);
-        }
-
-        const data = await res.json();
-        console.log('Response:', data);
-
-        if (data.redirect) {
-            clearInterval(timerInterval);
-            window.location.href = data.redirect;
-        } else if (data.question && answeredCount < totalQuestions) {
-            updateQuestion(data.question, data.current_question_index);
-            timeLeft = data.initial_time || 60;
-            timerElement.textContent = `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`;
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                if (timeLeft <= 0) {
+                const data = await res.json();
+                if (data.redirect) {
                     clearInterval(timerInterval);
-                    submitAnswer();
+                    window.location.href = data.redirect;
+                } else if (data.question) {
+                    updateQuestion(data.question);
+                    timeLeft = data.initial_time || 60;
+                    answeredCount++;
+                    answeredCountElement.textContent = answeredCount;
+                    progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
                 }
-            }, 1000);
-            answeredCount++;
-            answeredCountElement.textContent = answeredCount;
-            progressBar.style.width = `${(answeredCount / totalQuestions) * 100}%`;
-        } else {
-            throw new Error('Unexpected response format or test limit reached');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
         }
-    } catch (error) {
-        console.error('Error submitting answer:', error);
-        alert(`Error: ${error.message}. Please try again.`);
-    }
-}
 
-        function updateQuestion(question, index) {
+        function updateQuestion(question) {
             questionWrapper.innerHTML = `
                 <div class="question-card" data-question-id="${question.id}">
                     <div class="question-header">
                         <span class="category-badge">{{ selected_field }}</span>
                         <span class="time-limit">⏱ ${question.time_limit}s</span>
                     </div>
-                    <h3 class="question-text" id="question-text">${question.text}</h3>
-                    <div class="options-grid" id="options">
+                    <h3 class="question-text">${question.text}</h3>
+                    <div class="options-grid">
                         ${question.options.map((opt, i) => `
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" 
@@ -244,27 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }
-
-        // Handle test completion (display results if redirected back)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('result')) {
-            questionWrapper.style.display = 'none';
-            submitBtn.style.display = 'none';
-            resultsDiv.style.display = 'block';
-            const score = urlParams.get('score');
-            const weaknesses = JSON.parse(decodeURIComponent(urlParams.get('weaknesses') || '{}'));
-            resultScore.textContent = `${score}%`;
-            if (Object.keys(weaknesses).length > 0) {
-                weaknessesDiv.innerHTML = '<h3>Weaknesses:</h3><ul>' +
-                    Object.entries(weaknesses).map(([topic, data]) => 
-                        `<li>${topic} (${data.count} errors): ${data.description}<br>Tips: ${data.tips.join(', ')}<br>Resources: ${data.resources.join(', ')}</li>`
-                    ).join('') + '</ul>';
-            } else {
-                weaknessesDiv.textContent = 'No significant weaknesses identified.';
-            }
-        }
-    } else {
-        console.error('Required DOM elements are missing or totalQuestions is invalid.');
     }
 });
 </script>

@@ -1,107 +1,242 @@
-{% extends "base.html" %}
-{% block title %}Career Advice and Resources{% endblock %}
-{% block extra_head %}
-<style>
-  .card {
-      transition: transform 0.3s ease;
-      border-radius: 15px;
-      overflow: hidden;
-      margin-bottom: 1.5rem;
-  }
-
-  .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-  }
-
-  .card-img-top {
-      height: 200px;
-      object-fit: cover;
-  }
-  
-  .resource-filter {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      background: #f8f9fa;
-      border-radius: 10px;
-  }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="container py-5">
-    <h1 class="text-center mb-5">Latest Career Resources</h1>
-    
-    <div class="resource-filter">
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <input type="text" class="form-control" id="searchInput" placeholder="Search resources...">
-            </div>
-            <div class="col-md-4 mb-3">
-                <select class="form-select" id="categorySelect">
-                    <option value="">All Categories</option>
-                    <option value="interview">Interview Tips</option>
-                    <option value="resume">Resume Building</option>
-                    <option value="skills">Skill Development</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <div id="resourcesGrid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <!-- Resources loaded by JavaScript -->
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_scripts %}
-{% block extra_scripts %}
-<script>
-// Local career resources data
-const localResources = [
-    {
-        title: "Top Interview Questions",
-        description: "Master common interview questions and answers",
-        category: "interview",
-        url: "/interview",
-        date: "2024-05-01"
-    },
-    {
-        title: "Resume Writing Guide",
-        description: "Step-by-step resume building tutorial",
-        category: "resume",
-        url: "/resume",
-        date: "2024-05-02"
-    },
-    {
-        title: "Skill Development Roadmap",
-        description: "Learn in-demand skills for 2024",
-        category: "skills",
-        url: "/skills",
-        date: "2024-05-03"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+  <title>Career Advice and Resources</title>
+  <style>
+    /* Global Reset */
+    * { box-sizing: border-box; margin: 0; padding: 0; scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #eef2f3, #d7e3fc);
+      color: #333;
+      line-height: 1.6;
     }
-];
 
-function loadResources() {
-    const grid = document.getElementById('resourcesGrid');
-    grid.innerHTML = localResources.map(article => `
-        <div class="col">
-            <div class="card h-100">
-                <img src="https://via.placeholder.com/300" class="card-img-top" alt="${article.title}">
-                <div class="card-body">
-                    <h5 class="card-title">${article.title}</h5>
-                    <p class="card-text">${article.description}</p>
-                    <div class="badge bg-primary">${article.category}</div>
-                    <a href="${article.url}" class="btn btn-primary mt-2">Read More</a>
-                </div>
-                <div class="card-footer">
-                    <small class="text-muted">${new Date(article.date).toLocaleDateString()}</small>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
+    /* Header */
+    header {
+      background: linear-gradient(90deg, #1a365d, #4299e1);
+      color: white;
+      padding: 15px 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .logo { font-size: 2rem; font-weight: bold; text-align: center; }
 
-document.addEventListener('DOMContentLoaded', loadResources);
-</script>
-{% endblock %}
+    /* Navigation */
+    nav {
+      padding: 10px 0;
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+    }
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 8px 15px;
+      border-radius: 8px;
+      transition: 0.3s ease;
+    }
+    .nav-link:hover {
+      background-color: #2b6cb0;
+      transform: scale(1.1);
+    }
+    .nav-link:focus {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+
+    /* Main Content */
+    main {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #0a1e3b;
+      font-size: 2.8rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      width: 80%;
+      padding: 12px;
+      margin: 20px auto;
+      border-radius: 8px;
+      border: 1px solid #4299e1;
+      font-size: 1rem;
+      display: block;
+    }
+    .search-bar:focus {
+      outline: 2px solid #4299e1;
+      border-color: transparent;
+    }
+
+    /* Grid Layout */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+      padding: 25px 0;
+    }
+
+    /* Grid Items */
+    .content-section {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-align: center;
+      padding-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .content-section:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .content-section img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+    .content-section p {
+      font-size: 0.9rem;
+      color: #555;
+      padding: 5px 10px;
+    }
+    .content-section a {
+      background: linear-gradient(90deg, #4299e1, #2b6cb0);
+      color: white;
+      padding: 12px;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: 0.3s ease;
+      margin: 10px auto;
+      width: 80%;
+      display: block;
+    }
+    .content-section a:hover {
+      background: linear-gradient(90deg, #2b6cb0, #1a365d);
+      transform: scale(1.05);
+    }
+    .content-section a:focus {
+      outline: 2px solid #4299e1;
+      outline-offset: 2px;
+    }
+
+    /* Footer */
+    footer {
+      background: #1a365d;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin-top: 50px;
+      font-size: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      h1 { font-size: 2.2rem; }
+      .grid-container { grid-template-columns: repeat(2, 1fr); }
+      .content-section img { height: 160px; }
+      nav ul { flex-wrap: wrap; gap: 15px; }
+    }
+    @media (max-width: 480px) {
+      .grid-container { grid-template-columns: 1fr; }
+      .search-bar { width: 90%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Career Analytics</div>
+    <nav role="navigation" aria-label="Main Navigation">
+      <ul>
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/test" class="nav-link">Career Test</a></li>
+        <li><a href="/student" class="nav-link">Student Portal</a></li>
+        <li><a href="/degree" class="nav-link">Degrees</a></li>
+        <li><a href="/login" class="nav-link">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Career Advice and Resources</h1>
+    <input type="text" placeholder="Search career topics..." class="search-bar" id="search-bar" aria-label="Search career resources" />
+    <div class="grid-container">
+      <section class="content-section">
+        <img src="{{ url_for('test', filename='images/career_test.webp') }}" alt="Illustration of a career test" loading="lazy" />
+        <p>Find your perfect career match.</p>
+        <a href="/test">Take the Career Test Now</a>
+      </section>
+      <section class="content-section">
+        <img src="{{ url_for('static', filename='images/career.jpg') }}" alt="Illustration of trending careers in 2025" loading="lazy" />
+        <p>Explore high-demand jobs for the future.</p>
+        <a href="/career">Careers Blooming in 2025</a>
+      </section>
+      <section class="content-section">
+        <img src="{{ url_for('static', filename='images/introvert.jpg') }}" alt="Illustration of careers for introverts" loading="lazy" />
+        <p>Jobs suited for quieter personalities.</p>
+        <a href="/introvert">Best Careers for Introverts</a>
+      </section>
+      <section class="content-section">
+        <img src="{{ url_for('static', filename='images/interview.jpg') }}" alt="Illustration of interview preparation" loading="lazy" />
+        <p>Prepare for common interview questions.</p>
+        <a href="/interview">Top 10 Interview Questions</a>
+      </section>
+      <section class="content-section">
+        <img src="{{ url_for('static', filename='images/online.jpg') }}" alt="Illustration of job search websites" loading="lazy" />
+        <p>Find jobs with top online platforms.</p>
+        <a href="/online">Best Job Search Websites</a>
+      </section>
+      <section class="content-section">
+        <img src="{{ url_for('static', filename='images/image.png') }}" alt="Illustration of resume building" loading="lazy" />
+        <p>Create a standout resume easily.</p>
+        <a href="/resume">Resume Building Tips</a>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2024 Career Analytics. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // Dynamic Search Functionality
+    const searchBar = document.getElementById('search-bar');
+    const sections = document.querySelectorAll('.content-section');
+
+    searchBar.addEventListener('input', () => {
+      const query = searchBar.value.toLowerCase();
+      sections.forEach(section => {
+        const title = section.querySelector('a').textContent.toLowerCase();
+        const description = section.querySelector('p').textContent.toLowerCase();
+        section.style.display = (title.includes(query) || description.includes(query)) ? 'flex' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

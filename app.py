@@ -16,6 +16,7 @@ from datetime import datetime
 from collections import defaultdict
 from flask_caching import Cache
 import xml.etree.ElementTree as ET
+from zoneinfo import ZoneInfo
 import logging
 import random
 import copy
@@ -24,7 +25,7 @@ from PIL import Image
 from datetime import datetime, timezone
 import numpy as np
 import pdfkit
-
+from pathlib import Path 
 import requests
 # Import question data
 from questions import (
@@ -136,8 +137,8 @@ class Resume(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     resume_data = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -628,16 +629,17 @@ def generate_questions(test_type):
         field = session.get('selected_field', 'Software Development')
         available_questions = copy.deepcopy(SKILL_GAP_QUESTIONS.get(field, []))
         if len(available_questions) < 10:
-            flash(f'Insufficient questions available for {field}. Please contact support.', "danger")
-            return []  # Return empty list to trigger an error response
-        questions = random.sample(available_questions, 10)  # Always select exactly 10
+            flash(f'Insufficient questions for {field}.', 'danger')
+            return []
+        questions = random.sample(available_questions, 10)
         for q in questions:
             q['time_limit'] = q.get('time_limit', 60)
-        session['skill_gap_questions'] = questions  # Store only the selected 10 questions
+        session['skill_gap_questions'] = questions
         session['skill_gap_correct'] = 0
         session['skill_gap_total'] = 0
+        session['responses'] = []
         return questions
-    
+        
     return []
 
 # Routes
@@ -657,65 +659,105 @@ def student():
 @app.route('/degree', methods=['GET'])
 @login_required
 def degree():
-    edx_api = EdxAPI()  # Only need EdX API since we're focusing on courses
+    """
+    Degree search with India/Abroad toggle, institute listings, and test requirements.
+    """
+    # Fetch query parameters
+    location_type    = request.args.get('location_type', 'india')  # 'india' or 'abroad'
+    degree_level     = request.args.get('degree_level', '').strip()
+    field_of_study   = request.args.get('field_of_study', '').strip()
+    duration         = request.args.get('duration', '').strip()
+    country          = request.args.get('country', '').strip()
+    university_sel   = request.args.get('university', '').strip()
+    keyword          = request.args.get('keyword', '').strip().lower()
+    sort_by          = request.args.get('sort_by', '').strip()
 
-    degree_level = request.args.get('degree_level', '').strip()
-    field_of_study = request.args.get('field_of_study', '').strip()
-    duration = request.args.get('duration', '').strip()
-    country = request.args.get('country', '').strip()
-    university = request.args.get('university', '').strip()
-    keyword = request.args.get('keyword', '').strip().lower()
-    sort_by = request.args.get('sort_by', '').strip()
+    # Base courses fetched via EdX or local data
+    # For simplicity, reuse LEARNING_RESOURCES mapping as 'degrees'
+    raw_degrees = LEARNING_RESOURCES.get(field_of_study or 'General', [])
 
-    # Fetch courses based on location
-    region = get_region_from_pin(current_user.pin_code) if current_user.pin_code else 'US'
-    if region == 'IN':
-        courses = get_indian_courses(field_of_study=field_of_study, degree_level=degree_level, limit=5)
-    else:
-        courses = edx_api.search_courses(subject=field_of_study, limit=5)
-
-    # Apply filters
-    filtered_degrees = courses
+    # Apply basic filters on raw_degrees
+    filtered_degrees = raw_degrees
     if degree_level:
         filtered_degrees = [d for d in filtered_degrees if d.get('degree_level') == degree_level]
-    if field_of_study:
-        filtered_degrees = [d for d in filtered_degrees if d.get('field_of_study') == field_of_study]
     if duration:
         filtered_degrees = [d for d in filtered_degrees if d.get('duration') == duration]
-    if country:
-        filtered_degrees = [d for d in filtered_degrees if d.get('country') == country]
-    if university:
-        filtered_degrees = [d for d in filtered_degrees if d.get('university') == university]
     if keyword:
-        filtered_degrees = [d for d in filtered_degrees if keyword in d.get('university', '').lower() or keyword in d.get('title', '').lower()]
+        filtered_degrees = [d for d in filtered_degrees if keyword in d.get('title', '').lower()]
+    # Sorting
     if sort_by == 'title':
-        filtered_degrees.sort(key=lambda x: x.get('title', ''))
-    elif sort_by == 'duration':
-        filtered_degrees.sort(key=lambda x: float(x.get('duration', '0').split()[0]) if x.get('duration') != 'Self-paced' else float('inf'))
-    elif sort_by == 'university':
-        filtered_degrees.sort(key=lambda x: x.get('university', ''))
+        filtered_degrees.sort(key=lambda x: x.get('title',''))
 
-    # Dropdown options
-    countries = sorted(set(d.get('country', '') for d in courses))
-    universities = sorted(set(d.get('university', '') for d in courses))
-    degree_levels = sorted(set(d.get('degree_level', '') for d in courses))
-    fields_of_study = sorted(set(d.get('field_of_study', '') for d in courses))
-    durations = sorted(set(d.get('duration', '') for d in courses))
+    # --- Fetch Institutes via Hipolabs API ---
+    institutes = []
+    try:
+        if location_type == 'india':
+            resp = requests.get('https://universities.hipolabs.com/search', params={'country': 'India'})
+        else:
+            # Abroad: require user-selected country, default to 'United States'
+            target = country or 'United States'
+            resp = requests.get('https://universities.hipolabs.com/search', params={'country': target})
+        if resp.status_code == 200:
+            all_unis = resp.json()
+            # Filter by field_of_study keyword in university name
+            if field_of_study:
+                institutes = [u for u in all_unis if field_of_study.lower() in u['name'].lower()]
+            else:
+                institutes = all_unis
+            # Limit to top 10
+            institutes = institutes[:10]
+    except Exception as e:
+        institutes = []
+        print("Error fetching institutes:", e)
 
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
+    # --- Test Requirements Mapping ---
+    TEST_MAP = {
+        'Engineering': ['JEE Main', 'JEE Advanced'],
+        'Medicine':    ['NEET'],
+        'Business':    ['CAT', 'GMAT'],
+        'Arts':        ['CUET'],
+        'General':     []
+    }
+    # For abroad, add TOEFL/IELTS for all fields
+    base_tests = TEST_MAP.get(field_of_study, TEST_MAP['General'])
+    if location_type == 'abroad':
+        abroad_tests = ['TOEFL', 'IELTS']
+        tests = base_tests + abroad_tests
+    else:
+        tests = base_tests
+
+    # Dropdown options (static or derived)
+    countries       = sorted({u.get('country','') for u in institutes if u.get('country')})
+    degree_levels   = sorted({d.get('degree_level','') for d in raw_degrees})
+    fields_of_study = sorted(CAREER_MAPPING.keys())
+    durations       = sorted({d.get('duration','') for d in raw_degrees})
+    universities    = sorted({u.get('name','') for u in institutes})
+
+    # Notifications
+    notifications = (
+        Notification.query
+        .filter_by(user_id=current_user.id, is_read=False)
+        .order_by(Notification.date.desc())
+        .limit(5)
+        .all()
+    )
+
     return render_template(
         'degree.html',
         degrees=filtered_degrees,
+        institutes=institutes,
+        tests=tests,
         countries=countries,
         universities=universities,
         degree_levels=degree_levels,
         fields_of_study=fields_of_study,
         durations=durations,
+        selected_location=location_type,
         selected_degree_level=degree_level,
         selected_field_of_study=field_of_study,
         selected_duration=duration,
         selected_country=country,
-        selected_university=university,
+        selected_university=university_sel,
         keyword=keyword,
         sort_by=sort_by,
         notifications=notifications
@@ -1014,35 +1056,33 @@ def test():
                               notifications=notifications)
 
     elif test_type == 'interest_test':
-        selected_field = request.args.get('field', session.get('selected_field', 'Software Development'))
+        selected_field = request.args.get('field', session.get('selected_field', None))
         if not selected_field:
-            return redirect(url_for('interest_test'))
+            return render_template('assessments/interest_test.html', selected_field=None, questions=[], total_questions=0, completed_questions=0, current_question_index=0, initial_time=60)
+
         session['selected_field'] = selected_field
-        questions = session.get('skill_gap_questions')
-        if not questions or request.method == 'GET':
+        questions = session.get('skill_gap_questions', [])
+        if not questions or session.get('skill_gap_field') != selected_field:
+            session.pop('skill_gap_questions', None)
+            session.pop('skill_gap_correct', None)
+            session.pop('skill_gap_total', None)
+            session.pop('responses', None)
             questions = generate_questions('skill_gap')
             if not questions:
-                flash('No skill gap questions available at this time.', 'danger')
                 return redirect(url_for('dashboard'))
-            session['skill_gap_questions'] = questions
-            session['skill_gap_correct'] = 0
-            session['skill_gap_total'] = 0
+            session['skill_gap_field'] = selected_field
 
         current_question_index = int(request.args.get('q', 0))
         if current_question_index >= len(questions):
             return redirect(url_for('skill_gap_results'))
         question = questions[current_question_index]
-        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
         return render_template('assessments/interest_test.html',
                               selected_field=selected_field,
                               questions=[question],
                               total_questions=len(questions),
                               completed_questions=current_question_index,
                               current_question_index=current_question_index,
-                              initial_time=question['time_limit'],
-                              active_page='test',
-                              test_type='skill_gap',
-                              notifications=notifications)
+                              initial_time=question['time_limit'])
 
     flash(f'Invalid test type: {test_type}. Please choose aptitude, personality, or skill_gap.', 'danger')
     return redirect(url_for('dashboard'))
@@ -1467,20 +1507,9 @@ def submit_assessment():
 from collections import defaultdict
 
 def identify_weaknesses(questions, responses, correct_count):
-    """
-    Identifies significant weaknesses based on incorrect responses.
-    
-    Args:
-        questions (list): List of question dictionaries from SKILL_GAP_QUESTIONS.
-        responses (list): List of user responses with 'questionId' and 'answer'.
-        correct_count (int): Number of correct answers.
-    
-    Returns:
-        dict or None: Dictionary of significant weaknesses or None if none found.
-    """
     weaknesses = defaultdict(lambda: {"count": 0, "description": "", "tips": [], "resources": []})
     total_questions = len(questions)
-    total_wrong = total_questions - correct_count
+    total_wrong = max(0, total_questions - correct_count)
 
     for response in responses:
         question_id = response['questionId']
@@ -1984,6 +2013,23 @@ def identify_weaknesses(questions, responses, correct_count):
     }
     return significant_weaknesses if significant_weaknesses else None
 
+def calculate_match(score, weaknesses, field):
+    recommendations = {"Basic": [], "Intermediate": [], "Advanced": []}
+    weaknesses = weaknesses or {}
+    if score < 40 or (weaknesses and len(weaknesses) > 2):
+        recommendations["Basic"].extend(LEARNING_RESOURCES.get(field, {}).get("basic", []))
+        for topic in weaknesses:
+            recommendations["Basic"].extend(weaknesses[topic].get("resources", []))
+    elif 40 <= score < 70 or (weaknesses and 1 <= len(weaknesses) <= 2):
+        recommendations["Intermediate"].extend(LEARNING_RESOURCES.get(field, {}).get("intermediate", []))
+        for topic in weaknesses:
+            recommendations["Intermediate"].extend(weaknesses[topic].get("resources", []))
+    else:  # score >= 70
+        recommendations["Advanced"].extend(LEARNING_RESOURCES.get(field, {}).get("advanced", []))
+        if not weaknesses and score >= 80:
+            recommendations["Advanced"].append({"name": "Mastery Resources", "url": "#", "description": "Explore advanced topics"})
+    return recommendations
+
 @app.route('/submit_skill_gap', methods=['POST'])
 @login_required
 def submit_skill_gap():
@@ -2090,84 +2136,73 @@ def submit_skill_gap():
 def interest_test():
     selected_field = request.args.get('field', session.get('selected_field', None))
     if not selected_field:
-        notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-        return render_template('assessments/interest_test.html', 
-                              selected_field=None, 
-                              questions=[], 
-                              total_questions=0,
-                              completed_questions=0, 
-                              current_question_index=0, 
-                              initial_time=60, 
-                              active_page='interest_test',
-                              notifications=notifications)
-
-    # Check prerequisites
-    completed_tests = session.get('completed_tests', [t.test_type for t in TestResult.query.filter_by(user_id=current_user.id).all()])
-    if 'aptitude' not in completed_tests or 'personality' not in completed_tests:
-        flash('Please complete both the Aptitude and Personality Tests before taking the Skill Gap Test.', 'warning')
-        return redirect(url_for('dashboard'))
+        return render_template('assessments/interest_test.html', selected_field=None, questions=[], total_questions=0, completed_questions=0, current_question_index=0, initial_time=60)
 
     session['selected_field'] = selected_field
-    questions = session.get('skill_gap_questions')
-    if not questions or session.get('skill_gap_field', '') != selected_field:
-        # Clear existing questions if field has changed
+    questions = session.get('skill_gap_questions', [])
+    if not questions or session.get('skill_gap_field') != selected_field:
         session.pop('skill_gap_questions', None)
         session.pop('skill_gap_correct', None)
         session.pop('skill_gap_total', None)
+        session.pop('responses', None)  # Clear previous responses
         questions = generate_questions('skill_gap')
         if not questions:
-            flash('No skill gap questions available at this time.', 'danger')
             return redirect(url_for('dashboard'))
-        session['skill_gap_questions'] = questions
-        session['skill_gap_correct'] = 0
-        session['skill_gap_total'] = 0
-        session['skill_gap_field'] = selected_field  # Track the field used
+        session['skill_gap_field'] = selected_field
 
     current_question_index = int(request.args.get('q', 0))
     if current_question_index >= len(questions):
         return redirect(url_for('skill_gap_results'))
     question = questions[current_question_index]
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
     return render_template('assessments/interest_test.html',
                           selected_field=selected_field,
                           questions=[question],
                           total_questions=len(questions),
                           completed_questions=current_question_index,
                           current_question_index=current_question_index,
-                          initial_time=question['time_limit'],
-                          active_page='interest_test',
-                          test_type='skill_gap',
-                          notifications=notifications)
+                          initial_time=question['time_limit'])
 
 @app.route('/interest_test/next', methods=['POST'])
 @login_required
 def interest_test_next():
     data = request.get_json()
-    if not data or 'current_question_index' not in data or 'responses' not in data:
+    if not data or 'responses' not in data:
         return jsonify({'error': 'Invalid data'}), 400
 
-    current_question_index = int(data['current_question_index'])
+    current_question_index = data.get('current_question_index', 0)
     responses = data['responses']
     time_spent = data.get('time_spent', 0)
     questions = session.get('skill_gap_questions', [])
-    total_questions = 10  # Fixed total questions
-    selected_field = session.get('selected_field', 'Software Development')
+    total_questions = 10
 
-    # Ensure questions exist and are sufficient
     if not questions or len(questions) < total_questions:
-        # Regenerate questions if session data is corrupted
         questions = generate_questions('skill_gap')
-        if len(questions) < total_questions:
-            return jsonify({'error': 'Not enough questions available'}), 500
+        if not questions:
+            return jsonify({'error': 'Not enough questions'}), 500
         session['skill_gap_questions'] = questions
-        session['skill_gap_correct'] = 0
-        session['skill_gap_total'] = 0
 
-    # Check if test should end
-    if current_question_index >= total_questions - 1 or len(responses) == 0:
-        # Calculate final score and save results
-        score = (session.get('skill_gap_correct', 0) / session.get('skill_gap_total', 1)) * 100
-        detailed_scores = {selected_field: score}
+    response = responses[-1]
+    question_id = response['questionId']
+    try:
+        answer = int(response['answer'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid answer format'}), 400
+
+    question = next((q for q in questions if q['id'] == question_id), None)
+    if question:
+        session['skill_gap_total'] = session.get('skill_gap_total', 0) + 1
+        session['responses'] = session.get('responses', []) + [response]
+        if answer == question.get('correct', -1):
+            session['skill_gap_correct'] = session.get('skill_gap_correct', 0) + 1
+    session.modified = True
+
+    if current_question_index + 1 >= total_questions:
+        skill_gap_total = session.get('skill_gap_total', 1)
+        score = (session.get('skill_gap_correct', 0) / skill_gap_total) * 100 if skill_gap_total > 0 else 0
+        weaknesses = identify_weaknesses(questions, session.get('responses', []), session.get('skill_gap_correct', 0))
+        session['weaknesses'] = weaknesses or {}
+
+        detailed_scores = {session.get('selected_field', 'Unknown'): score}
         result = TestResult(
             user_id=current_user.id,
             test_type='skill_gap',
@@ -2178,56 +2213,68 @@ def interest_test_next():
         current_user.skill_gap_scores = json.dumps(detailed_scores)
         db.session.add(result)
         db.session.commit()
+
+        if not Badge.query.filter_by(user_id=current_user.id, name="First Test Completed").first():
+            badge = Badge(user_id=current_user.id, name="First Test Completed", description="Completed your first skill gap test!", icon="fas fa-trophy")
+            db.session.add(badge)
+        if score >= 80:
+            if not Badge.query.filter_by(user_id=current_user.id, name="Skill Expert").first():
+                badge = Badge(user_id=current_user.id, name="Skill Expert", description="Scored 80% or higher in skill gap test!", icon="fas fa-star")
+                db.session.add(badge)
+
+        notification = Notification(
+            user_id=current_user.id,
+            message=f"Skill Gap Test for {session.get('selected_field', 'Unknown')} completed! Score: {score:.1f}%",
+            type="test_result"
+        )
+        db.session.add(notification)
+        db.session.commit()
+
+        completed_tests = session.get('completed_tests', [])
+        if 'skill_gap' not in completed_tests:
+            completed_tests.append('skill_gap')
+            session['completed_tests'] = completed_tests
+
         session.pop('skill_gap_questions', None)
         session.pop('skill_gap_correct', None)
         session.pop('skill_gap_total', None)
+        session.pop('responses', None)
+
         return jsonify({'redirect': url_for('skill_gap_results')})
 
-    # Process the current answer
-    answer = int(responses[0]['answer'])
-    question_id = responses[0]['questionId']
-    question = next((q for q in questions if q['id'] == question_id), None)
-    if question and answer == question.get('correct', -1):
-        session['skill_gap_correct'] = session.get('skill_gap_correct', 0) + 1
-    session['skill_gap_total'] = session.get('skill_gap_total', 0) + 1
-    session.modified = True
-
-    # Move to the next question
-    next_index = current_question_index + 1
-    if next_index < total_questions:
-        next_question = questions[next_index]
-        return jsonify({
-            'question': next_question,
-            'current_question_index': next_index,
-            'initial_time': next_question.get('time_limit', 60)
-        })
-    else:
-        return jsonify({'redirect': url_for('skill_gap_results')})
+    next_question = questions[current_question_index + 1]
+    return jsonify({
+        'question': next_question,
+        'current_question_index': current_question_index + 1,
+        'initial_time': next_question['time_limit']
+    })
 
 @app.route('/skill_gap_results')
 @login_required
 def skill_gap_results():
-    field = session.get('selected_field', 'Software Development')
-    score = (session.get('skill_gap_correct', 0) / session.get('skill_gap_total', 1)) * 100 if session.get('skill_gap_total', 0) > 0 else 0
-    has_aptitude = 'aptitude' in session.get('completed_tests', [])
-    has_personality = 'personality' in session.get('completed_tests', [])
+    score = (session.get('skill_gap_correct', 0) / session.get('skill_gap_total', 1)) * 100 if session.get('skill_gap_total', 1) > 0 else 0
     weaknesses = session.get('weaknesses', {})
-    
-    # Ensure session cleanup if test is complete
-    if session.get('skill_gap_total', 0) > 0 and 'skill_gap' in session.get('completed_tests', []):
-        session.pop('skill_gap_correct', None)
-        session.pop('skill_gap_total', None)
+    field = session.get('selected_field', 'Unknown')
+    match_recommendations = calculate_match(score, weaknesses, field)
 
-    return render_template(
-        'skill_gap_results.html',
-        field=field,
-        score=score,
-        weaknesses=weaknesses,
-        has_aptitude=has_aptitude,
-        has_personality=has_personality
-    )
-# Three-tiered matching algorithm
+    # Determine feedback message based on score
+    feedback_message = ""
+    if score >= 80:
+        feedback_message = f"Congratulations! You answered all questions correctly, indicating complete mastery in {field}. This reflects your exceptional proficiency across all assessed areas."
+    elif 40 <= score < 70:
+        feedback_message = f"Your skill level in {field} is {score:.0f}%. You have a moderate skill gap. Consider reviewing the recommended resources to improve."
+    else:  # score < 40
+        feedback_message = f"Your skill level in {field} is {score:.0f}%. You have a significant skill gap. We recommend starting with the Basic tier resources and focusing on the identified weaknesses."
 
+    return render_template('skill_gap_results.html', 
+                          score=score, 
+                          weaknesses=weaknesses, 
+                          field=field, 
+                          match_recommendations=match_recommendations,
+                          feedback_message=feedback_message,
+                          total_questions=10,
+                          correct_answers=session.get('skill_gap_correct', 0),
+                          incorrect_answers=session.get('skill_gap_total', 1) - session.get('skill_gap_correct', 0))
 
 @app.route('/submit_career_assessment', methods=['POST'])
 @login_required
@@ -2740,24 +2787,71 @@ def career_details(career_name):
 @app.route('/resources')
 @login_required
 def resources():
-    # Determine the user's career path
+    """
+    Render the vintage‑styled newsletter page.
+    We simply pass the raw resource dicts (with date as string).
+    """
     career_path = session.get('selected_field', 'Software Development')
     if career_path not in CAREER_MAPPING:
         career_path = 'Software Development'
-    
-    # Fetch resources for the career path
+
+    # Get the list of dicts; each dict has keys: title, description, category, url, date, image_url?
     resources = LEARNING_RESOURCES.get(career_path, [])
-    
-    # Fetch notifications
-    notifications = Notification.query.filter_by(user_id=current_user.id, is_read=False).order_by(Notification.date.desc()).limit(5).all()
-    
-    return render_template('resources.html',
-                          user=current_user,
-                          career_path=career_path,
-                          resources=resources,
-                          active_page='resources',
-                          notifications=notifications)
-    
+
+    # Fetch up to 5 unread notifications
+    notifications = (
+        Notification.query
+        .filter_by(user_id=current_user.id, is_read=False)
+        .order_by(Notification.date.desc())
+        .limit(5)
+        .all()
+    )
+
+    return render_template(
+        'std.html',
+        resources=resources,
+        notifications=notifications
+    )
+
+@app.route('/api/resources')
+@login_required
+def api_resources():
+    """
+    Return JSON list of resources (date stays as string) for client‑side JS.
+    """
+    career_path = session.get('selected_field', 'Software Development')
+    if career_path not in CAREER_MAPPING:
+        career_path = 'Software Development'
+
+    raw = LEARNING_RESOURCES.get(career_path, [])
+    # Sort by date string descending (ISO YYYY-MM-DD sorts lexically)
+    resources = sorted(raw, key=lambda r: r.get('date',''), reverse=True)
+    return jsonify(resources)
+
+@app.route('/api/institutes')
+@login_required
+def api_institutes():
+    country = request.args.get('country', 'India')
+    name    = request.args.get('name', '')
+    params  = {'country': country}
+    if name:
+        params['name'] = name
+
+    try:
+        resp = requests.get(
+            'https://universities.hipolabs.com/search',
+            params=params,
+            timeout=5
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        app.logger.error(f"Error fetching institutes: {e}")
+        return jsonify({'error': 'Could not load institutes'}), 502
+
+    return jsonify(data)
+
+   
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -3225,87 +3319,80 @@ def roadmap():
                           active_page='roadmap',
                           notifications=notifications)
 
-@app.route('/resume', methods=['GET', 'POST'])
+@app.route('/resume_builder', methods=['GET', 'POST'])
 @login_required
 def resume_builder():
     if request.method == 'POST':
-        resume_data = {
-            'personal_info': {
-                'name': request.form.get('name', ''),
-                'email': request.form.get('email', ''),
-                'phone': request.form.get('phone', ''),
-                'linkedin': request.form.get('linkedin', '')
-            },
-            'education': [],
-            'experience': [],
-            'skills': json.loads(request.form.get('skills', '[]')),
-            'summary': request.form.get('summary', ''),
-            'template': request.form.get('template', 'modern'),
-            'photo': ''
-        }
+        try:
+            resume_data = {
+                'template': request.form.get('template', 'modern'),
+                'personal_info': {
+                    'name': request.form.get('name', '').strip(),
+                    'email': request.form.get('email', '').strip(),
+                    'phone': request.form.get('phone', '').strip(),
+                    'linkedin': request.form.get('linkedin', '').strip(),
+                },
+                'summary': request.form.get('summary', '').strip(),
+                'education': [],
+                'experience': [],
+                'skills': json.loads(request.form.get('skills', '[]'))
+            }
 
-        # Handle education
-        educations = list(zip(
-            request.form.getlist('education[]'),
-            request.form.getlist('institution[]'),
-            request.form.getlist('education_date[]')
-        ))
-        for degree, institution, date in educations:
-            if degree and institution:
-                resume_data['education'].append({
-                    'degree': degree,
-                    'institution': institution,
-                    'date': date or ''
-                })
-
-        # Handle experience
-        experiences = list(zip(
-            request.form.getlist('position[]'),
-            request.form.getlist('company[]'),
-            request.form.getlist('description[]'),
-            request.form.getlist('experience_date[]')
-        ))
-        for position, company, description, date in experiences:
-            if position:
-                resume_data['experience'].append({
-                    'position': position,
-                    'company': company or '',
-                    'description': description or '',
-                    'date': date or ''
-                })
-
-        # Handle photo upload
-        if 'photo' in request.files:
-            file = request.files['photo']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(f"{current_user.id}_{file.filename}")
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                img = Image.open(file)
-                img = img.resize((150, 150), Image.LANCZOS)
-                img.save(filepath)
+            # Handle photo upload
+            photo_file = request.files.get('photo')
+            if photo_file and photo_file.filename:
+                filename = secure_filename(f'resume_photo_{current_user.id}_{photo_file.filename}')
+                photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                os.makedirs(os.path.dirname(photo_path), exist_ok=True)
+                photo_file.save(photo_path)
                 resume_data['photo'] = url_for('static', filename=f'uploads/{filename}')
 
-        new_resume = Resume(user_id=current_user.id, resume_data=resume_data)
-        db.session.add(new_resume)
-        db.session.commit()
-        flash('Resume saved successfully!', 'success')
-        return redirect(url_for('resume_builder'))
+            # Process education
+            education = request.form.getlist('education[]')
+            institutions = request.form.getlist('institution[]')
+            dates = request.form.getlist('education_date[]')
+            for deg, inst, date in zip(education, institutions, dates):
+                if deg.strip() and inst.strip():
+                    resume_data['education'].append({
+                        'degree': deg.strip(),
+                        'institution': inst.strip(),
+                        'date': date.strip()
+                    })
 
-    # GET request: Fetch latest resume or initialize empty
-    resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.updated_at.desc()).first()
-    resume_data = resume.resume_data if resume else {
-        'template': 'modern',
-        'personal_info': {'name': '', 'email': '', 'phone': '', 'linkedin': ''},
-        'education': [],
-        'experience': [],
-        'skills': [],
-        'summary': '',
-        'photo': ''
-    }
+            # Process experience (optional)
+            positions = request.form.getlist('position[]')
+            companies = request.form.getlist('company[]')
+            descriptions = request.form.getlist('description[]')
+            exp_dates = request.form.getlist('experience_date[]')
+            for pos, comp, desc, date in zip(positions, companies, descriptions, exp_dates):
+                if any([pos.strip(), comp.strip(), desc.strip()]):
+                    resume_data['experience'].append({
+                        'position': pos.strip(),
+                        'company': comp.strip(),
+                        'description': desc.strip(),
+                        'date': date.strip()
+                    })
+
+            # Save to database
+            resume = Resume.query.filter_by(user_id=current_user.id).first()
+            if resume:
+                resume.resume_data = resume_data
+                resume.updated_at = datetime.now(pytz.utc)
+            else:
+                resume = Resume(user_id=current_user.id, resume_data=resume_data)
+                db.session.add(resume)
+            db.session.commit()
+
+            return jsonify({'success': True, 'resume_id': resume.id})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    # GET request
+    resume = Resume.query.filter_by(user_id=current_user.id).first()
+    resume_data = resume.resume_data if resume else {}
     return render_template('resume.html', resume=resume_data)
 
-@app.route('/api/career-suggestions', methods=['GET'])
+@app.route('/api/career-suggestions')
 def career_suggestions():
     query = request.args.get('skills', '').lower()
     all_skills = [
@@ -3331,16 +3418,24 @@ def get_template_html():
 @login_required
 def export_resume(resume_id):
     resume = Resume.query.get_or_404(resume_id)
-    if resume.user_id != current_user.id:
-        abort(403)
-    
-    # Select the template based on resume_data
     template_name = resume.resume_data.get('template', 'modern')
-    template_file = f'resume_{template_name}.html'
     
-    html_content = render_template(template_file, resume=resume.resume_data)
-    pdf = pdfkit.from_string(html_content, False, options={'page-size': 'Letter', 'margin-top': '0.75in', 'margin-right': '0.75in', 'margin-bottom': '0.75in', 'margin-left': '0.75in'})
+    # Render template with CSS
+    html_content = render_template(f'resume_{template_name}.html', resume=resume.resume_data)
     
+    # Include base CSS
+    base_css = Path(app.static_folder) / 'css' / 'resume.css'
+    options = {
+        'page-size': 'Letter',
+        'margin-top': '0.75in',
+        'margin-right': '0.75in',
+        'margin-bottom': '0.75in',
+        'margin-left': '0.75in',
+        'user-style-sheet': str(base_css),
+        'encoding': 'UTF-8'
+    }
+    
+    pdf = pdfkit.from_string(html_content, False, options=options)
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename={current_user.username}_resume.pdf'
