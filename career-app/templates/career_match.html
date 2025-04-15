@@ -26,6 +26,14 @@
                         <p class="fit-level"><strong>Why It Fits:</strong> {{ career.fit_reasons|join(', ') }}</p>
                         <p class="career-info"><strong>Median Salary:</strong> {{ career.currency }} {{ career.median_wage|format_number }}</p>
                         <p class="career-info"><strong>Growth Rate:</strong> {{ career.growth_rate }}%</p>
+                        <div class="resource-orbit">
+                            <h3>Recommended Resources</h3>
+                            <ul>
+                                {% for resource in career.resources %}
+                                    <li><a href="{{ resource.url }}" class="resource-link" target="_blank">{{ resource.name }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
                     </div>
                     <div class="planet-glow"></div>
                 </div>
@@ -269,20 +277,29 @@
     margin-bottom: 1rem;
 }
 
-.planet-rings {
-    margin-top: 1.5rem;
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 1.5rem;
-    position: relative;
-    z-index: 1;
+.fit-level {
+    font-size: 1.2rem;
+    color: #14b8a6;
+    margin-top: 0.75rem;
+    text-shadow: 0 0 5px rgba(20, 184, 166, 0.5);
 }
 
-.detail-orbit p {
-    margin: 0.75rem 0;
-    color: #e5e7eb;
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0.75rem 0 1rem;
+    color: #d1d5db;
     font-size: 1.1rem;
-    line-height: 1.5;
+}
+
+ul li {
+    margin-bottom: 0.5rem;
+}
+
+.career-info {
+    font-size: 1.1rem;
+    color: #e5e7eb;
+    margin-bottom: 0.75rem;
 }
 
 .resource-orbit h3 {
@@ -357,12 +374,7 @@
     box-shadow: 0 0 20px #14b8a6;
     transform: translateY(-3px);
 }
-.fit-level {
-        font-size: 1.2rem;
-        color: #14b8a6;
-        margin-top: 0.75rem;
-        text-shadow: 0 0 5px rgba(20, 184, 166, 0.5);
-    }
+
 .no-matches {
     text-align: center;
     padding: 3.5rem;
@@ -384,7 +396,7 @@
         color: #fff;
         text-shadow: 0 0 10px #fff;
     }
-    .career-desc, .detail-orbit p, .form-check-label {
+    .career-desc, .detail-orbit p, .form-check-label, ul li {
         color: #e5e7eb;
     }
     .btn-gradient, .btn-galaxy, .btn-nebula {
