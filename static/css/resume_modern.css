@@ -1,74 +1,160 @@
-body {
-    font-family: 'Helvetica', sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background-color: #f4f7fa;
-    margin: 0;
-    padding: 0;
-}
-.resume-container {
-    max-width: 850px;
-    margin: 40px auto;
+.resume-container.modern {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 3rem;
     display: grid;
-    grid-template-columns: 1fr 3fr;
-    gap: 30px;
-    background: #fff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    grid-template-columns: 1fr 2fr;
+    gap: 3rem;
+    position: relative;
 }
-.sidebar {
-    background: #1e3c72;
-    color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-}
-.sidebar h2 {
-    font-size: 1.3em;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #fff;
-    padding-bottom: 5px;
-}
-.sidebar p {
-    margin: 10px 0;
-    font-size: 0.95em;
-}
-.photo img {
-    width: 120px;
+
+.modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 20px;
-    border: 3px solid #fff;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    z-index: 1;
 }
-.main-content h1 {
+
+.modern .sidebar {
+    position: relative;
+    z-index: 2;
+    padding-right: 2rem;
+}
+
+.modern .main-content {
+    position: relative;
+    z-index: 2;
+}
+
+.modern h1 {
+    color: #ffffff;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    position: relative;
+    padding-bottom: 1rem;
+}
+
+.modern h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: #4ecdc4;
+}
+
+.modern .section {
+    margin-bottom: 2.5rem;
+}
+
+.modern .section h2 {
     color: #1e3c72;
-    font-size: 2.3em;
-    margin-bottom: 10px;
-    border-bottom: 3px solid #1e3c72;
-    padding-bottom: 10px;
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
-.section {
-    margin-bottom: 25px;
+
+.modern .section h2::before {
+    content: '';
+    width: 30px;
+    height: 3px;
+    background: #4ecdc4;
 }
-.section h2 {
-    color: #2c5282;
-    font-size: 1.5em;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 5px;
+
+.modern .timeline-item {
+    padding-left: 2rem;
+    margin-left: 1rem;
+    border-left: 2px solid #1e3c72;
+    position: relative;
+    margin-bottom: 2rem;
 }
-.education-item, .experience-item {
-    margin-bottom: 20px;
-    padding-left: 15px;
-    border-left: 4px solid #1e3c72;
-}
-.skill-tag {
-    display: inline-block;
+
+.modern .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -9px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
     background: #1e3c72;
-    color: #fff;
-    padding: 6px 15px;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+}
+
+.modern .skill-tag {
+    background: #1e3c72;
+    color: white;
+    padding: 8px 18px;
     border-radius: 20px;
     margin: 5px;
-    font-size: 0.9em;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.modern .skill-tag:hover {
+    background: #2a5298;
+    transform: translateY(-2px);
+}
+
+/* ======================
+   Responsive Design 
+   ====================== */
+@media (max-width: 768px) {
+    .resume-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .resume-container.modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .creative::before {
+        width: 100%;
+        clip-path: polygon(0 0, 100% 0, 100% 20%, 0 30%);
+    }
+    
+    .contact-info {
+        grid-template-columns: 1fr;
+    }
+    
+    h1 {
+        font-size: 2rem !important;
+    }
+    
+    .section h2 {
+        font-size: 1.4rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .resume-container {
+        padding: 1rem;
+    }
+    
+    .skill-tag {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .timeline-item {
+        padding-left: 1rem;
+    }
 }

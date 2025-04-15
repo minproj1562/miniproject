@@ -106,3 +106,30 @@
     object-fit: cover;
     margin-bottom: 1rem;
 }
+/* Template selector styling */
+.template-previews {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.template-option {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.template-option.active {
+    border-color: #1e3c72;
+    box-shadow: 0 0 15px rgba(30, 60, 114, 0.2);
+}
+
+.template-thumb {
+    height: 200px;
+    background-size: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}

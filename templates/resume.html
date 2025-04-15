@@ -2,165 +2,241 @@
 {% block title %}Enhanced Resume Builder{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/resume.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/resume.css') }}?v=3.1">
 {% endblock %}
 
 {% block content %}
+{% set default_resume = {
+    'template': 'modern',
+    'personal_info': {
+        'name': '',
+        'email': '',
+        'phone': '',
+        'linkedin': ''
+    },
+    'summary': '',
+    'education': [],
+    'experience': [],
+    'skills': {
+        'technical': [],
+        'soft': []
+    },
+    'photo': '',
+    'certificates': []
+} %}
+{% set resume = resume|default(default_resume, true) %}
+
 <div class="resume-builder">
     <div class="builder-form">
         <form id="resumeForm" method="POST" action="{{ url_for('resume_builder') }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <div class="builder-section">
+            <!-- Template Selector -->
+            <div class="builder-section template-selector">
                 <h2>Choose a Template</h2>
-                <select name="template" id="templateSelect" class="form-control" onchange="updateTemplatePreview()">
-                    <option value="modern" {% if resume.get('template', 'modern') == 'modern' %}selected{% endif %}>Modern</option>
-                    <option value="classic" {% if resume.get('template', 'classic') == 'classic' %}selected{% endif %}>Classic</option>
-                    <option value="creative" {% if resume.get('template', 'creative') == 'creative' %}selected{% endif %}>Creative</option>
-                </select>
-                <input type="hidden" name="current_template" id="currentTemplate" value="{{ resume.get('template', 'modern') }}">
+                <div class="template-previews">
+                    {% for template in ['modern', 'classic', 'creative'] %}
+                    <div class="template-option {% if resume.template == template %}active{% endif %}" data-value="{{ template }}">
+                        <div class="template-thumb {{ template }}-thumb"></div>
+                        <span>{{ template|title }}</span>
+                        <div class="template-features">
+                            {% if template == 'modern' %}
+                            <i class="fas fa-desktop"></i> Clean Layout
+                            <i class="fas fa-palette"></i> Modern Design
+                            {% elif template == 'classic' %}
+                            <i class="fas fa-briefcase"></i> Professional
+                            <i class="fas fa-file-alt"></i> Traditional
+                            {% else %}
+                            <i class="fas fa-paint-brush"></i> Visual Design
+                            <i class="fas fa-lightbulb"></i> Unique Style
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="template" id="templateSelect" value="{{ resume.template }}">
             </div>
 
-            <div class="builder-section">
-                <h2>Profile Photo</h2>
-                <input type="file" name="photo" accept="image/*" class="form-control" onchange="updatePreview()">
-                <small>Upload a professional photo (optional).</small>
-            </div>
-
+            <!-- Personal Information -->
             <div class="builder-section">
                 <h2>Personal Information</h2>
-                <input type="text" class="form-control" name="name" value="{{ resume.get('personal_info', {}).get('name', '') }}" placeholder="Full Name" required onchange="updatePreview()">
-                <input type="email" class="form-control" name="email" value="{{ resume.get('personal_info', {}).get('email', '') }}" placeholder="Email" required onchange="updatePreview()">
-                <input type="tel" class="form-control" name="phone" value="{{ resume.get('personal_info', {}).get('phone', '') }}" placeholder="Phone Number" onchange="updatePreview()">
-                <input type="text" class="form-control" name="linkedin" value="{{ resume.get('personal_info', {}).get('linkedin', '') }}" placeholder="LinkedIn Profile (username or URL)" onchange="updatePreview()">
-                <small>Use a professional email and LinkedIn username/URL.</small>
+                <div class="form-grid">
+                    <input type="text" class="form-control" name="name" 
+                           value="{{ resume.personal_info.name|default('', true) }}" 
+                           placeholder="Full Name" required>
+                    <input type="email" class="form-control" name="email" 
+                           value="{{ resume.personal_info.email|default('', true) }}" 
+                           placeholder="Email" required>
+                    <input type="tel" class="form-control" name="phone" 
+                           value="{{ resume.personal_info.phone|default('', true) }}" 
+                           placeholder="Phone (optional)">
+                    <input type="url" class="form-control" name="linkedin" 
+                           value="{{ resume.personal_info.linkedin|default('', true) }}"
+                           pattern="^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[a-zA-Z0-9-]+\/?" 
+                           placeholder="LinkedIn URL (optional)"
+                           title="Example: linkedin.com/in/yourprofile">
+                </div>
             </div>
 
+            <!-- Attachments Section -->
+            <div class="builder-section file-uploads">
+                <h2>Attachments</h2>
+                <div class="upload-group">
+                    <label class="upload-label">
+                        <i class="fas fa-camera"></i> Profile Photo (optional)
+                        <input type="file" name="photo" accept="image/*" class="form-control">
+                        {% if resume.photo %}
+                        <div class="current-file">Current: {{ resume.photo|basename }}</div>
+                        {% endif %}
+                    </label>
+                    <label class="upload-label">
+                        <i class="fas fa-certificate"></i> Certificates (PDF/DOC)
+                        <input type="file" name="certificates" accept=".pdf,.doc,.docx" multiple class="form-control">
+                        {% if resume.certificates %}
+                        <div class="current-files">Uploaded: {{ resume.certificates|length }} files</div>
+                        {% endif %}
+                    </label>
+                </div>
+            </div>
+
+            <!-- Education Section -->
             <div class="builder-section" id="educationSection">
                 <h2>Education</h2>
                 <div id="educationFields">
-                    {% for edu in resume.get('education', []) %}
-                    <div class="dynamic-section mt-2">
-                        <input type="text" class="form-control" name="education[]" value="{{ edu.get('degree', '') }}" placeholder="Degree" required onchange="updatePreview()">
-                        <input type="text" class="form-control" name="institution[]" value="{{ edu.get('institution', '') }}" placeholder="Institution" required onchange="updatePreview()">
-                        <input type="month" class="form-control" name="education_date[]" value="{{ edu.get('date', '') }}" onchange="updatePreview()">
-                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
+                    {% for edu in resume.education %}
+                    <div class="dynamic-section">
+                        <input type="text" class="form-control" name="education[]" 
+                               value="{{ edu.degree|default('', true) }}" placeholder="Degree" required>
+                        <input type="text" class="form-control" name="institution[]" 
+                               value="{{ edu.institution|default('', true) }}" placeholder="Institution" required>
+                        <input type="month" class="form-control" name="education_date[]" 
+                               value="{{ edu.date|default('', true) }}">
+                        <button type="button" class="btn-remove" onclick="removeSection(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     {% endfor %}
-                    {% if not resume.get('education', []) %}
-                    <div class="dynamic-section">
-                        <input type="text" class="form-control" name="education[]" placeholder="Degree" required onchange="updatePreview()">
-                        <input type="text" class="form-control" name="institution[]" placeholder="Institution" required onchange="updatePreview()">
-                        <input type="month" class="form-control" name="education_date[]" onchange="updatePreview()">
-                    </div>
-                    {% endif %}
                 </div>
-                <button type="button" class="btn-add" onclick="addEducation()">+ Add Education</button>
-                <small>List your most recent education first; include certifications.</small>
+                <button type="button" class="btn-add" onclick="addEducation()">
+                    <i class="fas fa-plus"></i> Add Education
+                </button>
             </div>
 
+            <!-- Experience Section -->
             <div class="builder-section" id="experienceSection">
                 <h2>Work Experience</h2>
                 <div id="experienceFields">
-                    {% for exp in resume.get('experience', []) %}
-                    <div class="dynamic-section mt-2">
-                        <input type="text" class="form-control" name="position[]" value="{{ exp.get('position', '') }}" placeholder="Position" onchange="updatePreview()">
-                        <input type="text" class="form-control" name="company[]" value="{{ exp.get('company', '') }}" placeholder="Company" onchange="updatePreview()">
-                        <textarea class="form-control" name="description[]" placeholder="Job Description" onchange="updatePreview()">{{ exp.get('description', '') }}</textarea>
-                        <input type="month" class="form-control" name="experience_date[]" value="{{ exp.get('date', '') }}" onchange="updatePreview()">
-                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="this.parentElement.remove(); updatePreview()">Remove</button>
+                    {% for exp in resume.experience %}
+                    <div class="dynamic-section">
+                        <input type="text" class="form-control" name="position[]" 
+                               value="{{ exp.position|default('', true) }}" placeholder="Position">
+                        <input type="text" class="form-control" name="company[]" 
+                               value="{{ exp.company|default('', true) }}" placeholder="Company">
+                        <textarea class="form-control" name="description[]" 
+                                  placeholder="Description">{{ exp.description|default('', true) }}</textarea>
+                        <input type="month" class="form-control" name="experience_date[]" 
+                               value="{{ exp.date|default('', true) }}">
+                        <button type="button" class="btn-remove" onclick="removeSection(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     {% endfor %}
-                    {% if not resume.get('experience', []) %}
-                    <div class="dynamic-section">
-                        <input type="text" class="form-control" name="position[]" placeholder="Position" onchange="updatePreview()">
-                        <input type="text" class="form-control" name="company[]" placeholder="Company" onchange="updatePreview()">
-                        <textarea class="form-control" name="description[]" placeholder="Job Description" onchange="updatePreview()"></textarea>
-                        <input type="month" class="form-control" name="experience_date[]" onchange="updatePreview()">
-                    </div>
-                    {% endif %}
                 </div>
-                <button type="button" class="btn-add" onclick="addExperience()">+ Add Experience</button>
-                <small>Use action verbs and quantify achievements (optional section).</small>
+                <button type="button" class="btn-add" onclick="addExperience()">
+                    <i class="fas fa-plus"></i> Add Experience
+                </button>
             </div>
 
-            <div class="builder-section" id="skillsSection">
+            <!-- Skills Section -->
+            <div class="builder-section skills-section">
                 <h2>Skills</h2>
-                <div id="skillsContainer" class="mb-3">
-                    <div class="skill-input-group position-relative">
-                        <input type="text" class="form-control skill-input" placeholder="Type skill and press Enter" id="skillInput">
-                        <div id="suggestions" class="suggestions-dropdown"></div>
+                <div class="skills-columns">
+                    <!-- Technical Skills -->
+                    <div class="skill-category">
+                        <h3><i class="fas fa-code"></i> Technical Skills</h3>
+                        <div class="common-skills">
+                            {% for skill in ['Python', 'JavaScript', 'Java', 'C++', 'SQL', 'HTML/CSS', 'Git', 'AWS', 'React', 'Node.js'] %}
+                            <label class="skill-checkbox">
+                                <input type="checkbox" name="technical_skills" value="{{ skill }}"
+                                    {% if skill in resume.skills.technical|default([], true) %}checked{% endif %}>
+                                <span class="checkmark"></span>
+                                {{ skill }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="custom-skill">
+                            <input type="text" class="form-control" id="customTechnical" 
+                                   placeholder="Add custom technical skill">
+                            <button type="button" class="btn-add-skill" onclick="addCustomSkill('technical')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div id="selectedSkills" class="mt-2">
-                        {% for skill in resume.get('skills', []) %}
-                        <span class="skill-tag">{{ skill }} <button type="button" onclick="removeSkill('{{ skill }}'); updatePreview()">×</button></span>
-                        {% endfor %}
+
+                    <!-- Soft Skills -->
+                    <div class="skill-category">
+                        <h3><i class="fas fa-users"></i> Soft Skills</h3>
+                        <div class="common-skills">
+                            {% for skill in ['Communication', 'Teamwork', 'Leadership', 'Problem Solving', 
+                                           'Time Management', 'Adaptability', 'Creativity', 'Critical Thinking'] %}
+                            <label class="skill-checkbox">
+                                <input type="checkbox" name="soft_skills" value="{{ skill }}"
+                                    {% if skill in resume.skills.soft|default([], true) %}checked{% endif %}>
+                                <span class="checkmark"></span>
+                                {{ skill }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="custom-skill">
+                            <input type="text" class="form-control" id="customSoft" 
+                                   placeholder="Add custom soft skill">
+                            <button type="button" class="btn-add-skill" onclick="addCustomSkill('soft')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
-                    <input type="hidden" name="skills" id="hiddenSkills" value="{{ resume.get('skills', [])|tojson|safe }}">
                 </div>
-                <small>Mix technical and soft skills (optional).</small>
+                <input type="hidden" name="technical_skills" id="hiddenTechnicalSkills" 
+                       value="{{ resume.skills.technical|default([], true)|tojson|safe }}">
+                <input type="hidden" name="soft_skills" id="hiddenSoftSkills" 
+                       value="{{ resume.skills.soft|default([], true)|tojson|safe }}">
             </div>
 
+            <!-- Summary Section -->
             <div class="builder-section">
                 <h2>Professional Summary</h2>
-                <textarea class="form-control" name="summary" rows="4" placeholder="E.g., Detail-oriented developer with expertise in Python and team leadership." onchange="updatePreview()">{{ resume.get('summary', '') }}</textarea>
-                <small>Keep it concise (2-3 sentences) and highlight key strengths.</small>
+                <textarea class="form-control" name="summary" rows="4" 
+                          placeholder="Example: Experienced software developer with 5+ years...">{{ resume.summary|default('', true) }}</textarea>
             </div>
 
-            <button type="submit" class="btn-primary">Save Resume</button>
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save"></i> Save Resume
+                </button>
+                <button type="button" class="btn-preview" onclick="updatePreview()">
+                    <i class="fas fa-eye"></i> Live Preview
+                </button>
+                <button type="button" class="btn-export" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf"></i> Export PDF
+                </button>
+            </div>
         </form>
     </div>
 
+    <!-- Preview Section -->
     <div class="preview-section">
-        <div class="preview-content" id="resumePreview">
-            <div class="photo-preview">
-                {% if resume.get('photo', '') %}
-                <img id="previewPhoto" src="{{ resume['photo'] }}" alt="Profile Photo">
-                {% else %}
-                <img id="previewPhoto" src="" alt="Profile Photo" style="display: none;">
-                {% endif %}
-            </div>
-            <h1 id="previewName">{{ resume.get('personal_info', {}).get('name', 'Your Name') }}</h1>
-            <div class="contact-info">
-                <p id="previewEmail">Email: {{ resume.get('personal_info', {}).get('email', 'your.email@example.com') }}</p>
-                <p id="previewPhone">Phone: {{ resume.get('personal_info', {}).get('phone', '(123) 456-7890') }}</p>
-                <p id="previewLinkedIn">LinkedIn: {{ resume.get('personal_info', {}).get('linkedin', 'linkedin.com/in/yourprofile') }}</p>
-            </div>
-            <div class="summary-preview section">
-                <h3>Professional Summary</h3>
-                <p id="previewSummary">{{ resume.get('summary', 'Your professional summary will appear here.') }}</p>
-            </div>
-            <div class="education-preview section" id="previewEducation">
-                <h3>Education</h3>
-                {% for edu in resume.get('education', []) %}
-                <div class="education-item">
-                    <h4>{{ edu.get('degree', '') }}</h4>
-                    <p>{{ edu.get('institution', '') }} - {{ edu.get('date', '') }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="experience-preview section" id="previewExperience">
-                <h3>Experience</h3>
-                {% for exp in resume.get('experience', []) %}
-                <div class="experience-item">
-                    <h4>{{ exp.get('position', '') }}</h4>
-                    <p>{{ exp.get('company', '') }} - {{ exp.get('date', '') }}</p>
-                    <p>{{ exp.get('description', '') }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="skills-preview section" id="previewSkills">
-                <h3>Skills</h3>
-                {% for skill in resume.get('skills', []) %}
-                <span class="skill-tag">{{ skill }}</span>
-                {% endfor %}
-            </div>
+        <div class="preview-header">
+            <h3><i class="fas fa-eye"></i> Live Preview</h3>
+            <div class="template-indicator" id="templateName">{{ resume.template|default('modern', true)|title }}</div>
         </div>
-        <button class="btn-add" onclick="exportPDF()">Export as PDF</button>
+        <div class="preview-content" id="resumePreview">
+            {% include 'resume_preview_fallback.html' %}
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/resume.js') }}"></script>
+<script src="{{ url_for('static', filename='js/resume.js') }}?v=3.1"></script>
 {% endblock %}

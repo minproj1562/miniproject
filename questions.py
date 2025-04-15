@@ -1145,7 +1145,7 @@ CAREER_MAPPING = {
             "logical": 90,
             "verbal": 60,
             "spatial": 50,
-            "science": 40,  # Minimal science needed
+            "science": 40,
             "history": 20,
             "geography": 20
         },
@@ -1162,7 +1162,7 @@ CAREER_MAPPING = {
             "Openness": 85,
             "Conscientiousness": 75,
             "Extraversion": 35,
-            " Agreeableness": 45,
+            "Agreeableness": 45,
             "Neuroticism": 25
         },
         "aptitude": {
@@ -1170,7 +1170,7 @@ CAREER_MAPPING = {
             "logical": 85,
             "verbal": 55,
             "spatial": 40,
-            "science": 60,  # Statistics and data analysis
+            "science": 60,
             "history": 20,
             "geography": 30
         },
@@ -1187,7 +1187,7 @@ CAREER_MAPPING = {
             "Openness": 90,
             "Conscientiousness": 60,
             "Extraversion": 50,
-            " Agreeableness": 70,
+            "Agreeableness": 70,
             "Neuroticism": 40
         },
         "aptitude": {
@@ -1196,7 +1196,7 @@ CAREER_MAPPING = {
             "verbal": 60,
             "spatial": 90,
             "science": 20,
-            "history": 40,  # Art history could be relevant
+            "history": 40,
             "geography": 30
         },
         "skills": {"required": 65},
@@ -1206,30 +1206,55 @@ CAREER_MAPPING = {
         ],
         "interests": ["Graphic Design", "Art"]
     },
-    "Business Manager": {
-        "description": "Business Managers oversee operations, manage teams, and ensure organizational goals are met.",
+    "Financial Analyst": {
+        "description": "Financial Analysts evaluate financial data to guide investment decisions and business strategies.",
         "personality": {
-            "Openness": 60,
+            "Openness": 65,
             "Conscientiousness": 85,
-            "Extraversion": 75,
-            " Agreeableness": 65,
+            "Extraversion": 50,
+            "Agreeableness": 55,
             "Neuroticism": 35
         },
         "aptitude": {
-            "numerical": 70,
-            "logical": 75,
-            "verbal": 80,
+            "numerical": 90,
+            "logical": 80,
+            "verbal": 70,
             "spatial": 40,
             "science": 30,
-            "history": 50,  # Business history could be useful
-            "geography": 50  # Global markets awareness
+            "history": 50,
+            "geography": 40
+        },
+        "skills": {"required": 75},
+        "resources": [
+            {"name": "CFA Institute", "url": "https://www.cfainstitute.org/"},
+            {"name": "Investopedia", "url": "https://www.investopedia.com/"}
+        ],
+        "interests": ["Finance", "Analysis"]
+    },
+    "Bank Manager": {
+        "description": "Bank Managers oversee bank operations, manage staff, and ensure customer satisfaction.",
+        "personality": {
+            "Openness": 60,
+            "Conscientiousness": 90,
+            "Extraversion": 70,
+            "Agreeableness": 65,
+            "Neuroticism": 30
+        },
+        "aptitude": {
+            "numerical": 80,
+            "logical": 75,
+            "verbal": 85,
+            "spatial": 30,
+            "science": 20,
+            "history": 40,
+            "geography": 50
         },
         "skills": {"required": 70},
         "resources": [
-            {"name": "Coursera Business Management Courses", "url": "https://www.coursera.org/courses?query=business%20management"},
-            {"name": "Harvard Business Review", "url": "https://hbr.org/"}
+            {"name": "American Bankers Association", "url": "https://www.aba.com/"},
+            {"name": "Coursera Banking Courses", "url": "https://www.coursera.org/courses?query=banking"}
         ],
-        "interests": ["Business Management", "Leadership"]
+        "interests": ["Banking", "Management"]
     },
     "Research Scientist": {
         "description": "Research Scientists conduct experiments and research to advance knowledge in their field.",
@@ -1237,7 +1262,7 @@ CAREER_MAPPING = {
             "Openness": 95,
             "Conscientiousness": 80,
             "Extraversion": 30,
-            " Agreeableness": 50,
+            "Agreeableness": 50,
             "Neuroticism": 20
         },
         "aptitude": {
@@ -1245,7 +1270,7 @@ CAREER_MAPPING = {
             "logical": 90,
             "verbal": 70,
             "spatial": 60,
-            "science": 95,  # Core requirement
+            "science": 95,
             "history": 40,
             "geography": 40
         },
@@ -1256,13 +1281,113 @@ CAREER_MAPPING = {
         ],
         "interests": ["Scientific Research", "Innovation"]
     },
+    "Accountant": {
+        "description": "Accountants prepare and examine financial records to ensure accuracy and compliance.",
+        "personality": {
+            "Openness": 55,
+            "Conscientiousness": 90,
+            "Extraversion": 40,
+            "Agreeableness": 60,
+            "Neuroticism": 25
+        },
+        "aptitude": {
+            "numerical": 95,
+            "logical": 80,
+            "verbal": 65,
+            "spatial": 30,
+            "science": 20,
+            "history": 40,
+            "geography": 30
+        },
+        "skills": {"required": 70},
+        "resources": [
+            {"name": "AICPA", "url": "https://www.aicpa.org/"},
+            {"name": "QuickBooks Training", "url": "https://quickbooks.intuit.com/learn-support/training/"}
+        ],
+        "interests": ["Accounting", "Finance"]
+    },
+    "Mathematician": {
+        "description": "Mathematicians develop mathematical theories and solve complex problems.",
+        "personality": {
+            "Openness": 90,
+            "Conscientiousness": 75,
+            "Extraversion": 30,
+            "Agreeableness": 45,
+            "Neuroticism": 20
+        },
+        "aptitude": {
+            "numerical": 95,
+            "logical": 95,
+            "verbal": 50,
+            "spatial": 70,
+            "science": 60,
+            "history": 30,
+            "geography": 20
+        },
+        "skills": {"required": 85},
+        "resources": [
+            {"name": "Khan Academy Math", "url": "https://www.khanacademy.org/math"},
+            {"name": "Wolfram MathWorld", "url": "https://mathworld.wolfram.com/"}
+        ],
+        "interests": ["Mathematics", "Problem Solving"]
+    },
+    "Marketing Manager": {
+        "description": "Marketing Managers plan and execute campaigns to promote products or services.",
+        "personality": {
+            "Openness": 85,
+            "Conscientiousness": 70,
+            "Extraversion": 80,
+            "Agreeableness": 65,
+            "Neuroticism": 35
+        },
+        "aptitude": {
+            "numerical": 60,
+            "logical": 70,
+            "verbal": 90,
+            "spatial": 50,
+            "science": 30,
+            "history": 50,
+            "geography": 60
+        },
+        "skills": {"required": 75},
+        "resources": [
+            {"name": "HubSpot Academy", "url": "https://academy.hubspot.com/"},
+            {"name": "Google Digital Garage", "url": "https://learndigital.withgoogle.com/digitalgarage"}
+        ],
+        "interests": ["Marketing", "Advertising"]
+    },
+    "Business Manager": {
+        "description": "Business Managers oversee operations, manage teams, and ensure organizational goals are met.",
+        "personality": {
+            "Openness": 60,
+            "Conscientiousness": 85,
+            "Extraversion": 75,
+            "Agreeableness": 65,
+            "Neuroticism": 35
+        },
+        "aptitude": {
+            "numerical": 70,
+            "logical": 75,
+            "verbal": 80,
+            "spatial": 40,
+            "science": 30,
+            "history": 50,
+            "geography": 50
+        },
+        "skills": {"required": 70},
+        "resources": [
+            {"name": "Coursera Business Management Courses", "url": "https://www.coursera.org/courses?query=business%20management"},
+            {"name": "Harvard Business Review", "url": "https://hbr.org/"}
+        ],
+        "interests": ["Business Management", "Leadership"]
+    },
     "Cybersecurity Analyst": {
         "description": "Cybersecurity Analysts protect systems and networks from cyber threats and vulnerabilities.",
         "personality": {
             "Openness": 75,
             "Conscientiousness": 80,
             "Extraversion": 35,
-            " Agreeableness": 50,
+            "Agreeableness": 50,
             "Neuroticism": 30
         },
         "aptitude": {
@@ -1270,7 +1395,7 @@ CAREER_MAPPING = {
             "logical": 90,
             "verbal": 60,
             "spatial": 45,
-            "science": 50,  # Some technical science knowledge
+            "science": 50,
             "history": 20,
             "geography": 20
         },
@@ -1287,7 +1412,7 @@ CAREER_MAPPING = {
             "Openness": 85,
             "Conscientiousness": 75,
             "Extraversion": 50,
-            " Agreeableness": 70,
+            "Agreeableness": 70,
             "Neuroticism": 35
         },
         "aptitude": {
@@ -1295,9 +1420,9 @@ CAREER_MAPPING = {
             "logical": 75,
             "verbal": 65,
             "spatial": 70,
-            "science": 85,  # Strong science needed
+            "science": 85,
             "history": 30,
-            "geography": 75  # Environmental geography
+            "geography": 75
         },
         "skills": {"required": 75},
         "resources": [
@@ -1312,7 +1437,7 @@ CAREER_MAPPING = {
             "Openness": 80,
             "Conscientiousness": 70,
             "Extraversion": 30,
-            " Agreeableness": 45,
+            "Agreeableness": 45,
             "Neuroticism": 25
         },
         "aptitude": {
@@ -1346,8 +1471,8 @@ CAREER_MAPPING = {
             "verbal": 75,
             "spatial": 85,
             "science": 50,
-            "history": 60,  # Urban history
-            "geography": 90  # Core requirement
+            "history": 60,
+            "geography": 90
         },
         "skills": {"required": 70},
         "resources": [
@@ -1362,7 +1487,7 @@ CAREER_MAPPING = {
             "Openness": 85,
             "Conscientiousness": 60,
             "Extraversion": 75,
-            " Agreeableness": 65,
+            "Agreeableness": 65,
             "Neuroticism": 45
         },
         "aptitude": {
@@ -1371,7 +1496,7 @@ CAREER_MAPPING = {
             "verbal": 90,
             "spatial": 30,
             "science": 20,
-            "history": 40,  # Historical context for roles
+            "history": 40,
             "geography": 30
         },
         "skills": {"required": 60},
@@ -1387,7 +1512,7 @@ CAREER_MAPPING = {
             "Openness": 95,
             "Conscientiousness": 80,
             "Extraversion": 25,
-            " Agreeableness": 40,
+            "Agreeableness": 40,
             "Neuroticism": 20
         },
         "aptitude": {
@@ -1395,7 +1520,7 @@ CAREER_MAPPING = {
             "logical": 90,
             "verbal": 65,
             "spatial": 80,
-            "science": 95,  # Core requirement
+            "science": 95,
             "history": 30,
             "geography": 40
         },
@@ -1412,7 +1537,7 @@ CAREER_MAPPING = {
             "Openness": 85,
             "Conscientiousness": 75,
             "Extraversion": 45,
-            " Agreeableness": 70,
+            "Agreeableness": 70,
             "Neuroticism": 30
         },
         "aptitude": {
@@ -1420,9 +1545,9 @@ CAREER_MAPPING = {
             "logical": 70,
             "verbal": 70,
             "spatial": 75,
-            "science": 90,  # Core requirement
+            "science": 90,
             "history": 30,
-            "geography": 80  # Ecosystem locations
+            "geography": 80
         },
         "skills": {"required": 70},
         "resources": [
@@ -1437,7 +1562,7 @@ CAREER_MAPPING = {
             "Openness": 70,
             "Conscientiousness": 90,
             "Extraversion": 60,
-            " Agreeableness": 80,
+            "Agreeableness": 80,
             "Neuroticism": 30
         },
         "aptitude": {
@@ -1445,7 +1570,7 @@ CAREER_MAPPING = {
             "logical": 85,
             "verbal": 80,
             "spatial": 60,
-            "science": 95,  # Core requirement (anatomy, biology)
+            "science": 95,
             "history": 40,
             "geography": 30
         },
@@ -1462,7 +1587,7 @@ CAREER_MAPPING = {
             "Openness": 65,
             "Conscientiousness": 85,
             "Extraversion": 70,
-            " Agreeableness": 90,
+            "Agreeableness": 90,
             "Neuroticism": 35
         },
         "aptitude": {
@@ -1470,7 +1595,7 @@ CAREER_MAPPING = {
             "logical": 70,
             "verbal": 85,
             "spatial": 50,
-            "science": 85,  # Biology and medical knowledge
+            "science": 85,
             "history": 30,
             "geography": 30
         },
@@ -1487,7 +1612,7 @@ CAREER_MAPPING = {
             "Openness": 90,
             "Conscientiousness": 85,
             "Extraversion": 40,
-            " Agreeableness": 60,
+            "Agreeableness": 60,
             "Neuroticism": 25
         },
         "aptitude": {
@@ -1495,7 +1620,7 @@ CAREER_MAPPING = {
             "logical": 90,
             "verbal": 70,
             "spatial": 55,
-            "science": 95,  # Core requirement
+            "science": 95,
             "history": 40,
             "geography": 30
         },
@@ -1512,7 +1637,7 @@ CAREER_MAPPING = {
             "Openness": 75,
             "Conscientiousness": 80,
             "Extraversion": 70,
-            " Agreeableness": 85,
+            "Agreeableness": 85,
             "Neuroticism": 35
         },
         "aptitude": {
@@ -1520,9 +1645,9 @@ CAREER_MAPPING = {
             "logical": 65,
             "verbal": 90,
             "spatial": 40,
-            "science": 60,  # Varies by subject
-            "history": 70,  # Useful for social studies
-            "geography": 60  # Useful for geography teachers
+            "science": 60,
+            "history": 70,
+            "geography": 60
         },
         "skills": {"required": 70},
         "resources": [
@@ -1537,7 +1662,7 @@ CAREER_MAPPING = {
             "Openness": 70,
             "Conscientiousness": 85,
             "Extraversion": 75,
-            " Agreeableness": 60,
+            "Agreeableness": 60,
             "Neuroticism": 40
         },
         "aptitude": {
@@ -1546,7 +1671,7 @@ CAREER_MAPPING = {
             "verbal": 95,
             "spatial": 30,
             "science": 30,
-            "history": 80,  # Legal history and precedents
+            "history": 80,
             "geography": 40
         },
         "skills": {"required": 80},
@@ -1562,7 +1687,7 @@ CAREER_MAPPING = {
             "Openness": 80,
             "Conscientiousness": 75,
             "Extraversion": 50,
-            " Agreeableness": 55,
+            "Agreeableness": 55,
             "Neuroticism": 30
         },
         "aptitude": {
@@ -1570,7 +1695,7 @@ CAREER_MAPPING = {
             "logical": 85,
             "verbal": 60,
             "spatial": 85,
-            "science": 90,  # Physics and mechanics
+            "science": 90,
             "history": 30,
             "geography": 40
         },
@@ -3130,7 +3255,7 @@ SKILL_GAP_QUESTIONS = {
 }
 
 LEARNING_RESOURCES = {
-    "Software Development": {
+    "Software Developer": {
         "basic": [
             {"name": "Learn Python on Codecademy", "url": "https://www.codecademy.com/learn/learn-python-3"},
             {"name": "FreeCodeCamp", "url": "https://www.freecodecamp.org"}
@@ -3144,7 +3269,7 @@ LEARNING_RESOURCES = {
             {"name": "LeetCode", "url": "https://leetcode.com/"}
         ]
     },
-    "Data Science": {
+    "Data Scientist": {
         "basic": [
             {"name": "Kaggle Competitions", "url": "https://www.kaggle.com/competitions"},
             {"name": "DataCamp", "url": "https://www.datacamp.com"}
@@ -3158,7 +3283,7 @@ LEARNING_RESOURCES = {
             {"name": "Fast.ai", "url": "https://www.fast.ai/"}
         ]
     },
-    "Graphic Design": {
+    "Graphic Designer": {
         "basic": [
             {"name": "Adobe Creative Cloud Tutorials", "url": "https://helpx.adobe.com/creative-cloud/tutorials-explore.html"},
             {"name": "Canva Design School", "url": "https://www.canva.com/learn/"}
@@ -3172,21 +3297,35 @@ LEARNING_RESOURCES = {
             {"name": "Dribbble", "url": "https://dribbble.com/"}
         ]
     },
-    "Business Management": {
+    "Financial Analyst": {
         "basic": [
-            {"name": "Coursera Business Management Courses", "url": "https://www.coursera.org/courses?query=business%20management"},
-            {"name": "Harvard Business Review", "url": "https://hbr.org/"}
+            {"name": "CFA Institute", "url": "https://www.cfainstitute.org/"},
+            {"name": "Investopedia", "url": "https://www.investopedia.com/"}
         ],
         "intermediate": [
-            {"name": "Intermediate Leadership on LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/leadership"},
-            {"name": "MindTools", "url": "https://www.mindtools.com/"}
+            {"name": "Financial Modeling on Coursera", "url": "https://www.coursera.org/learn/financial-modeling"},
+            {"name": "Morningstar Learning Center", "url": "https://www.morningstar.com/learn"}
         ],
         "advanced": [
-            {"name": "Advanced Business Strategy on edX", "url": "https://www.edx.org/course/advanced-business-strategy"},
-            {"name": "McKinsey Insights", "url": "https://www.mckinsey.com/insights"}
+            {"name": "Advanced Financial Analysis on edX", "url": "https://www.edx.org/course/advanced-financial-analysis"},
+            {"name": "Bloomberg Terminal Training", "url": "https://www.bloomberg.com/professional/training/"}
         ]
     },
-    "Scientific": {
+    "Bank Manager": {
+        "basic": [
+            {"name": "American Bankers Association", "url": "https://www.aba.com/"},
+            {"name": "Coursera Banking Courses", "url": "https://www.coursera.org/courses?query=banking"}
+        ],
+        "intermediate": [
+            {"name": "Bank Management on LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/bank-management"},
+            {"name": "Bank Administration Institute", "url": "https://www.bai.org/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Banking Strategy on edX", "url": "https://www.edx.org/course/advanced-banking-strategy"},
+            {"name": "Federal Reserve Education", "url": "https://www.federalreserveeducation.org/"}
+        ]
+    },
+    "Research Scientist": {
         "basic": [
             {"name": "Google Scholar", "url": "https://scholar.google.com/"},
             {"name": "ResearchGate", "url": "https://www.researchgate.net/"}
@@ -3200,7 +3339,161 @@ LEARNING_RESOURCES = {
             {"name": "arXiv", "url": "https://arxiv.org/"}
         ]
     },
-    "Medicine": {
+    "Accountant": {
+        "basic": [
+            {"name": "AICPA", "url": "https://www.aicpa.org/"},
+            {"name": "QuickBooks Training", "url": "https://quickbooks.intuit.com/learn-support/training/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Accounting on Coursera", "url": "https://www.coursera.org/learn/intermediate-accounting"},
+            {"name": "CPA Exam Prep", "url": "https://www.cpaexam.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Accounting on edX", "url": "https://www.edx.org/course/advanced-accounting"},
+            {"name": "IASB Resources", "url": "https://www.ifrs.org/"}
+        ]
+    },
+    "Mathematician": {
+        "basic": [
+            {"name": "Khan Academy Math", "url": "https://www.khanacademy.org/math"},
+            {"name": "Wolfram MathWorld", "url": "https://mathworld.wolfram.com/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Algebra on Coursera", "url": "https://www.coursera.org/learn/intermediate-algebra"},
+            {"name": "Project Euler", "url": "https://projecteuler.net/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Mathematics on edX", "url": "https://www.edx.org/course/advanced-mathematics"},
+            {"name": "MathOverflow", "url": "https://mathoverflow.net/"}
+        ]
+    },
+    "Marketing Manager": {
+        "basic": [
+            {"name": "HubSpot Academy", "url": "https://academy.hubspot.com/"},
+            {"name": "Google Digital Garage", "url": "https://learndigital.withgoogle.com/digitalgarage"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Marketing on Coursera", "url": "https://www.coursera.org/learn/marketing-strategy"},
+            {"name": "MarketingProfs", "url": "https://www.marketingprofs.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Marketing on edX", "url": "https://www.edx.org/course/advanced-marketing"},
+            {"name": "Nielsen Insights", "url": "https://www.nielsen.com/insights/"}
+        ]
+    },
+    "Business Manager": {
+        "basic": [
+            {"name": "Coursera Business Management Courses", "url": "https://www.coursera.org/courses?query=business%20management"},
+            {"name": "Harvard Business Review", "url": "https://hbr.org/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Leadership on LinkedIn Learning", "url": "https://www.linkedin.com/learning/topics/leadership"},
+            {"name": "MindTools", "url": "https://www.mindtools.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Business Strategy on edX", "url": "https://www.edx.org/course/advanced-business-strategy"},
+            {"name": "McKinsey Insights", "url": "https://www.mckinsey.com/insights"}
+        ]
+    },
+    "Cybersecurity Analyst": {
+        "basic": [
+            {"name": "Cybrary Cybersecurity Courses", "url": "https://www.cybrary.it/"},
+            {"name": "TryHackMe", "url": "https://tryhackme.com/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Cybersecurity on Coursera", "url": "https://www.coursera.org/learn/cybersecurity-intermediate"},
+            {"name": "SANS Institute", "url": "https://www.sans.org/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Cybersecurity on edX", "url": "https://www.edx.org/course/advanced-cybersecurity"},
+            {"name": "EC-Council", "url": "https://www.eccouncil.org/"}
+        ]
+    },
+    "Environmental Engineer": {
+        "basic": [
+            {"name": "edX Environmental Engineering Courses", "url": "https://www.edx.org/learn/environmental-engineering"},
+            {"name": "EPA Resources", "url": "https://www.epa.gov/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Environmental Engineering on Coursera", "url": "https://www.coursera.org/learn/environmental-engineering-intermediate"},
+            {"name": "ASCE Learning", "url": "https://www.asce.org/learning/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Environmental Engineering on edX", "url": "https://www.edx.org/course/advanced-environmental-engineering"},
+            {"name": "Green Building Council", "url": "https://www.usgbc.org/"}
+        ]
+    },
+    "Ethical Hacker": {
+        "basic": [
+            {"name": "Hack The Box", "url": "https://www.hackthebox.com/"},
+            {"name": "Offensive Security Certifications", "url": "https://www.offsec.com/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Ethical Hacking on Coursera", "url": "https://www.coursera.org/learn/ethical-hacking-intermediate"},
+            {"name": "CEH Training", "url": "https://www.eccouncil.org/programs/certified-ethical-hacker-ceh/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Penetration Testing on edX", "url": "https://www.edx.org/course/advanced-penetration-testing"},
+            {"name": "Black Hat Training", "url": "https://www.blackhat.com/training/"}
+        ]
+    },
+    "Urban Planner": {
+        "basic": [
+            {"name": "Planetizen Courses", "url": "https://courses.planetizen.com/"},
+            {"name": "American Planning Association", "url": "https://www.planning.org/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Urban Planning on Coursera", "url": "https://www.coursera.org/learn/urban-planning-intermediate"},
+            {"name": "Urban Land Institute", "url": "https://uli.org/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Urban Design on edX", "url": "https://www.edx.org/course/advanced-urban-design"},
+            {"name": "CNU Resources", "url": "https://www.cnu.org/"}
+        ]
+    },
+    "Voice Actor": {
+        "basic": [
+            {"name": "Voices.com Learning Center", "url": "https://www.voices.com/learn"},
+            {"name": "Backstage Voice Acting Guides", "url": "https://www.backstage.com/magazine/voiceover/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Voice Acting on Udemy", "url": "https://www.udemy.com/topic/voice-acting/"},
+            {"name": "Voice123 Academy", "url": "https://academy.voice123.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Voiceover on Skillshare", "url": "https://www.skillshare.com/classes/advanced-voiceover"},
+            {"name": "Actors Connection", "url": "https://actorsconnection.com/"}
+        ]
+    },
+    "Astrophysicist": {
+        "basic": [
+            {"name": "NASA Astrophysics Resources", "url": "https://science.nasa.gov/astrophysics/"},
+            {"name": "Coursera Astrophysics Courses", "url": "https://www.coursera.org/courses?query=astrophysics"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Astrophysics on Coursera", "url": "https://www.coursera.org/learn/astrophysics-intermediate"},
+            {"name": "Astronomy Magazine", "url": "https://www.astronomy.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Astrophysics on edX", "url": "https://www.edx.org/course/advanced-astrophysics"},
+            {"name": "American Astronomical Society", "url": "https://aas.org/"}
+        ]
+    },
+    "Wildlife Biologist": {
+        "basic": [
+            {"name": "Wildlife Society Resources", "url": "https://wildlife.org/"},
+            {"name": "Khan Academy Biology", "url": "https://www.khanacademy.org/science/biology"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Ecology on Coursera", "url": "https://www.coursera.org/learn/ecology-intermediate"},
+            {"name": "National Geographic Education", "url": "https://www.nationalgeographic.org/education/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Conservation on edX", "url": "https://www.edx.org/course/advanced-conservation"},
+            {"name": "IUCN Resources", "url": "https://www.iucn.org/"}
+        ]
+    },
+    "Doctor (General Physician)": {
         "basic": [
             {"name": "Khan Academy Medicine", "url": "https://www.khanacademy.org/science/health-and-medicine"},
             {"name": "Medscape", "url": "https://www.medscape.com/"}
@@ -3214,7 +3507,35 @@ LEARNING_RESOURCES = {
             {"name": "NEJM Knowledge+", "url": "https://knowledgeplus.nejm.org/"}
         ]
     },
-    "Education": {
+    "Nurse": {
+        "basic": [
+            {"name": "Nursing Times Learning", "url": "https://www.nursingtimes.net/"},
+            {"name": "American Nurses Association", "url": "https://www.nursingworld.org/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Nursing on Coursera", "url": "https://www.coursera.org/learn/nursing-intermediate"},
+            {"name": "NCLEX Prep", "url": "https://www.nclex.com/"}
+        ],
+        "advanced": [
+            {"name": "Advanced Nursing on edX", "url": "https://www.edx.org/course/advanced-nursing"},
+            {"name": "AACN Resources", "url": "https://www.aacnnursing.org/"}
+        ]
+    },
+    "Medical Researcher": {
+        "basic": [
+            {"name": "PubMed", "url": "https://pubmed.ncbi.nlm.nih.gov/"},
+            {"name": "ClinicalTrials.gov", "url": "https://clinicaltrials.gov/"}
+        ],
+        "intermediate": [
+            {"name": "Intermediate Research Methods on Coursera", "url": "https://www.coursera.org/learn/research-methods"},
+            {"name": "NIH Training", "url": "https://www.nih.gov/research-training"}
+        ],
+        "advanced": [
+            {"name": "Advanced Scientific Writing on edX", "url": "https://www.edx.org/course/scientific-writing"},
+            {"name": "Nature Research", "url": "https://www.nature.com/"}
+        ]
+    },
+    "Teacher (Secondary Education)": {
         "basic": [
             {"name": "Edutopia", "url": "https://www.edutopia.org/"},
             {"name": "Teach.com", "url": "https://teach.com/"}
@@ -3228,7 +3549,7 @@ LEARNING_RESOURCES = {
             {"name": "ASCD Resources", "url": "https://www.ascd.org/"}
         ]
     },
-    "Law": {
+    "Lawyer": {
         "basic": [
             {"name": "ABA Legal Education", "url": "https://www.americanbar.org/groups/legal_education/"},
             {"name": "Coursera Law Courses", "url": "https://www.coursera.org/courses?query=law"}
@@ -3242,7 +3563,7 @@ LEARNING_RESOURCES = {
             {"name": "BarPrep Courses", "url": "https://www.barbri.com/"}
         ]
     },
-    "Mechanical Engineering": {
+    "Mechanical Engineer": {
         "basic": [
             {"name": "ASME Learning", "url": "https://www.asme.org/learning-development"},
             {"name": "MIT OpenCourseWare - Mechanical Engineering", "url": "https://ocw.mit.edu/courses/mechanical-engineering/"}
@@ -3257,6 +3578,7 @@ LEARNING_RESOURCES = {
         ]
     }
 }
+
 SCORING_WEIGHTS = {
     'base_weights': {
         'aptitude': 0.6,
@@ -3281,4 +3603,13 @@ SCORING_WEIGHTS = {
             'Neuroticism': 0.2
         }
     }
+}
+APTITUDE_MAPPING ={
+    'Mathematics': 'numerical',
+    'Logical Reasoning': 'logical',
+    'Verbal Ability': 'verbal',
+    'Science': 'science',
+    'Spatial Reasoning': 'spatial',
+    'History': 'history',
+    'Geography': 'geography'
 }

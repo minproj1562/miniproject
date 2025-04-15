@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, Blueprint, send_from_directory, abort, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -30,10 +31,10 @@ import requests
 # Import question data
 from questions import (
     APTITUDE_QUESTIONS, PERSONALITY_QUESTIONS, SCORING_WEIGHTS,
-    CAREER_MAPPING, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES, ADAPTIVE_TEST_SETTINGS
+    CAREER_MAPPING, SKILL_GAP_QUESTIONS, LEARNING_RESOURCES, ADAPTIVE_TEST_SETTINGS, APTITUDE_MAPPING
 )
 from forms import ProfileForm, LoginForm, RegisterForm, ContactForm
-from jinja2 import Environment
+from jinja2 import Environment, TemplateNotFound
 
 app = Flask(__name__,static_url_path='/static', static_folder='static')
 # Configure Flask-Session
@@ -341,7 +342,7 @@ class ONetAPI:
                     # Extract outlook data (growth rate)
                     # O*NET might use different paths; try multiple possibilities
                     growth_rate_elem = root.find(".//outlook/projections/percent_change") or root.find(".//outlook/growth_rate")
-                    growth_rate = float(growth_rate_elem.text) if growth_rate_elem is not None and growth_rate_elem.text else 0
+                    growth_rate = float(growth_rate_elem.text) if growth_rate_elem is not None and growth_rate_elem.text else 50
                     
                     return {
                         "title": title,
@@ -357,7 +358,7 @@ class ONetAPI:
                         "description": "Error retrieving data",
                         "wages": {"median": 100000},
                         "currency": "USD",
-                        "outlook": {"growth_rate": 0}
+                        "outlook": {"growth_rate": 50}
                     }
             else:
                 logger.error(f"API request failed for {soc_code} with status {response.status_code}")
@@ -366,7 +367,7 @@ class ONetAPI:
                     "description": "Data unavailable",
                     "wages": {"median": 100000},
                     "currency": "USD",
-                    "outlook": {"growth_rate": 0}
+                    "outlook": {"growth_rate": 50}
                 }
         except requests.RequestException as e:
             logger.error(f"Request failed for {soc_code}: {e}")
@@ -375,7 +376,7 @@ class ONetAPI:
                 "description": "Connection error",
                 "wages": {"median": 100000},
                 "currency": "USD",
-                "outlook": {"growth_rate": 0}
+                "outlook": {"growth_rate": 50}
             }
 
     def get_abilities(self, soc_code):
@@ -495,7 +496,21 @@ CAREERS = {
     "Research Scientist": "19-1042.00",
     "Accountant": "13-2011.00",
     "Mathematician": "15-2021.00",
-    "Marketing Manager": "11-2021.00"
+    "Marketing Manager": "11-2021.00",
+    "Business Manager": "11-1021.00",  # General and Operations Managers
+    "Cybersecurity Analyst": "15-1212.00",  # Information Security Analysts
+    "Environmental Engineer": "17-2081.00",
+    "Ethical Hacker": "15-1212.00",  # Same as Cybersecurity Analyst
+    "Urban Planner": "19-3051.00",
+    "Voice Actor": "27-2011.00",  # Actors
+    "Astrophysicist": "19-2011.00",  # Astronomers
+    "Wildlife Biologist": "19-1023.00",
+    "Doctor (General Physician)": "29-1215.00",  # Family Medicine Physicians
+    "Nurse": "29-1141.00",  # Registered Nurses
+    "Medical Researcher": "19-1042.00",  # Medical Scientists
+    "Teacher (Secondary Education)": "25-2031.00",
+    "Lawyer": "23-1011.00",
+    "Mechanical Engineer": "17-2141.00"
 }
 
 class EdxAPI:
@@ -2511,41 +2526,47 @@ def calculate_career_fit(user_scores, career_requirements, test_types_completed)
     total_match_score = 0
     max_possible_score = 0
 
-    # Aptitude fit
-    if 'aptitude' in test_types_completed and user_scores['aptitude']:
-        for apt, user_score in user_scores['aptitude'].items():
-            required_score = career_requirements['aptitude'].get(apt, 0)
-            if required_score > 0:  # Only consider aptitudes required by the career
-                max_possible_score += 100  # Each aptitude contributes up to 100 points
+    # Aptitude fit with mapping
+    if 'aptitude' in test_types_completed and user_scores.get('aptitude'):
+        for user_apt, user_score in user_scores['aptitude'].items():
+            if user_apt == 'score':  # Skip overall score
+                continue
+            mapped_apt = APTITUDE_MAPPING.get(user_apt, user_apt.lower())  # Map to CAREER_MAPPING key
+            required_score = career_requirements['aptitude'].get(mapped_apt, 0)
+            if required_score > 0:
+                max_possible_score += 100
                 match_percentage = min(user_score / required_score, 1.0) * 100
                 total_match_score += match_percentage
                 if user_score >= required_score * 0.8:  # 80% threshold
-                    fit_reasons.append(f"High {apt} aptitude ({user_score}%)")
+                    fit_reasons.append(f"High {user_apt.replace('_', ' ').capitalize()} aptitude ({user_score}% vs {required_score}% required)")
 
     # Personality fit
-    if 'personality' in test_types_completed and user_scores['personality']:
+    if 'personality' in test_types_completed and user_scores.get('personality'):
         for trait, user_score in user_scores['personality'].items():
             required_score = career_requirements['personality'].get(trait, 0)
-            if required_score > 0:  # Only consider traits required by the career
+            if required_score > 0:
                 max_possible_score += 100
-                match_percentage = min(user_score / required_score, 1.0) * 100 if required_score > 50 else (100 - user_score) / (100 - required_score) * 100
-                total_match_score += match_percentage
-                if user_score >= required_score * 0.8 and required_score > 50:
-                    fit_reasons.append(f"High {trait} personality ({user_score}%)")
-                elif user_score <= required_score * 1.2 and required_score < 50:
-                    fit_reasons.append(f"Low {trait} personality ({user_score}%)")
+                if required_score > 50:  # High trait required
+                    match_percentage = min(user_score / required_score, 1.0) * 100
+                    total_match_score += match_percentage
+                    if user_score >= required_score * 0.8:
+                        fit_reasons.append(f"High {trait.capitalize()} personality ({user_score}% vs {required_score}% required)")
+                else:  # Low trait preferred
+                    match_percentage = (100 - user_score) / (100 - required_score) * 100 if required_score < 50 else 0
+                    total_match_score += match_percentage
+                    if user_score <= required_score * 1.2:
+                        fit_reasons.append(f"Low {trait.capitalize()} personality ({user_score}% vs {required_score}% preferred low)")
 
-    # Skill fit (optional)
-    if 'skill_gap' in test_types_completed and user_scores['skill_gap']:
-        required_skill = career_requirements['skills']['required']
+    # Skill fit
+    if 'skill_gap' in test_types_completed and user_scores.get('skill_gap'):
+        required_skill = career_requirements['skills'].get('required', 0)
         user_skill = user_scores['skill_gap'].get('score', 0)
         max_possible_score += 100
         match_percentage = min(user_skill / required_skill, 1.0) * 100
         total_match_score += match_percentage
         if user_skill >= required_skill * 0.8:
-            fit_reasons.append(f"Strong skill proficiency ({user_skill}%)")
+            fit_reasons.append(f"Strong skill proficiency ({user_skill}% vs {required_skill}% required)")
 
-    # Calculate overall fit level
     overall_score = (total_match_score / max_possible_score * 100) if max_possible_score > 0 else 0
     if overall_score >= 75:
         fit_level = "Highly Suitable"
@@ -2555,58 +2576,60 @@ def calculate_career_fit(user_scores, career_requirements, test_types_completed)
         fit_level = "Not Assessed"
         fit_reasons = ["Complete more tests for a better assessment"] if not fit_reasons else fit_reasons
 
+    print(f"Debug - Fit for {career_requirements.get('description', 'Unknown')}: Score={overall_score}, Reasons={fit_reasons}")  # Debug print
     return {"fit_level": fit_level, "score": overall_score, "reasons": fit_reasons}
 
-def get_precise_career_matches(user_scores, region, show_global):
-    """Get top 5 career matches based on user scores and O*NET data."""
+def get_precise_career_matches(user_scores, region, completed_tests):
     matches = []
     onet_api = ONetAPI()
+
+    completed_tests_list = list(completed_tests.keys()) if isinstance(completed_tests, dict) else completed_tests
+
     for career_name, career_data in CAREER_MAPPING.items():
         soc_code = CAREERS.get(career_name, "15-1252.00")
         onet_summary = onet_api.get_occupation_summary(soc_code) or {}
-        onet_abilities = {a['name']: {'level': 50, 'importance': 3} for a in onet_api.get_abilities(soc_code)} or {}
-        onet_work_styles = {ws['name']: {'level': 50, 'importance': 3} for ws in onet_api.get_work_styles(soc_code)} or {}
+        match_result = calculate_career_fit(user_scores, career_data, completed_tests_list)
 
-        # Ensure required keys exist with defaults
-        for ability in APTITUDE_TO_ONET.values():
-            if ability not in onet_abilities:
-                onet_abilities[ability] = {'level': 50, 'importance': 3}
-        for style in PERSONALITY_TO_ONET.values():
-            if style not in onet_work_styles:
-                onet_work_styles[style] = {'level': 50, 'importance': 3}
+        onet_skills = onet_api.get_skills(soc_code) or []
+        missing_skills = []
+        if 'skill_gap' in completed_tests_list and user_scores.get('skill_gap'):
+            for skill, score in user_scores['skill_gap'].items():
+                if skill != 'score' and score < 50:
+                    missing_skills.append(skill)
+        else:
+            missing_skills = [skill.get('name', 'N/A') for skill in onet_skills[:2]]
 
-        # Construct career_data_for_match for calculate_match
-        career_data_for_match = {
-            'personality': {k: v['level'] for k, v in onet_work_styles.items()},
-            'aptitude': {k: v['level'] for k, v in onet_abilities.items()},
-            'skills': {'required': onet_summary.get('skill_level', 70)}
-        }
-        match_score = calculate_career_match(user_scores, career_data_for_match)  # Replace compute_career_match
-
-        # Fetch additional O*NET details
-        onet_skills = onet_api.get_skills(soc_code)
-        onet_education = onet_api.get_education(soc_code)
+        resource_category = career_name.split()[0] if career_name in ['Voice Actor', 'Business Manager'] else career_name
+        resources = []
+        if resource_category in LEARNING_RESOURCES:
+            for level in ['basic', 'intermediate', 'advanced']:
+                for resource in LEARNING_RESOURCES[resource_category][level]:
+                    if 'edx' not in resource['url'].lower():
+                        resources.append(resource)
+        resources = resources[:3]
 
         onet_details = {
             'title': onet_summary.get('title', career_name),
             'median_wage': onet_summary.get('wages', {}).get('median', 100000),
-            'currency': 'USD' if show_global else 'INR' if region == 'IN' else 'USD',
+            'currency': 'USD' if region != 'IN' else 'INR',
             'growth_rate': onet_summary.get('outlook', {}).get('growth_rate', 0),
             'skills': [skill.get('name', 'N/A') for skill in onet_skills],
-            'education': onet_education.get('level_required', [])
+            'education': onet_api.get_education(soc_code) or 'N/A'
         }
-        if region == 'IN' and not show_global and onet_details['median_wage']:
-            onet_details['median_wage'] *= 83  # USD to INR approximation
+        if region == 'IN' and onet_details['median_wage']:
+            onet_details['median_wage'] *= 83
 
         matches.append({
             'name': career_name,
             'description': onet_summary.get('description', career_data.get('description', '')),
-            'match_score': match_score,
+            'score': match_result['score'],
+            'fit_level': match_result['fit_level'],
+            'fit_reasons': match_result['reasons'],
             'onet_details': onet_details,
-            'resources': get_recommendations(career_name, match_score)
+            'resources': resources
         })
 
-    matches.sort(key=lambda x: x['match_score'], reverse=True)
+    matches.sort(key=lambda x: x['score'], reverse=True)
     return matches[:5]
 
 @app.route('/career_match', methods=['GET', 'POST'])
@@ -2717,31 +2740,45 @@ def interest_results(result_id):
 @app.route('/full_analysis')
 @login_required
 def full_analysis():
-    analysis = {
-        'aptitude': {
-            'completed_at': current_user.aptitude_completed_at,
-            'score': sum(current_user.aptitude_scores.values()) / len(current_user.aptitude_scores) if current_user.aptitude_scores else 0,
-            'details': current_user.aptitude_scores or {}
-        },
-        'personality': {
-            'completed_at': current_user.personality_completed_at,
-            'score': sum(current_user.personality_scores.values()) / len(current_user.personality_scores) if current_user.personality_scores else 0,
-            'details': current_user.personality_scores or {}
-        },
-        'skill_gap': {
-            'completed_at': current_user.skill_gap_completed_at,
-            'score': current_user.skill_gap_scores.get('score', 0) if current_user.skill_gap_scores else 0,
-            'details': current_user.skill_gap_scores or {}
-        }
+    test_results = [t.test_type for t in TestResult.query.filter_by(user_id=current_user.id).all()]
+    completed_tests = {test: True for test in test_results}
+    session['completed_tests'] = completed_tests
+
+    user_scores = {
+        'aptitude': json.loads(current_user.aptitude_scores) if current_user.aptitude_scores else {},
+        'personality': json.loads(current_user.personality_scores) if current_user.personality_scores else {},
+        'skill_gap': json.loads(current_user.skill_gap_scores) if current_user.skill_gap_scores else {'score': 0}
     }
     region = get_region_from_pin(current_user.pin_code) if current_user.pin_code else 'US'
-    user_scores = {
-        'aptitude': current_user.aptitude_scores or {},
-        'personality': current_user.personality_scores or {},
-        'skill_gap': current_user.skill_gap_scores or {}
+
+    matches = get_precise_career_matches(user_scores, region, completed_tests)
+    
+    recommendations = []
+    for career_category in LEARNING_RESOURCES.keys():
+        for level in ['basic', 'intermediate', 'advanced']:
+            for resource in LEARNING_RESOURCES[career_category][level]:
+                if 'edx' not in resource['url'].lower():
+                    recommendations.append(resource)
+    recommendations = recommendations[:5]
+
+    analysis = {
+        'aptitude': {
+            'completed_at': TestResult.query.filter_by(user_id=current_user.id, test_type='aptitude').order_by(TestResult.completed_at.desc()).first().completed_at if test_results else None,
+            'score': user_scores.get('aptitude', {}).get('score', 0),
+            'details': user_scores.get('aptitude', {})
+        },
+        'personality': {
+            'completed_at': TestResult.query.filter_by(user_id=current_user.id, test_type='personality').order_by(TestResult.completed_at.desc()).first().completed_at if test_results else None,
+            'details': user_scores.get('personality', {})
+        },
+        'skill_gap': {
+            'completed_at': TestResult.query.filter_by(user_id=current_user.id, test_type='skill_gap').order_by(TestResult.completed_at.desc()).first().completed_at if test_results else None,
+            'score': user_scores.get('skill_gap', {}).get('score', 0),
+            'details': user_scores.get('skill_gap', {})
+        }
     }
-    matches = get_precise_career_matches(user_scores, region, False)
-    return render_template('full_analysis.html', analysis=analysis, matches=matches)
+
+    return render_template('full_analysis.html', matches=matches, recommendations=recommendations, analysis=analysis, active_page='full_analysis')
     
 @app.route('/career_path')
 @login_required
@@ -3324,122 +3361,208 @@ def roadmap():
 def resume_builder():
     if request.method == 'POST':
         try:
+            # Process form data
             resume_data = {
                 'template': request.form.get('template', 'modern'),
                 'personal_info': {
                     'name': request.form.get('name', '').strip(),
                     'email': request.form.get('email', '').strip(),
                     'phone': request.form.get('phone', '').strip(),
-                    'linkedin': request.form.get('linkedin', '').strip(),
+                    'linkedin': validate_linkedin(request.form.get('linkedin', '').strip())
                 },
                 'summary': request.form.get('summary', '').strip(),
                 'education': [],
                 'experience': [],
-                'skills': json.loads(request.form.get('skills', '[]'))
+                'skills': {
+                    'technical': json.loads(request.form.get('technical_skills', '[]')),
+                    'soft': json.loads(request.form.get('soft_skills', '[]'))
+                },
+                'certificates': handle_file_uploads(request.files.getlist('certificates'))
             }
 
-            # Handle photo upload
-            photo_file = request.files.get('photo')
-            if photo_file and photo_file.filename:
-                filename = secure_filename(f'resume_photo_{current_user.id}_{photo_file.filename}')
-                photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                os.makedirs(os.path.dirname(photo_path), exist_ok=True)
-                photo_file.save(photo_path)
-                resume_data['photo'] = url_for('static', filename=f'uploads/{filename}')
+            # Process photo upload
+            if 'photo' in request.files:
+                photo_file = request.files['photo']
+                if photo_file and allowed_file(photo_file.filename):
+                    filename = secure_filename(f'resume_photo_{current_user.id}_{photo_file.filename}')
+                    photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    os.makedirs(os.path.dirname(photo_path), exist_ok=True)
+                    photo_file.save(photo_path)
+                    resume_data['photo'] = url_for('static', filename=f'uploads/{filename}')
 
-            # Process education
-            education = request.form.getlist('education[]')
-            institutions = request.form.getlist('institution[]')
-            dates = request.form.getlist('education_date[]')
-            for deg, inst, date in zip(education, institutions, dates):
-                if deg.strip() and inst.strip():
-                    resume_data['education'].append({
-                        'degree': deg.strip(),
-                        'institution': inst.strip(),
-                        'date': date.strip()
-                    })
-
-            # Process experience (optional)
-            positions = request.form.getlist('position[]')
-            companies = request.form.getlist('company[]')
-            descriptions = request.form.getlist('description[]')
-            exp_dates = request.form.getlist('experience_date[]')
-            for pos, comp, desc, date in zip(positions, companies, descriptions, exp_dates):
-                if any([pos.strip(), comp.strip(), desc.strip()]):
-                    resume_data['experience'].append({
-                        'position': pos.strip(),
-                        'company': comp.strip(),
-                        'description': desc.strip(),
-                        'date': date.strip()
-                    })
-
-            # Save to database
+            # Process education and experience
+            process_dynamic_sections(resume_data)
+            
+            # Database operations
             resume = Resume.query.filter_by(user_id=current_user.id).first()
             if resume:
                 resume.resume_data = resume_data
-                resume.updated_at = datetime.now(pytz.utc)
+                resume.updated_at = datetime.now(timezone.utc)
             else:
                 resume = Resume(user_id=current_user.id, resume_data=resume_data)
                 db.session.add(resume)
             db.session.commit()
 
             return jsonify({'success': True, 'resume_id': resume.id})
+
         except Exception as e:
+            app.logger.error(f'Resume save error: {str(e)}')
             return jsonify({'success': False, 'error': str(e)}), 500
 
-    # GET request
+    # GET request handling
     resume = Resume.query.filter_by(user_id=current_user.id).first()
-    resume_data = resume.resume_data if resume else {}
+    resume_data = create_resume_data_structure(resume)
     return render_template('resume.html', resume=resume_data)
+
+def process_dynamic_sections(resume_data):
+    # Education processing
+    education = request.form.getlist('education[]')
+    institutions = request.form.getlist('institution[]')
+    dates = request.form.getlist('education_date[]')
+    for deg, inst, date in zip(education, institutions, dates):
+        if deg.strip() and inst.strip():
+            resume_data['education'].append({
+                'degree': deg.strip(),
+                'institution': inst.strip(),
+                'date': date.strip()
+            })
+
+    # Experience processing
+    positions = request.form.getlist('position[]')
+    companies = request.form.getlist('company[]')
+    descriptions = request.form.getlist('description[]')
+    exp_dates = request.form.getlist('experience_date[]')
+    for pos, comp, desc, date in zip(positions, companies, descriptions, exp_dates):
+        if any([pos.strip(), comp.strip(), desc.strip()]):
+            resume_data['experience'].append({
+                'position': pos.strip(),
+                'company': comp.strip(),
+                'description': desc.strip(),
+                'date': date.strip()
+            })
+
+def create_resume_data_structure(resume):
+    base_data = {
+        'template': 'modern',
+        'personal_info': {
+            'name': '',
+            'email': '',
+            'phone': '',
+            'linkedin': ''
+        },
+        'summary': '',
+        'education': [],
+        'experience': [],
+        'skills': {
+            'technical': [],
+            'soft': []
+        },
+        'photo': '',
+        'certificates': []
+    }
+    
+    if resume and resume.resume_data:
+        for key in base_data:
+            if key in resume.resume_data:
+                base_data[key] = resume.resume_data[key]
+                
+    return base_data
+
+def validate_linkedin(url):
+    if not url:
+        return ''
+    pattern = re.compile(
+        r'^(https?://)?(www\.)?linkedin\.com/(in|pub)/[a-zA-Z0-9-]+/?$'
+    )
+    if not pattern.match(url):
+        abort(400, "Invalid LinkedIn URL format. Valid examples:\n- linkedin.com/in/username\n- linkedin.com/pub/username")
+    return url
+
+def handle_file_uploads(files):
+    saved_files = []
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = secure_filename(f"cert_{current_user.id}_{file.filename}")
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'certificates', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+            saved_files.append(url_for('static', filename=f'uploads/certificates/{filename}'))
+    return saved_files
 
 @app.route('/api/career-suggestions')
 def career_suggestions():
-    query = request.args.get('skills', '').lower()
-    all_skills = [
-        "Python", "JavaScript", "Java", "C++", "SQL", "HTML", "CSS",
-        "Project Management", "Data Analysis", "Machine Learning",
-        "Cloud Computing", "Cybersecurity", "Graphic Design", "Marketing",
-        "Leadership", "Communication", "Problem Solving", "Teamwork"
-    ]
-    suggestions = [skill for skill in all_skills if query in skill.lower()]
-    return jsonify(suggestions[:5])
+    try:
+        query = request.args.get('skills', '').lower()
+        all_skills = [
+            "Python", "JavaScript", "Java", "C++", "SQL", "HTML", "CSS",
+            "Project Management", "Data Analysis", "Machine Learning",
+            "Cloud Computing", "Cybersecurity", "Graphic Design", "Marketing",
+            "Leadership", "Communication", "Problem Solving", "Teamwork"
+        ]
+        suggestions = [skill for skill in all_skills if query in skill.lower()]
+        return jsonify(suggestions[:5])
+    except Exception as e:
+        app.logger.error(f'Career suggestions error: {str(e)}')
+        return jsonify([])
 
 @app.route('/get-template-html')
 def get_template_html():
-    template_name = request.args.get('template', 'modern')
-    template_file = f'resume_{template_name}.html'
     try:
-        with open(os.path.join(app.template_folder, template_file), 'r') as f:
-            return f.read()
-    except FileNotFoundError:
-        return render_template('resume_modern.html')  # Fallback
+        template_name = request.args.get('template', 'modern')
+        return render_template(f'resume_{template_name}.html')
+    except TemplateNotFound:
+        app.logger.warning(f'Template not found: resume_{template_name}.html')
+        try:
+            # First fallback attempt
+            return render_template('resume_modern.html')
+        except TemplateNotFound:
+            # Final fallback template
+            return """
+            <div class="resume-container">
+                <h1>Resume Preview Unavailable</h1>
+                <p>Please try selecting a different template or contact support.</p>
+            </div>
+            """
 
 @app.route('/export-resume/<int:resume_id>')
 @login_required
 def export_resume(resume_id):
-    resume = Resume.query.get_or_404(resume_id)
-    template_name = resume.resume_data.get('template', 'modern')
+    try:
+        resume = Resume.query.get_or_404(resume_id)
+        template_name = resume.resume_data.get('template', 'modern')
+        
+        # Render template with CSS
+        html_content = render_template(f'resume_{template_name}.html', resume=resume.resume_data)
+        
+        # PDF configuration
+        options = {
+            'page-size': 'Letter',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': 'UTF-8',
+            'quiet': ''
+        }
+        
+        # Add CSS from static folder
+        css_path = os.path.join(app.static_folder, 'css', 'resume.css')
+        if os.path.exists(css_path):
+            options['user-style-sheet'] = css_path
+        
+        pdf = pdfkit.from_string(html_content, False, options=options)
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={current_user.username}_resume.pdf'
+        return response
+    except Exception as e:
+        app.logger.error(f'PDF export error: {str(e)}')
+        flash('Error generating PDF. Please try again.', 'danger')
+        return redirect(url_for('resume_builder'))
     
-    # Render template with CSS
-    html_content = render_template(f'resume_{template_name}.html', resume=resume.resume_data)
-    
-    # Include base CSS
-    base_css = Path(app.static_folder) / 'css' / 'resume.css'
-    options = {
-        'page-size': 'Letter',
-        'margin-top': '0.75in',
-        'margin-right': '0.75in',
-        'margin-bottom': '0.75in',
-        'margin-left': '0.75in',
-        'user-style-sheet': str(base_css),
-        'encoding': 'UTF-8'
-    }
-    
-    pdf = pdfkit.from_string(html_content, False, options=options)
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename={current_user.username}_resume.pdf'
-    return response
+@app.template_filter('basename')
+def basename_filter(path):
+    return os.path.basename(path)
 
 @app.route('/search', methods=['GET'])
 def search():
